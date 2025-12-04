@@ -429,6 +429,7 @@ void ChModeControl_FreeMode_RCControl(void)
     //待优化：这边可以加一个根据遥控器通道值映射到目标速度的函数，也就是目标值速度不是固定的，而是随着摇杆变化的
     /*********************************测试test**********************************************/
 
+    //#region 简单运动
     /*移动方向*/
     int8_t Forward = 1;
     int8_t Backward = -1;
@@ -520,7 +521,7 @@ void ChModeControl_FreeMode_RCControl(void)
         GST_RMCtrl.STCH_Default.DisDes = GSTCH_Data.DisFB;
     }
     GST_RMCtrl.STCH_Default.VelDes = VelDesNext;
-    
+
     /*******************************偏航角速度控制*********************************/
     if(IsLeftJoyStickLeft() == true)
     {
@@ -534,7 +535,8 @@ void ChModeControl_FreeMode_RCControl(void)
     {
         GST_RMCtrl.STCH_Default.YawAngleVelDes = 0.0f;
     }
-
+    //#endregion
+    
     /*********************************测试test*******************************************/
 
     //#region 待复刻：小陀螺模式

@@ -83,16 +83,24 @@ void VofaPrint(void)
 {
     USART3_DMA_printf
     ("C:%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
-/*0*/   (float)GSTCH_OffGround1.F_N,
-/*1*/   (float)GSTCH_OffGround1.F_Leg,
-/*2*/   (float)GSTCH_OffGround1.Tp_Leg,
-/*3*/   (float)GSTCH_OffGround1.ZAcc_Wheel,
-/*4*/   (float)GSTCH_OffGround2.F_N,
-/*5*/   (float)GSTCH_OffGround2.F_Leg,
-/*6*/   (float)GSTCH_OffGround2.Tp_Leg,
-/*7*/   (float)GSTCH_OffGround2.ZAcc_Wheel,
-/*8*/   (float)GstCH_Leg1VMC.F_Matrix[0],
-/*9*/   (float)GstCH_Leg1VMC.F_Matrix[1]
+/*0*/   (float)GstCH_LegLen1TD.v,
+/*1*/   (float)GstCH_LegLen1TD.x1,
+/*2*/   (float)GstCH_LegLen1TD.x2,
+/*3*/   (float)0,
+/*4*/   (float)0,
+/*5*/   (float)0,
+/*6*/   (float)0,
+/*7*/   (float)0,
+/*8*/   (float)GSTCH_Data.LegLen1Des,
+/*9*/   (float)GSTCH_Data.LegLen1FB
+// GSTCH_OffGround1.F_N,
+// GSTCH_OffGround1.F_Leg,
+// GSTCH_OffGround1.Tp_Leg,
+// GSTCH_OffGround1.ZAcc_Wheel,
+// GSTCH_OffGround2.F_N,
+// GSTCH_OffGround2.F_Leg,
+// GSTCH_OffGround2.Tp_Leg,
+// GSTCH_OffGround2.ZAcc_Wheel,
     );
 }
 

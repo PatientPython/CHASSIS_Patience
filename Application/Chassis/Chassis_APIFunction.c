@@ -243,13 +243,13 @@ void Chassis_AllFBDataUpdate(void)
 */
 void CH_LegLenDes_Update(RobotControl_StructTypeDef RMCtrl)
 {
-    TD_SetInput(&GstCH_LegLen1TD, RMCtrl.STCH_Default.LegLen1Des); //左腿腿长TD输入值设为左腿腿长目标值
-    TD_Cal(&GstCH_LegLen1TD);                               //左腿腿长TD计算
-    GSTCH_Data.LegLen1Des = TD_GetOutput(&GstCH_LegLen1TD); //左腿腿长目标值更新为TD输出值
+    TD_SetInput(&GstCH_LegLen1TD, (RMCtrl.STCH_Default.LegLen1Des*MM2M)); //左腿腿长TD输入值设为左腿腿长目标值
+    TD_Cal(&GstCH_LegLen1TD);                                       //左腿腿长TD计算
+    GSTCH_Data.LegLen1Des = TD_GetOutput(&GstCH_LegLen1TD)*M2MM;    //左腿腿长目标值更新为TD输出值
 
-    TD_SetInput(&GstCH_LegLen2TD, RMCtrl.STCH_Default.LegLen2Des); //右腿腿长TD输入值设为右腿腿长目标值
-    TD_Cal(&GstCH_LegLen2TD);                               //右腿腿长TD计算
-    GSTCH_Data.LegLen2Des = TD_GetOutput(&GstCH_LegLen2TD); //右腿腿长目标值更新为TD输出值
+    TD_SetInput(&GstCH_LegLen2TD, (RMCtrl.STCH_Default.LegLen2Des*MM2M)); //右腿腿长TD输入值设为右腿腿长目标值
+    TD_Cal(&GstCH_LegLen2TD);                                       //右腿腿长TD计算
+    GSTCH_Data.LegLen2Des = TD_GetOutput(&GstCH_LegLen2TD)*M2MM;    //右腿腿长目标值更新为TD输出值
 }
 
 /**
@@ -322,16 +322,16 @@ void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
 
     /****获取腿长PID的输出力****/
     /*左腿*/
-    PID_SetDes(&GstCH_LegLen1PID, GSTCH_Data.LegLen1Des);   //腿长PID目标值设为目标腿长
-    PID_SetFB (&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB);    //腿长PID反馈值设置为实际腿长
-    PID_Cal  (&GstCH_LegLen1PID);                           //腿长PID计算
-    float Leg1PIDForce = PID_GetOutput(&GstCH_LegLen1PID);  //获取左腿腿长PID作用力
+    PID_SetDes(&GstCH_LegLen1PID, GSTCH_Data.LegLen1Des*MM2M);  //腿长PID目标值设为目标腿长
+    PID_SetFB (&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB*MM2M);   //腿长PID反馈值设置为实际腿长
+    PID_Cal  (&GstCH_LegLen1PID);                               //腿长PID计算
+    float Leg1PIDForce = PID_GetOutput(&GstCH_LegLen1PID);      //获取左腿腿长PID作用力
 
     /*右腿*/
-    PID_SetDes(&GstCH_LegLen2PID, GSTCH_Data.LegLen2Des);   //腿长PID目标值设为目标腿长
-    PID_SetFB (&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB);    //腿长PID反馈值设置为实际腿长
-    PID_Cal  (&GstCH_LegLen2PID);                           //腿长PID计算
-    float Leg2PIDForce = PID_GetOutput(&GstCH_LegLen2PID);  //获取右腿腿长PID作用力
+    PID_SetDes(&GstCH_LegLen2PID, GSTCH_Data.LegLen2Des*MM2M);  //腿长PID目标值设为目标腿长
+    PID_SetFB (&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB*MM2M);   //腿长PID反馈值设置为实际腿长
+    PID_Cal  (&GstCH_LegLen2PID);                               //腿长PID计算
+    float Leg2PIDForce = PID_GetOutput(&GstCH_LegLen2PID);      //获取右腿腿长PID作用力
 
     /****最终等效摆杆力、力矩目标值赋值****/
     GSTCH_Data.Leg1ForceDes  = Leg1PIDForce + RollCompForce + Leg1FFForce;  //左腿沿杆F = 腿长PID输出值 + Roll轴补偿力 + 腿部前馈力
@@ -501,8 +501,8 @@ void _CH_VMCCal_DesDataReset(void)
 void _CH_TDCal_DataReset(void)
 {
     /*腿长TD相关数据重置*/
-    TD_Reset(&GstCH_LegLen1TD, GSTCH_Data.LegLen1FB); //左腿长度TD重置
-    TD_Reset(&GstCH_LegLen2TD, GSTCH_Data.LegLen2FB); //右腿长度TD重置
+    TD_Reset(&GstCH_LegLen1TD, GSTCH_Data.LegLen1FB*MM2M); //左腿长度TD重置
+    TD_Reset(&GstCH_LegLen2TD, GSTCH_Data.LegLen2FB*MM2M); //右腿长度TD重置
 }
 
 /**
@@ -514,8 +514,8 @@ void _CH_TDCal_DataReset(void)
 void _CH_PIDCal_DataReset(void)
 {
     /*腿长PID相关数据清零*/
-    PID_Reset(&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB);//左腿PID数据重置
-    PID_Reset(&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB);//右腿PID数据重置
+    PID_Reset(&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB*MM2M);//左腿PID数据重置
+    PID_Reset(&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB*MM2M);//右腿PID数据重置
 
     /*Roll补偿PID相关数据清零*/
     PID_Reset(&GstCH_RollCompPID, GSTCH_Data.RollAngleFB); //底盘Roll补偿PID数据重置

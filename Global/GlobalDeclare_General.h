@@ -253,6 +253,7 @@ extern ReceiverData_StructTypeDef GST_Receiver;
 #define R2A     180.0f/PI    //弧度制转角度制，RadianToAngle
 /*其他单位互换*/
 #define MM2M    0.001f       //毫米转米，MillimeterToMeter
+#define M2MM    1000.0f      //米转毫米，MeterToMillimeter
 /*其他常数*/
 #define GravityAcc  9.80f    //标准重力加速度，单位：m/s²
 #define GravityAcc_Harbin 9.806639f //哈尔滨地区重力加速度，单位：m/s²

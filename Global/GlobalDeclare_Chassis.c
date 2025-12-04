@@ -56,7 +56,7 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque; //关节电机最大
 //换车时需修改
 #define LPF_Alpha_HM_AngleVel    0.091f     //轮毂电机速度低通滤波器系数
 #define LPF_Alpha_xCdot          0.091f     //底盘速度补偿低通滤波器系数
-#define LPF_Alpha_Thetadot       0.167f     //腿部Theta_dot低通滤波器系数
+#define LPF_Alpha_Thetadot       0.09f     //腿部Theta_dot低通滤波器系数
 #define LPF_Alpha_YawAngleVel    0.09f      //底盘Yaw轴角速度低通滤波器系数
 #define LPF_Alpha_PitchAngleVel  0.06f      //底盘Pitch轴角速度低通滤波器系数
 #define LPF_Alpha_AccXFB         0.6f       //底盘加速度AccX低通滤波器系数
@@ -72,9 +72,9 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque; //关节电机最大
 #define TD_LegLen_r    0.0f                 //腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
 #define TD_LegLen_h0   1*TD_SampleTime      //腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
 
-float TD_LegLen_rStandUp = 4000.0f;    //腿长TD：起立模式下的速度因子
-float TD_LegLen_rNorm    = 4000.0f;    //腿长TD：正常模式下的速度因子
-float TD_LegLen_rSlowSitDown = 70.0f;  //腿长TD：缓慢坐下模式下的速度因子
+float TD_LegLen_rStandUp = 20.0f;    //腿长TD：起立模式下的速度因子
+float TD_LegLen_rNorm    = 20.0f;    //腿长TD：正常模式下的速度因子
+float TD_LegLen_rSlowSitDown = 0.2f;  //腿长TD：缓慢坐下模式下的速度因子
 //#endregion
 
 //#region /****PID相关参数********************************/
@@ -88,10 +88,10 @@ float TD_LegLen_rSlowSitDown = 70.0f;  //腿长TD：缓慢坐下模式下的速�
 #define PID_LegLen_UdMax  PID_LegLen_UMax   //腿长PID：Kd项输出最大值
 #define PID_LegLen_AddMax 0.01f             //腿长PID：误差单次累加最大值
 
-float PID_LegLen_KpStandUp = 0.8f;          //腿长PID：起立状态下Kp值
-float PID_LegLen_KdStandUp = 20.0f;         //腿长PID：起立状态下Kd值
-float PID_LegLen_KpNorm    = 0.8f;          //腿长PID：正常时的Kp值
-float PID_LegLen_KdNorm    = 20.0f;         //腿长PID：正常时的Kd值
+float PID_LegLen_KpStandUp = 800.0f;          //腿长PID：起立状态下Kp值
+float PID_LegLen_KdStandUp = 20000.0f;         //腿长PID：起立状态下Kd值
+float PID_LegLen_KpNorm    = 800.0f;          //腿长PID：正常时的Kp值
+float PID_LegLen_KdNorm    = 20000.0f;         //腿长PID：正常时的Kd值
 
 /*Roll轴补偿相关*/
 //待优化：可以试试给小陀螺单独一套PID参数
@@ -121,7 +121,7 @@ float LegLenHigh = 290.0f;    //高腿长，单位mm
 /*底盘零点补偿相关*/
 //换车时需要修改
 float ChassisPitchAngleZP = 0.0f;  //底盘Pitch轴零点补偿值，单位度，正值表示实际需要抬头才能平衡
-float ChassisRollAngleZP  = 0.95f; //底盘Roll轴零点补偿值，单位度
+float ChassisRollAngleZP  = 0.6f;  //底盘Roll轴零点补偿值，单位度
 
 /*腿部前馈力补偿相关*/
 float LegFFForce_Norm            = 80.0f;   //正常时的腿部前馈力，单位N，用于补偿重力对腿部的影响
