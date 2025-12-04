@@ -1,0 +1,14 @@
+..\stm32\output\globaldeclare_chassis.o: ..\Global\GlobalDeclare_Chassis.c
+..\stm32\output\globaldeclare_chassis.o: ..\Global\GlobalDeclare_Chassis.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\ARM\ARMCC\Bin\..\include\stdbool.h
+..\stm32\output\globaldeclare_chassis.o: ..\API\Algorithm.h
+..\stm32\output\globaldeclare_chassis.o: ..\Global\GlobalDeclare_General.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\ARM\ARMCC\Bin\..\include\stdint.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\FreeRTOS.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\ARM\ARMCC\Bin\..\include\stddef.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\FreeRTOSConfig.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\projdefs.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\portable.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\deprecated_definitions.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\port\inc\portmacro.h
+..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\mpu_wrappers.h

@@ -1,0 +1,11 @@
+..\stm32\output\algorithm_simple.o: ..\API\Algorithm_Simple.c
+..\stm32\output\algorithm_simple.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\arm_math.h
+..\stm32\output\algorithm_simple.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h
+..\stm32\output\algorithm_simple.o: L:\Keil\ARM\ARMCC\Bin\..\include\stdint.h
+..\stm32\output\algorithm_simple.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_version.h
+..\stm32\output\algorithm_simple.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h
+..\stm32\output\algorithm_simple.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h
+..\stm32\output\algorithm_simple.o: L:\Keil\ARM\ARMCC\Bin\..\include\string.h
+..\stm32\output\algorithm_simple.o: L:\Keil\ARM\ARMCC\Bin\..\include\math.h
+..\stm32\output\algorithm_simple.o: ..\Global\GlobalDeclare_General.h
+..\stm32\output\algorithm_simple.o: L:\Keil\ARM\ARMCC\Bin\..\include\stdbool.h

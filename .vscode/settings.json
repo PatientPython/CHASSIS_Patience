@@ -1,0 +1,22 @@
+{
+    "files.associations": {
+        "freertos.h": "c",
+        "stm32f4xx.h": "c",
+        "queue": "cpp",
+        "globaldeclare_general.h": "c",
+        "stdlib.h": "c",
+        "arm_math_types.h": "c",
+        "arm_math.h": "c",
+        "fast_math_functions.h": "c",
+        "functional": "c",
+        "cmath": "c",
+        "stdbool.h": "c",
+        "general_auxiliaryfunc.h": "c",
+        "algorithm.h": "c",
+        "usart_communication.h": "c",
+        "stm32f4xx_tim.h": "c",
+        "chassis_apifunction.h": "c",
+        "globaldeclare_chassis.h": "c",
+        "tim_config.h": "c"
+    }
+}
