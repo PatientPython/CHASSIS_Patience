@@ -447,52 +447,6 @@ void JM_DesDataReset(void)
 }
 
 /**
-  * @brief  腿部长度目标值数据重置函数
-  * @note   把腿部长度相关的目标值全部重置，机器人未运动时调用
-  * @param  无
-  * @retval 无
-*/
-void _CH_LegLen_DesDataReset(void)
-{
-    GSTCH_Data.LegLen1Des = GSTCH_Data.LegLen1FB;   //左腿目标长度清零
-    GSTCH_Data.LegLen2Des = GSTCH_Data.LegLen2FB;   //右腿目标长度清零
-}
-
-/**
-  * @brief  底盘LQR目标值数据重置函数
-  * @note   把底盘LQR计算相关的目标值全部重置，机器人未运动时调用
-  * @param  无
-  * @retval 无
-*/
-void _CH_LQRCal_DesDataReset(void)
-{
-    GSTCH_Data.DisDes            = 0.0f;    //x[0]：底盘位移目标值
-    GSTCH_Data.VelDes            = 0.0f;    //x[1]：底盘速度目标值
-    GSTCH_Data.YawDeltaDes       = 0.0f;    //x[2]：底盘偏航角Yaw增量目标值
-    GSTCH_Data.YawAngleVelDes    = 0.0f;    //x[3]：底盘偏航角Yaw速度目标值
-    GSTCH_Data.Theta1Des         = 0.0f;    //x[4]：左腿Theta角目标值
-    GSTCH_Data.Theta1AngleVelDes = 0.0f;    //x[5]：左腿Theta角速度目标值
-    GSTCH_Data.Theta2Des         = 0.0f;    //x[6]：右腿Theta角目标值
-    GSTCH_Data.Theta2AngleVelDes = 0.0f;    //x[7]：右腿Theta角速度目标值
-    GSTCH_Data.PitchAngleDes     = 0.0f;    //x[8]：底盘俯仰角Pitch目标值
-    GSTCH_Data.PitchAngleVelDes  = 0.0f;    //x[9]：底盘俯仰角Pitch速度目标值
-}
-
-/**
-  * @brief  虚拟模型控制VMC计算相关目标值数据重置函数
-  * @note   把虚拟模型控制计算相关的目标值全部重置，机器人未运动时调用
-  * @param  无
-  * @retval 无
-*/
-void _CH_VMCCal_DesDataReset(void)
-{
-    GSTCH_Data.Leg1ForceDes  = 0.0f; //VMC：左腿力目标值清零
-    GSTCH_Data.Leg2ForceDes  = 0.0f; //VMC：右腿力目标值清零
-    GSTCH_Data.Leg1TorqueDes = 0.0f; //VMC：左腿力矩目标值清零
-    GSTCH_Data.Leg2TorqueDes = 0.0f; //VMC：右腿力矩目标值清零
-}
-
-/**
   * @brief  底盘TD计算相关目标值数据重置函数
   * @note   把底盘TD计算相关的目标值全部重置，机器人未运动时调用
   * @param  无
@@ -534,6 +488,40 @@ void _CH_Flag_Reset(void)
 }
 
 /**
+  * @brief  底盘数据结构体数据重置函数
+  * @note   把底盘数据结构体数据全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void _CH_GSTCH_Data_Reset(void)
+{
+    /*腿长目标值清零*/
+    GSTCH_Data.LegLen1Des = GSTCH_Data.LegLen1FB;   //左腿目标长度清零
+    GSTCH_Data.LegLen2Des = GSTCH_Data.LegLen2FB;   //右腿目标长度清零
+
+    /*LQR计算目标值清零*/
+    GSTCH_Data.DisDes            = 0.0f;    //x[0]：底盘位移目标值
+    GSTCH_Data.VelDes            = 0.0f;    //x[1]：底盘速度目标值
+    GSTCH_Data.YawDeltaDes       = 0.0f;    //x[2]：底盘偏航角Yaw增量目标值
+    GSTCH_Data.YawAngleVelDes    = 0.0f;    //x[3]：底盘偏航角Yaw速度目标值
+    GSTCH_Data.Theta1Des         = 0.0f;    //x[4]：左腿Theta角目标值
+    GSTCH_Data.Theta1AngleVelDes = 0.0f;    //x[5]：左腿Theta角速度目标值
+    GSTCH_Data.Theta2Des         = 0.0f;    //x[6]：右腿Theta角目标值
+    GSTCH_Data.Theta2AngleVelDes = 0.0f;    //x[7]：右腿Theta角速度目标值
+    GSTCH_Data.PitchAngleDes     = 0.0f;    //x[8]：底盘俯仰角Pitch目标值
+    GSTCH_Data.PitchAngleVelDes  = 0.0f;    //x[9]：底盘俯仰角Pitch速度目标值
+
+    /*VMC计算目标值清零*/
+    GSTCH_Data.Leg1ForceDes  = 0.0f; //VMC：左腿力目标值清零
+    GSTCH_Data.Leg2ForceDes  = 0.0f; //VMC：右腿力目标值清零
+    GSTCH_Data.Leg1TorqueDes = 0.0f; //VMC：左腿力矩目标值清零
+    GSTCH_Data.Leg2TorqueDes = 0.0f; //VMC：右腿力矩目标值清零
+
+    /*底盘运动状态重置为制动状态*/
+    GSTCH_Data.EN_MoveState = MoveState_Brake;
+}
+
+/**
   * @brief  底盘所有目标值数据重置函数
   * @note   把底盘所有目标值全部重置，机器人未运动时调用
   * @param  无
@@ -547,16 +535,12 @@ void Chassis_AllDesDataReset(void)
     /*关节电机相关数据重置*/
     JM_DesDataReset();      //关节电机目标值重置
 
-    /*底盘特殊算法相关数据重置*/
-    _CH_LQRCal_DesDataReset();  //底盘LQR计算相关目标值重置
-    _CH_VMCCal_DesDataReset();  //底盘VMC计算相关目标值重置
-    
     /*底盘的通用算法相关数据重置*/
     _CH_TDCal_DataReset();   //底盘TD计算相关目标值重置
     _CH_PIDCal_DataReset();  //底盘PID计算相关目标值重置
 
-    /*其他底盘相关数据重置*/
-    _CH_LegLen_DesDataReset();  //腿部长度目标值重置
+    /*底盘相关数据重置*/
+    _CH_GSTCH_Data_Reset();     //底盘数据结构体数据重置
     _CH_Flag_Reset();           //底盘标志位重置
 }
 
@@ -643,6 +627,161 @@ void Chassis_RobotCtrlDataReset(void)
 }
 //#endregion
 
+/**************************************底盘移动控制相关函数***************************************************************************/
+/**
+  * @brief  底盘运动状态选择函数
+  * @note   根据左摇杆的前后移动，选择底盘的运动状态
+  *         前进、后退、制动三种状态
+  * @param  无
+  * @retval Chassis_MoveState_EnumTypeDef类型，底盘运动状态枚举变量
+*/
+Chassis_MoveState_EnumTypeDef _CH_Move_DirectionChoose(void)
+{
+    Chassis_MoveState_EnumTypeDef MoveDirection;
+
+    /*如果摇杆Up，则前进*/
+    if(IsLeftJoyStickBeyondDeadZoneUp() == true)
+    {
+        MoveDirection = MoveState_Forward;
+    }
+    /*如果摇杆Down，则后退*/
+    else if(IsLeftJoyStickBeyondDeadZoneDown() == true)
+    {
+        MoveDirection = MoveState_Backward;
+    }
+    /*否则都是Brake*/
+    else
+    {
+        MoveDirection = MoveState_Brake;
+    }
+
+    return MoveDirection;
+}
+
+/**
+  * @brief  底盘速度目标值获取函数
+  * @note   根据当前底盘运动状态，计算并获取底盘速度目标值
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @retval float类型，底盘速度目标值
+*/
+float _CH_Move_GetDesVel(CHData_StructTypeDef* CHData)
+{
+    Chassis_MoveState_EnumTypeDef MoveDirection = CHData->EN_MoveState; //获取当前底盘运动状态
+    bool F_DirectionInvert = CHData->F_DirectionInvert;    //获取底盘运动方向反转标志位
+
+    float VelFBNow   = CHData->VelFB;     //获取当前底盘速度反馈值
+    float VelDesPre  = CHData->VelDes;   //获取上次底盘速度目标值
+    float VelDesNext = 0.0f;            //定义本次底盘速度目标值变量
+
+    if(MoveDirection == MoveState_Forward && F_DirectionInvert == false || MoveDirection == MoveState_Backward && F_DirectionInvert == true)
+    {
+        if(VelFBNow <= -ChMove_StillVelTH)
+        {
+            VelDesNext = VelFBNow + ChMove_VelBrakingChangeRateMax;
+        }
+        else
+        {
+            VelDesNext = StepChangeValue(VelDesPre, ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime);    //逐步改变目标速度
+            VelDesNext = Limit(VelDesNext, VelFBNow + ChMove_VelMovingChangeRateMin, VelFBNow + ChMove_VelMovingChangeRateMax); //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, ChMove_VelDesMin, ChMove_VelDesMax);                                //限制目标速度最小最大值
+        }
+
+    }
+
+    else if(MoveDirection == MoveState_Backward && F_DirectionInvert == false || MoveDirection == MoveState_Forward && F_DirectionInvert == true)
+    {
+        if(VelFBNow >= ChMove_StillVelTH)
+        {
+            VelDesNext = VelFBNow - ChMove_VelBrakingChangeRateMax;
+        }
+        else
+        {
+            VelDesNext = StepChangeValue(VelDesPre, -ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime); //逐步改变目标速度
+            VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelMovingChangeRateMax, VelFBNow - ChMove_VelMovingChangeRateMin);//限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, -ChMove_VelDesMax, -ChMove_VelDesMin);                                 //限制目标速度最小最大值
+        }
+    }
+
+    else if (MoveDirection == MoveState_Brake)
+    {
+        VelDesNext = StepChangeValue(VelDesPre, 0.0f, ChMove_Acc_Brake * GCH_TaskTime);
+        if(VelFBNow > ChMove_BrakeVelLimitTH)//如果当前速度是正的
+        {
+            VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelBrakingChangeRateMax, VelFBNow);   //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, 0.0f, 0.8f);  //限制目标速度最小最大值
+        }
+        else if(VelFBNow < -ChMove_BrakeVelLimitTH)//如果当前速度是负的
+        {
+            VelDesNext = Limit(VelDesNext, VelFBNow, VelFBNow + ChMove_VelBrakingChangeRateMax);   //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, -0.8f, 0.0f); //限制目标速度最小最大值
+        }
+    }
+
+    return VelDesNext;
+}
+
+/**
+  * @brief  底盘位移目标值处理函数
+  * @note   如果底盘没有停下，则把位移目标值设为当前的位移反馈值。即运动过程中位移控制不介入
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @param  RMCtrl：RobotControl_StructTypeDef类型，机器人控制结构体指针
+  * @retval 无
+*/
+void _CH_Move_DisHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDef *RMCtrl)
+{
+    float VelFBNow   = CHData->VelFB;     //获取当前底盘速度反馈值
+
+    /*没停下，目标位移等于实际位移*/
+    if(MyAbsf(VelFBNow) > ChMove_StillVelTH)
+    {
+        RMCtrl->STCH_Default.DisDes = CHData->DisFB;
+    }
+}
+
+/**
+  * @brief  底盘转向偏航角速度获取函数
+  * @note   根据左摇杆的左右移动，获取底盘转向偏航角速度目标值
+  * @param  无
+  * @retval float类型，底盘偏航角速度目标值
+*/
+float _CH_Move_GetTurnVel(void)
+{
+    if(IsLeftJoyStickLeft() == true)
+    {
+        return ChMove_TurnYawVel_Normal;
+    }
+    else if(IsLeftJoyStickRight() == true)
+    {
+        return -ChMove_TurnYawVel_Normal;
+    }
+    else
+    {
+        return 0.0f;
+    }
+}
+
+/**
+  * @brief  底盘移动处理函数
+  * @note   底盘移动的主要处理函数
+  *         包括底盘运动状态选择、底盘速度目标值获取、底盘位移目标值处理等
+  *         在允许运动的底盘策略Stratgy中调用
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @param  RMCtrl：RobotControl_StructTypeDef类型，机器人控制结构体指针
+  * @retval 无
+*/
+void ChModeControl_FreeMode_RCControl_MoveHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDef *RMCtrl)
+{
+    /*选择底盘运动状态、获取底盘速度目标值*/
+    CHData->EN_MoveState = _CH_Move_DirectionChoose();
+    RMCtrl->STCH_Default.VelDes = _CH_Move_GetDesVel(CHData);
+
+    /*转向的偏航角速度获取*/
+    RMCtrl->STCH_Default.YawAngleVelDes = _CH_Move_GetTurnVel();
+
+    /*底盘位移目标值处理*/
+    _CH_Move_DisHandler(CHData, RMCtrl);
+}
+
 
 /**************************************底盘其他相关函数***************************************************************************/
 /**
@@ -718,5 +857,4 @@ void CH_ModeChooseParaStructUpdate(Chassis_ModeChooseParameter_StructTypeDef *pM
     pModeChoosePara->MC_HubMotor2Rx_fps = GST_SystemMonitor.HubMotor2Rx_fps;    //轮毂电机2接收帧率
     pModeChoosePara->MC_UART4Rx_fps     = GST_SystemMonitor.UART4Rx_fps;        //串口4，即IMU2接收帧率
 }
-
 

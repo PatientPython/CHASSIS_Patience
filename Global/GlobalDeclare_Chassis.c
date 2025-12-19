@@ -66,7 +66,7 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque; //关节电机最大
 
 
 /****************************************宏定义、常量定义（可能需要修改）***************************************/
-//#region /****TD相关系数*********************************/
+//#region /****TD相关系数****************************************/
 #define TD_SampleTime   SampleTime_Default  //TD采样时间，单位秒
 
 #define TD_LegLen_r    0.0f                 //腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
@@ -77,7 +77,7 @@ float TD_LegLen_rNorm    = 20.0f;    //腿长TD：正常模式下的速度因子
 float TD_LegLen_rSlowSitDown = 0.2f;  //腿长TD：缓慢坐下模式下的速度因子
 //#endregion
 
-//#region /****PID相关参数********************************/
+//#region /****PID相关参数***************************************/
 /*腿长PID相关*/
 #define PID_LegLen_Kp     0.0f              //腿长PID：比例系数Kp，取0表示在外部根据不同模式赋值
 #define PID_LegLen_Ki     0.0f              //腿长PID：积分系数Ki，取0表示不使用积分
@@ -110,7 +110,7 @@ float PID_LegLen_KdNorm    = 20000.0f;         //腿长PID：正常时的Kd值
 
 //#endregion
 
-//#region /****零点补偿、前馈力补偿、腿长相关**************************/
+//#region /****零点补偿、前馈力补偿、腿长相关**********************/
 /*腿长相关*/
 float LegLenMin   = 108.0f;   //腿长最小值，单位mm
 float LegLenMinTH = 6.0f;     //腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
@@ -130,10 +130,24 @@ float LegFFForce_SlowSitDown     = 5.0f;    //缓慢坐下模式的腿部前馈�
 float LegFFForce_SlowSitDownStep = 0.05f;   //缓慢坐下模式的腿部前馈力的步进增加值
 //#endregion
 
-//#region /****底盘模式控制策略相关**************************/
+//#region /****底盘模式控制策略相关*******************************/
 uint16_t CHMode_AllMode_PreProcessTime  = 4;      //各个模式的前置处理时间，单位毫秒
-uint16_t CHMode_RC_StandUp_TotalTime    = 800;    //起立模式的总持续时间，单位毫秒
+uint16_t CHMode_RC_StandUp_TotalTime    = 600;    //起立模式的总持续时间，单位毫秒
 
+//#endregion
+
+//#region /****底盘平移、旋转控制相关*****************************/
+float ChMove_StillVelTH     = 0.24f;            //静止速度阈值，小于这个值认为是静止状态
+float ChMove_VelDesMax      = 1.8f;             //速度最大值
+float ChMove_Acc_Moving     = 2.0f;             //运动加速度（理论值，实际上会更小一些）
+float ChMove_Acc_Brake      = 10.0f;            //刹车加速度（理论值，实际上会更小一些）
+float ChMove_VelDesMin      = 1.4f;             //目标速度最小值
+float ChMove_VelMovingChangeRateMin  = 0.1f;    //速度变化最小值
+float ChMove_VelMovingChangeRateMax  = 0.65f;   //速度变化最大值
+float ChMove_VelBrakingChangeRateMax = 1.5f;    //刹车时速度变化最大值
+float ChMove_BrakeVelLimitTH = 0.9f;            //刹车时目标速度限制阈值
+
+float ChMove_TurnYawVel_Normal = 90.0f;         //正常模式下的转向偏航角速度，单位度每秒
 //#endregion
 
 /********************************************变量定义(不需要修改)********************************************/

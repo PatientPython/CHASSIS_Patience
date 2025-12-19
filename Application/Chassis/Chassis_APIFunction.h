@@ -69,4 +69,7 @@ uint8_t IsEnterManualCalibration(void);
 void CH_MotionUpdateAndProcess(RobotControl_StructTypeDef RMCtrl);
 void CH_ModeChooseParaStructUpdate(Chassis_ModeChooseParameter_StructTypeDef *pModeChoosePara);
 
+
+void ChModeControl_FreeMode_RCControl_MoveHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDef *RMCtrl);
+
 #endif

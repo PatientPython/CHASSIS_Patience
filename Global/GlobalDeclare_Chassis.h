@@ -36,7 +36,16 @@ typedef enum
     CHMode_RC_Follow,      //底盘模式：跟随（随云台转动）
     // CHMode_OffGround,   //底盘模式：离地//待补充
 }ChassisMode_EnumTypeDef;
+
+/*底盘运动状态相关枚举*/
+typedef enum
+{
+    MoveState_Brake,
+    MoveState_Forward,
+    MoveState_Backward
+}Chassis_MoveState_EnumTypeDef;
 //#endregion
+
 
 //#region /**** 结构体声明************************************************************************/
 /*模式开始时间结构体：实际在CHData_StructTypeDef中使用*/
@@ -237,8 +246,11 @@ typedef struct
     /*底盘控制策略相关*/
     //待考虑：是否需要增加左右两边的，然后在LQR的K矩阵赋值那里搞
     //把除了腿部theta之外的变量都清0
-    bool F_OffGround;       //底盘离地标志位，true表示离地，false表示未离地
+    bool F_OffGround;                                 //底盘离地标志位，true表示离地，false表示未离地
     _CH_ModeStartTime_StructTypeDef ST_ModeStartTime; //底盘各模式开始时间结构体
+
+    bool F_DirectionInvert;                      //底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
+    Chassis_MoveState_EnumTypeDef EN_MoveState;  //底盘运动状态枚举变量，表示当前底盘是刹车、前进还是后退
 }CHData_StructTypeDef;
 
 //#endregion
@@ -309,6 +321,21 @@ extern float PID_LegLen_KpNorm;
 extern float PID_LegLen_KdNorm;
 
 //#endregion
+
+//#region /****底盘平移、旋转控制相关*****************************/
+extern float ChMove_StillVelTH;
+extern float ChMove_VelDesMax;
+extern float ChMove_Acc_Moving;
+extern float ChMove_Acc_Brake;
+extern float ChMove_VelDesMin;
+extern float ChMove_VelMovingChangeRateMin;
+extern float ChMove_VelMovingChangeRateMax;
+extern float ChMove_VelBrakingChangeRateMax;
+extern float ChMove_BrakeVelLimitTH;
+
+extern float ChMove_TurnYawVel_Normal;
+//#endregion
+
 
 //#region /******************底盘其他相关参数***********************************/
 

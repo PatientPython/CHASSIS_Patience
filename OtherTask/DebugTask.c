@@ -91,8 +91,8 @@ void VofaPrint(void)
 /*5*/   (float)GstCH_LegLen1PID.FB,
 /*6*/   (float)GstCH_LegLen1PID.U,
 /*7*/   (float)0,
-/*8*/   (float)GSTCH_Data.LegLen1Des,
-/*9*/   (float)GSTCH_Data.LegLen1FB
+/*8*/   (float)GSTCH_Data.VelDes,
+/*9*/   (float)GSTCH_Data.VelFB
 // GSTCH_OffGround1.F_N,
 // GSTCH_OffGround1.F_Leg,
 // GSTCH_OffGround1.Tp_Leg,
