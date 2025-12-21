@@ -747,7 +747,6 @@ float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index)
 //#endregion
 
 //#region 离地OffGround检测相关函数全家桶
-//待测试25.11.28,下面的所有离地检测相关
 /**
   * @brief  离地检测的机体Z轴加速度更新函数
   * @note   根据传入的Z轴加速度值，更新OffGround结构体中的机体Z轴加速度
@@ -808,7 +807,6 @@ void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, OffGr
     pOffGrd->Phi4 = LegPtr.phi4;
 
     pOffGrd->Phi0 = LegPtr.phi0;
-    
     
     //待优化：下面这些数据未经过滤波处理，可能会有噪声，后续可以考虑加个滤波器
     pOffGrd->L0      = LegLinkage_GetL0Length(&LegPtr) * MM2M;
@@ -924,14 +922,12 @@ float OffGround_GetSupportForce(OffGround_StructTypeDef *pOffGrd)
     //Pitch都是一样的不用变
     //我的代码里面定义的都是向后为正，需要和老代码的方向对应上
 
-//  LpFilter(&LegData->L0_dot_fliter);//OffGround里面用
-
 // 	LpFilter(&OffGroundRight_struct.L0_ddot_fliter);
 // 	LpFilter(&OffGroundRight_struct.Theta_ddot_fliter);
 // 	LpFilter(&OffGroundRight_struct.F_N_fliter);
 
-// 	LpFilter(&OffGroundLeft_struct.Theta_ddot_fliter );
 // 	LpFilter(&OffGroundLeft_struct.L0_ddot_fliter );
+// 	LpFilter(&OffGroundLeft_struct.Theta_ddot_fliter );
 // 	LpFilter(&OffGroundLeft_struct.F_N_fliter);
 
 // 	if( OffGroundRight_struct.F_N_fliter.out <= 20 && OffGroundLeft_struct.F_N_fliter.out <= 20 )

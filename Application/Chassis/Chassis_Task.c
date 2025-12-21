@@ -60,8 +60,6 @@ OffGround_StructTypeDef GSTCH_OffGround2 = {2.4, 0, 10, 0.001};
 void ChassisControl(void)
 {
     /*********************测试时使用1上边界***********************************************************************************************/
-    //明天检查各个变量的正方向和算式是否正确
-    //测试test
     OffGround_BodyZAccUpdate(&GSTCH_OffGround1, GSTCH_Data.AccZFB);
     OffGround_PitchAngleUpdate(&GSTCH_OffGround1, GSTCH_Data.PitchAngleFB);
     OffGround_PitchAngleVelUpdate(&GSTCH_OffGround1, GSTCH_Data.PitchAngleVelFB);

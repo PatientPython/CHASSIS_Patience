@@ -68,7 +68,6 @@ void DebugTask(void* arg)
     }
 }
 
-extern LPF_StructTypeDef GstCH_VelCompLPF;//测试test
 /**
   * @brief  把数据打印到Vofa的函数
   * @note   底层实际上是调用串口3来打印，经过远程调试器（或Jlink）把数据传输到电脑，然后就可以用Vofa来查看相关数据了
@@ -90,7 +89,7 @@ void VofaPrint(void)
 /*4*/   (float)GstCH_LegLen1PID.Des,
 /*5*/   (float)GstCH_LegLen1PID.FB,
 /*6*/   (float)GstCH_LegLen1PID.U,
-/*7*/   (float)0,
+/*7*/   (float)G_fTest,
 /*8*/   (float)GSTCH_Data.VelDes,
 /*9*/   (float)GSTCH_Data.VelFB
 // GSTCH_OffGround1.F_N,

@@ -426,10 +426,85 @@ void ChModeControl_FreeMode_RCControl(void)
     /*************************任务开始一段时间后*************************/
 
 
-    /*********************************测试test**********************************************/
-    ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);//移动处理函数，包括平移、转弯的速度获取
 
     /*********************************测试test*******************************************/
+    static uint32_t RC_TopModeDetectTime = 0;
+    static bool F_TopMode = false;
+
+    if(GSTCH_Data.VelFB >= 0.7f)    //车子水平速度较大，不进入陀螺模式
+    {
+        F_TopMode = false;
+        RC_TopModeDetectTime = 0;
+    }
+    else if(IsLeftJoyStickLeft() == false && IsLeftJoyStickRight() == false)    //摇杆回中，不进入陀螺模式
+    {
+        F_TopMode = false;
+        RC_TopModeDetectTime = 0;
+    }
+    else if(RC_TopModeDetectTime == 0)      //车子水平速度较小时，检测摇杆左/右移时长
+    {
+        RC_TopModeDetectTime = RunTimeGet();
+    }
+    else if(RunTimeGet() - RC_TopModeDetectTime > 1000)
+    {
+        F_TopMode = true;
+    }
+
+
+    if(F_TopMode == false && MyAbsf(GST_RMCtrl.STCH_Default.YawAngleVelDes) <= 100.0f)
+    {
+        ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);//移动处理函数，包括平移、转弯的速度获取
+    }
+
+
+    if(F_TopMode == true)
+    {
+        GST_RMCtrl.STCH_Default.DisDes = GSTCH_Data.DisFB; //陀螺模式下不进行前后移动
+        GST_RMCtrl.STCH_Default.VelDes = 0.0f; //陀螺模式下不进行平移
+
+        float TOP_W_Des = 12.0f * R2A;    //小陀螺的目标转速
+        if(IsLeftJoyStickLeft() == true)
+        {
+            GST_RMCtrl.STCH_Default.YawAngleVelDes = StepChangeValue(GST_RMCtrl.STCH_Default.YawAngleVelDes , TOP_W_Des , 0.4f);
+        }
+        else if(IsLeftJoyStickRight() == true)
+        {
+            GST_RMCtrl.STCH_Default.YawAngleVelDes = StepChangeValue(GST_RMCtrl.STCH_Default.YawAngleVelDes , -TOP_W_Des , 0.4f);
+        }
+    }
+    else if(F_TopMode == false && MyAbsf(GST_RMCtrl.STCH_Default.YawAngleVelDes) > 80.0f)
+    {
+        GST_RMCtrl.STCH_Default.YawAngleVelDes = StepChangeValue(GST_RMCtrl.STCH_Default.YawAngleVelDes , 0.0f , 0.8f);
+    }
+    /*********************************测试test*******************************************/
+
+
+//     void Chassis_RC_TOP(void)
+// {
+//     fpVx = 0;
+//     float TOP_W_Des;    //小陀螺的目标转速
+    
+//     // 待优化：
+//     // 经过实验，小陀螺15仍然能正常转而不会转飞，但是超电的电压会疯狂下降
+//     // 2025.9.19测试test：试试根据超电电压改转速，目标：超电电压不会下到13导致进入安全模式
+// //    if(capacitor_msg.CAP_Vol >= 18)
+// //    {TOP_W_Des = 14.0f;}
+// //    else if(capacitor_msg.CAP_Vol >= 15)
+// //    {TOP_W_Des = 8.0f;}
+// //    else
+// //    {TOP_W_Des = 6.0f;}
+    
+//     TOP_W_Des = 12.0f;
+    
+//     if(g_stDBus.stRC.Ch2 - RC_CH_VALUE_OFFSET > RC_CH_VALUE_CHASSIS_DEAD)
+//     {
+//         RampSignal( &st_velt.fpW , TOP_W_Des*(-RadianToAngle) , 0.4f );
+//     }
+//     else 
+//     {
+//         RampSignal( &st_velt.fpW , TOP_W_Des*(RadianToAngle) , 0.4f );
+//     }
+// }
 
     //#region 待复刻：小陀螺模式
 //     void RC_TOPHandler(void)
