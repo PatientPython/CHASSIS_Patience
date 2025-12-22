@@ -60,9 +60,9 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque; //关节电机最大
 #define LPF_Alpha_Thetadot       0.09f      //腿部Theta_dot低通滤波器系数
 #define LPF_Alpha_YawAngleVel    0.09f      //底盘Yaw轴角速度低通滤波器系数
 #define LPF_Alpha_PitchAngleVel  0.8f       //底盘Pitch轴角速度低通滤波器系数
-#define LPF_Alpha_AccXFB         0.6f       //底盘加速度AccX低通滤波器系数
 #define LPF_Alpha_VelTheory      0.1f       //底盘理论质心水平速度低通滤波器系数
 #define LPF_Alpha_VelComp        0.1f       //底盘速度补偿低通滤波器系数
+#define LPF_Alpha_LegFN          0.0476f    //腿部支持力低通滤波器系数
 //#endregion
 
 
@@ -192,9 +192,6 @@ LPF_StructTypeDef GstCH_xC2dotLPF = {LPF_Alpha_xCdot}; //xC_dot低通滤波器�
 LPF_StructTypeDef GstCH_Theta1dotLPF = {LPF_Alpha_Thetadot}; //Theta1_dot低通滤波器，左腿
 LPF_StructTypeDef GstCH_Theta2dotLPF = {LPF_Alpha_Thetadot}; //Theta2_dot低通滤波器，右腿
 
-/*底盘加速度AccX低通滤波器*/
-LPF_StructTypeDef GstCH_AccX_LPF   = {LPF_Alpha_AccXFB};   //底盘加速度AccX低通滤波器结构体
-
 /*底盘理论质心水平速度低通滤波器*/
 LPF_StructTypeDef GstCH_TheoryVelLPF = {LPF_Alpha_VelTheory};
 
@@ -207,6 +204,10 @@ LuenbergerObserver_StructTypeDef GstCH_VelObserver;
 /*底盘Yaw、Pitch角速度低通滤波器*/
 LPF_StructTypeDef GstCH_YawAngleVelLPF   = {LPF_Alpha_YawAngleVel};   //底盘Yaw轴角速度低通滤波器结构体
 LPF_StructTypeDef GstCH_PitchAngleVelLPF = {LPF_Alpha_PitchAngleVel}; //底盘Pitch轴角速度低通滤波器结构体
+
+/*腿部支持力低通滤波器*/
+LPF_StructTypeDef GstCH_Leg1F_N_LPF = {LPF_Alpha_LegFN}; //左腿腿部支持力低通滤波器结构体
+LPF_StructTypeDef GstCH_Leg2F_N_LPF = {LPF_Alpha_LegFN}; //右腿腿部支持力低通滤波器结构体
 //#endregion
 
 //#region /****TD算法相关*****************************/
@@ -241,6 +242,11 @@ LQR_StructTypeDef GstCH_LQRCal; //底盘LQR计算结构体
 /*VMC计算结构体*/
 VMC_StructTypeDef GstCH_Leg1VMC; //左腿VMC计算结构体
 VMC_StructTypeDef GstCH_Leg2VMC; //右腿VMC计算结构体
+
+/* 离地检测结构体，INIT顺序为M_w, M_l, g, SampleTime */
+/* 单个轮子质量、腿部质量、当地重力加速度、采样时间 */
+OffGround_StructTypeDef GstCH_OffGround1 = {WheelMass, 0, GravityAcc_Harbin, SampleTime_Default};
+OffGround_StructTypeDef GstCH_OffGround2 = {WheelMass, 0, GravityAcc_Harbin, SampleTime_Default};
 //#endregion
 
 //#region /****其他底盘运动控制相关-正式变量*****************************/

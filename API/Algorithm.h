@@ -113,7 +113,6 @@ typedef struct
 }LuenbergerObserver_StructTypeDef;
 
 /*离地检测算法结构体*/
-//待测试25.11.28
 typedef struct
 {
     /*需要初始化赋值的成员*/
@@ -153,13 +152,6 @@ typedef struct
     float ZAcc_Body;    //底盘Z轴加速度，单位：m/s²
 
     float F_N;          //地面给轮子的支持力，单位：N
-
-/*ST_LPF L0_dot_fliter,L0_ddot_fliter,Theta_dot_fliter,Theta_ddot_fliter,F_N_fliter;
-	float L0,L0_pre,L0_dot_pre;
-	float Theta,Theta_pre,Theta_dot_pre;
-	float Z_w_ddot,Z_M_ddot;
-	float F_P,F_Gw,F,Tp; */
-
 }OffGround_StructTypeDef;
 //#endregion
 

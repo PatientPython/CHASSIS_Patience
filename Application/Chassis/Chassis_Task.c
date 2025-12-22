@@ -54,44 +54,20 @@ void ChassisTask(void* arg)
   * @param  无
   * @retval 无
 */
-//测试25.12.2
-OffGround_StructTypeDef GSTCH_OffGround1 = {2.4, 0, 10, 0.001};
-OffGround_StructTypeDef GSTCH_OffGround2 = {2.4, 0, 10, 0.001};
 void ChassisControl(void)
 {
-    /*********************测试时使用1上边界***********************************************************************************************/
-    OffGround_BodyZAccUpdate(&GSTCH_OffGround1, GSTCH_Data.AccZFB);
-    OffGround_PitchAngleUpdate(&GSTCH_OffGround1, GSTCH_Data.PitchAngleFB);
-    OffGround_PitchAngleVelUpdate(&GSTCH_OffGround1, GSTCH_Data.PitchAngleVelFB);
-    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal1, &GSTCH_OffGround1, LeftSide);
-    OffGround_TorqueDataUpdate(&GSTCH_OffGround1, GSTCH_JM3.TorqueFB, GSTCH_JM1.TorqueFB);
-    OffGround_GetRealFAndTp(&GSTCH_OffGround1);
-    G_fTest1 = OffGround_GetSupportForce(&GSTCH_OffGround1);
-
-    OffGround_BodyZAccUpdate(&GSTCH_OffGround2, GSTCH_Data.AccZFB);
-    OffGround_PitchAngleUpdate(&GSTCH_OffGround2, GSTCH_Data.PitchAngleFB);
-    OffGround_PitchAngleVelUpdate(&GSTCH_OffGround2, GSTCH_Data.PitchAngleVelFB);
-    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal2, &GSTCH_OffGround2, RightSide);
-    OffGround_TorqueDataUpdate(&GSTCH_OffGround2, GSTCH_JM2.TorqueFB, GSTCH_JM4.TorqueFB);
-    OffGround_GetRealFAndTp(&GSTCH_OffGround2);
-    G_fTest2 = OffGround_GetSupportForce(&GSTCH_OffGround2);
-
-    /*********************测试时使用1下边界***********************************************************************************************/
-    
-
     Chassis_AllFBDataUpdate();  //更新底盘相关数据的反馈值
     CH_LegLinkageCal_Process(); //腿部五连杆解算处理
+    CH_OffGroundCal_Process();  //离地检测计算处理
 
-    /*FB数据在ChassisControl之前就更新*/
-    /*Des数据在每一个Stratgy里面更新*/
-    //腿长计算无论什么时候都可以，所以放在这里计算
-    //LQR和VMC计算必须在允许运动的时候计算（也就是在Strategy控制里计算）
+    /*********************测试时使用1上边界***********************************************************************************************/
+    /*********************测试时使用1下边界***********************************************************************************************/
     
     //待优化：现在的代码如果在起立的时候切换到Follow模式，会导致出事，后面记得改
     //待优化：Sitting模式还有一个打蛋需要写，写到Booster里面
 
+    
     /*********************测试时使用2上边界***********************************************************************************************/
-
     //待优化：下面这一段可以适当封装一下，不然看起来有点丑陋
     /************底盘模式选择及对应控制************/
     /*记录上次底盘模式，选择当前底盘模式*/

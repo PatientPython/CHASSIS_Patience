@@ -513,6 +513,10 @@ void LPF_Cal(LPF_StructTypeDef* LPFptr)
 */
 float LPF_GetOutput(LPF_StructTypeDef* LPFptr)
 {
+    if(isnan(LPFptr->Out) == true) //防止出现NaN
+    {
+        LPFptr->Out = 0.0f;
+    }
     return LPFptr->Out;
 }
 //#endregion

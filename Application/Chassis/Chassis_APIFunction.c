@@ -91,6 +91,31 @@ void CH_VMCCal_Process(void)
     VMC_Cal(&GstCH_Leg1VMC, &GstCH_LegLinkCal1); //左腿VMC计算
     VMC_Cal(&GstCH_Leg2VMC, &GstCH_LegLinkCal2); //右腿VMC计算    
 }
+
+/**
+  * @brief  底盘离地检测计算处理函数
+  * @note   更新离地检测相关数据，然后调用离地检测计算函数
+  * @param  无
+  * @retval 无
+*/
+void CH_OffGroundCal_Process(void)
+{
+    /*左腿离地检测相关变量的计算*/
+    OffGround_BodyZAccUpdate(&GstCH_OffGround1, GSTCH_Data.AccZFB);
+    OffGround_PitchAngleUpdate(&GstCH_OffGround1, GSTCH_Data.PitchAngleFB);
+    OffGround_PitchAngleVelUpdate(&GstCH_OffGround1, GSTCH_Data.PitchAngleVelFB);
+    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal1, &GstCH_OffGround1, LeftSide);
+    OffGround_TorqueDataUpdate(&GstCH_OffGround1, GSTCH_JM3.TorqueFB, GSTCH_JM1.TorqueFB);
+    OffGround_GetRealFAndTp(&GstCH_OffGround1);
+
+    /*右腿离地检测相关变量的计算*/
+    OffGround_BodyZAccUpdate(&GstCH_OffGround2, GSTCH_Data.AccZFB);
+    OffGround_PitchAngleUpdate(&GstCH_OffGround2, GSTCH_Data.PitchAngleFB);
+    OffGround_PitchAngleVelUpdate(&GstCH_OffGround2, GSTCH_Data.PitchAngleVelFB);
+    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal2, &GstCH_OffGround2, RightSide);
+    OffGround_TorqueDataUpdate(&GstCH_OffGround2, GSTCH_JM2.TorqueFB, GSTCH_JM4.TorqueFB);
+    OffGround_GetRealFAndTp(&GstCH_OffGround2);
+}
 //#endregion
 
 /*****************************************底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值***********************************/
@@ -206,10 +231,8 @@ void Chassis_AllFBDataUpdate(void)
     GSTCH_Data.PitchAngleVelFB = _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.PitchAngleVel, &GstCH_PitchAngleVelLPF);
 
     GSTCH_Data.RollAngleFB     = GstCH_IMU2.ST_Rx.RollAngle;
-    // GSTCH_Data.AccXFB          =_Ch_FBData_LPF(-GstCH_IMU2.ST_Rx.AccX, &GstCH_AccX_LPF);    //底盘云控反着安装，所以取负号 //换车时需修改
-    //后面看到这里记得把GstCH_AccX_LPF给删了
-    GSTCH_Data.AccXFB          = -GstCH_IMU2.ST_Rx.AccX;         //不滤波了，待测试25.12.2
-    GSTCH_Data.AccZFB          = GstCH_IMU2.ST_Rx.AccZ;          //待测试25.12.2
+    GSTCH_Data.AccXFB          = -GstCH_IMU2.ST_Rx.AccX;         //底盘云控反着安装，所以取负号 //换车时需修改
+    GSTCH_Data.AccZFB          = GstCH_IMU2.ST_Rx.AccZ;          //底盘垂直加速度反馈值，向上为正，单位m/s²
 
     /*************** 底盘五连杆解算相关数据更新 ***************/
     GSTCH_Data.LegLen1FB  = LegLinkage_GetLegLength(&GstCH_LegLinkCal1);  //获取左腿实际长度
@@ -231,6 +254,11 @@ void Chassis_AllFBDataUpdate(void)
     /***************** 其他底盘相关数据更新 *****************/
     GSTCH_Data.VelFB  = _Ch_VelFB_Process();               //底盘速度滤波、观测处理
     GSTCH_Data.DisFB += GSTCH_Data.VelFB * GCH_TaskTime;  //位移 = 上次位移 + 速度*时间
+
+    float Leg1F_N_RawValue = OffGround_GetSupportForce(&GstCH_OffGround1); //左腿腿部支持力反馈原始值，单位N
+    float Leg2F_N_RawValue = OffGround_GetSupportForce(&GstCH_OffGround2); //右腿腿部支持力反馈原始值，单位N
+    GSTCH_Data.Leg1F_N = _Ch_FBData_LPF(Leg1F_N_RawValue, &GstCH_Leg1F_N_LPF); //低通滤波处理
+    GSTCH_Data.Leg2F_N = _Ch_FBData_LPF(Leg2F_N_RawValue, &GstCH_Leg2F_N_LPF); //低通滤波处理
 }
 //#endregion
 

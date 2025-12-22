@@ -34,7 +34,8 @@ typedef enum
     CHMode_RC_Free,        //底盘模式：自由（非跟随模式）
     CHMode_RC_SlowSitDown, //底盘模式：缓慢坐下
     CHMode_RC_Follow,      //底盘模式：跟随（随云台转动）
-    // CHMode_OffGround,   //底盘模式：离地//待补充
+    CHMode_RC_OffGround,   //底盘模式：离地
+    //待补充
 }ChassisMode_EnumTypeDef;
 
 /*底盘运动方向相关枚举*/
@@ -244,13 +245,17 @@ typedef struct
     float AccZFB;           //底盘垂直加速度反馈值，向上为正，单位m/s²
 
     /*底盘控制策略相关*/
+    _CH_ModeStartTime_StructTypeDef ST_ModeStartTime; //底盘各模式开始时间结构体
+
+    bool F_DirectionInvert;                             //底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
+    Chassis_MoveDirection_EnumTypeDef EM_MoveDirection; //底盘运动方向枚举变量，表示当前底盘是刹车、前进还是后退
+
+    /*其他一些变量*/
     //待考虑：是否需要增加左右两边的，然后在LQR的K矩阵赋值那里搞
     //把除了腿部theta之外的变量都清0
     bool F_OffGround;                                 //底盘离地标志位，true表示离地，false表示未离地
-    _CH_ModeStartTime_StructTypeDef ST_ModeStartTime; //底盘各模式开始时间结构体
-
-    bool F_DirectionInvert;                         //底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
-    Chassis_MoveDirection_EnumTypeDef EM_MoveDirection; //底盘运动方向枚举变量，表示当前底盘是刹车、前进还是后退
+    float Leg1F_N;                                   //左腿腿部支持力反馈值，单位N
+    float Leg2F_N;                                   //右腿腿部支持力反馈值，单位N
 }CHData_StructTypeDef;
 
 //#endregion
@@ -283,7 +288,6 @@ extern C620FeedBackData_StructTypeDef GstCH_HM2RxC620Data;
 extern LPF_StructTypeDef GstCH_HM1_AngleVelLPF;
 extern LPF_StructTypeDef GstCH_HM2_AngleVelLPF;
 
-extern LPF_StructTypeDef GstCH_AccX_LPF;
 extern LPF_StructTypeDef GstCH_TheoryVelLPF;
 extern LPF_StructTypeDef GstCH_VelCompLPF;
 extern LuenbergerObserver_StructTypeDef GstCH_VelObserver;
@@ -296,6 +300,9 @@ extern LPF_StructTypeDef GstCH_Theta2dotLPF;
 
 extern LPF_StructTypeDef GstCH_YawAngleVelLPF;
 extern LPF_StructTypeDef GstCH_PitchAngleVelLPF;
+
+extern LPF_StructTypeDef GstCH_Leg1F_N_LPF;
+extern LPF_StructTypeDef GstCH_Leg2F_N_LPF;
 //#endregion
 
 //#region /************************TD算法相关**********************************/
@@ -381,6 +388,9 @@ extern LQR_StructTypeDef GstCH_LQRCal;
 
 extern VMC_StructTypeDef GstCH_Leg1VMC;
 extern VMC_StructTypeDef GstCH_Leg2VMC;
+
+extern OffGround_StructTypeDef GstCH_OffGround1;
+extern OffGround_StructTypeDef GstCH_OffGround2;
 //#endregion
 
 //#region /*****************其他底盘运动控制相关-正式变量************************/

@@ -75,31 +75,20 @@ void DebugTask(void* arg)
   * @retval 无
 */
 //待优化:后续可以给这个函数加上一些参数，比如传入WatchFps就打印fps。传入自定义就打印自定义函数
-//测试test
-extern OffGround_StructTypeDef GSTCH_OffGround1;
-extern OffGround_StructTypeDef GSTCH_OffGround2;
 void VofaPrint(void)
 {
     USART3_DMA_printf
     ("C:%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
-/*0*/   (float)GstCH_LegLen1TD.v,
-/*1*/   (float)GstCH_LegLen1TD.x1,
-/*2*/   (float)GstCH_LegLen1TD.x2,
-/*3*/   (float)GSTCH_Data.LegLen1Des,
+/*0*/   (float)GSTCH_Data.Leg1F_N,
+/*1*/   (float)GSTCH_Data.Leg2F_N,
+/*2*/   (float)GstCH_Leg1F_N_LPF.Input,
+/*3*/   (float)GstCH_Leg2F_N_LPF.Input,
 /*4*/   (float)GstCH_LegLen1PID.Des,
 /*5*/   (float)GstCH_LegLen1PID.FB,
 /*6*/   (float)GstCH_LegLen1PID.U,
 /*7*/   (float)G_fTest,
 /*8*/   (float)GSTCH_Data.VelDes,
 /*9*/   (float)GSTCH_Data.YawAngleVelFB
-// GSTCH_OffGround1.F_N,
-// GSTCH_OffGround1.F_Leg,
-// GSTCH_OffGround1.Tp_Leg,
-// GSTCH_OffGround1.ZAcc_Wheel,
-// GSTCH_OffGround2.F_N,
-// GSTCH_OffGround2.F_Leg,
-// GSTCH_OffGround2.Tp_Leg,
-// GSTCH_OffGround2.ZAcc_Wheel,
     );
 }
 

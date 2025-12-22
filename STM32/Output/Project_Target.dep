@@ -12,10 +12,10 @@ I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h)(0x5A8E1FE2)
 I (L:\Keil\ARM\ARMCC\include\string.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\math.h)(0x60252378)
 F (..\Global\GlobalDeclare_General.h)(0x69318A34)()
-F (..\Global\GlobalDeclare_Chassis.c)(0x69491F60)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\globaldeclare_chassis.o --omf_browse ..\stm32\output\globaldeclare_chassis.crf --depend ..\stm32\output\globaldeclare_chassis.d)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
+F (..\Global\GlobalDeclare_Chassis.c)(0x694928E3)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\globaldeclare_chassis.o --omf_browse ..\stm32\output\globaldeclare_chassis.crf --depend ..\stm32\output\globaldeclare_chassis.d)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
@@ -33,7 +33,7 @@ I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h)(0x5A8E1FE2)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h)(0x5A8E1FE2)
 I (L:\Keil\ARM\ARMCC\include\string.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\math.h)(0x60252378)
-F (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)()
+F (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)()
 F (..\Global\GlobalDeclare_Gimbal.c)(0x6922FE5B)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\globaldeclare_gimbal.o --omf_browse ..\stm32\output\globaldeclare_gimbal.crf --depend ..\stm32\output\globaldeclare_gimbal.d)
 I (..\STM32\Driver\CMSIS\stm32f4xx.h)(0x67CF055F)
 I (..\STM32\Driver\CMSIS\core_cm4.h)(0x61F12857)
@@ -70,7 +70,7 @@ I (..\STM32\Driver\FWLib\inc\stm32f4xx_dac.h)(0x61F25A30)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_dcmi.h)(0x61F25A31)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_fsmc.h)(0x61F25A36)
 I (..\Global\GlobalDeclare_Gimbal.h)(0x6922FE89)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
@@ -82,14 +82,14 @@ I (..\FreeRTOS\inc\deprecated_definitions.h)(0x66962B64)
 I (..\FreeRTOS\port\inc\portmacro.h)(0x66962B64)
 I (..\FreeRTOS\inc\mpu_wrappers.h)(0x66962B64)
 F (..\Global\GlobalDeclare_Gimbal.h)(0x6922FE89)()
-F (..\API\Algorithm.c)(0x69455D10)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\algorithm.o --omf_browse ..\stm32\output\algorithm.crf --depend ..\stm32\output\algorithm.d)
-I (..\API\Algorithm.h)(0x692EE590)
+F (..\API\Algorithm.c)(0x6949297C)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\algorithm.o --omf_browse ..\stm32\output\algorithm.crf --depend ..\stm32\output\algorithm.d)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\API\Algorithm_Simple.h)(0x690FF5FA)
 I (..\API\General_AuxiliaryFunc.h)(0x69106A38)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (..\FreeRTOS\inc\FreeRTOSConfig.h)(0x690BEA39)
@@ -105,7 +105,7 @@ I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h)(0x5A8E1FE2)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h)(0x5A8E1FE2)
 I (L:\Keil\ARM\ARMCC\include\string.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\math.h)(0x60252378)
-F (..\API\Algorithm.h)(0x692EE590)()
+F (..\API\Algorithm.h)(0x694926C9)()
 F (..\API\Algorithm_Simple.c)(0x69114554)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\algorithm_simple.o --omf_browse ..\stm32\output\algorithm_simple.crf --depend ..\stm32\output\algorithm_simple.d)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\arm_math.h)(0x5A8E1FE2)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h)(0x5A8E1FE2)
@@ -123,7 +123,7 @@ I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
 F (..\API\General_AuxiliaryFunc.h)(0x69106A38)()
-F (..\Application\Chassis\Chassis_Task.c)(0x69466478)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\chassis_task.o --omf_browse ..\stm32\output\chassis_task.crf --depend ..\stm32\output\chassis_task.d)
+F (..\Application\Chassis\Chassis_Task.c)(0x69492ADE)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\chassis_task.o --omf_browse ..\stm32\output\chassis_task.crf --depend ..\stm32\output\chassis_task.d)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
@@ -137,20 +137,20 @@ I (..\FreeRTOS\inc\task.h)(0x66962B64)
 I (..\FreeRTOS\inc\list.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\Application\Chassis\Chassis_Task.h)(0x6906155E)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
-I (..\Application\Chassis\Chassis_APIFunction.h)(0x6949037E)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
+I (..\Application\Chassis\Chassis_APIFunction.h)(0x69492A4A)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
 I (..\Application\Chassis\Chassis_Stratgy.h)(0x690F2C95)
 I (..\API\General_AuxiliaryFunc.h)(0x69106A38)
 F (..\Application\Chassis\Chassis_Task.h)(0x6906155E)()
-F (..\Application\Chassis\Chassis_Stratgy.c)(0x69491F82)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\chassis_stratgy.o --omf_browse ..\stm32\output\chassis_stratgy.crf --depend ..\stm32\output\chassis_stratgy.d)
+F (..\Application\Chassis\Chassis_Stratgy.c)(0x69492333)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\chassis_stratgy.o --omf_browse ..\stm32\output\chassis_stratgy.crf --depend ..\stm32\output\chassis_stratgy.d)
 I (..\API\General_AuxiliaryFunc.h)(0x69106A38)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (..\FreeRTOS\inc\FreeRTOSConfig.h)(0x690BEA39)
@@ -159,7 +159,7 @@ I (..\FreeRTOS\inc\portable.h)(0x66962B64)
 I (..\FreeRTOS\inc\deprecated_definitions.h)(0x66962B64)
 I (..\FreeRTOS\port\inc\portmacro.h)(0x66962B64)
 I (..\FreeRTOS\inc\mpu_wrappers.h)(0x66962B64)
-I (..\Application\Chassis\Chassis_APIFunction.h)(0x6949037E)
+I (..\Application\Chassis\Chassis_APIFunction.h)(0x69492A4A)
 I (..\STM32\BSP\TIM_Config.h)(0x68F0B5FF)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\arm_math.h)(0x5A8E1FE2)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h)(0x5A8E1FE2)
@@ -170,7 +170,7 @@ I (L:\Keil\ARM\ARMCC\include\string.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\math.h)(0x60252378)
 I (..\API\Algorithm_Simple.h)(0x690FF5FA)
 F (..\Application\Chassis\Chassis_Stratgy.h)(0x690F2C95)()
-F (..\Application\Chassis\Chassis_APIFunction.c)(0x69491AB1)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\chassis_apifunction.o --omf_browse ..\stm32\output\chassis_apifunction.crf --depend ..\stm32\output\chassis_apifunction.d)
+F (..\Application\Chassis\Chassis_APIFunction.c)(0x69492A3B)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\chassis_apifunction.o --omf_browse ..\stm32\output\chassis_apifunction.crf --depend ..\stm32\output\chassis_apifunction.d)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\arm_math.h)(0x5A8E1FE2)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h)(0x5A8E1FE2)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
@@ -179,11 +179,11 @@ I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h)(0x5A8E1FE2)
 I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h)(0x5A8E1FE2)
 I (L:\Keil\ARM\ARMCC\include\string.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\math.h)(0x60252378)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\API\Algorithm_Simple.h)(0x690FF5FA)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (..\FreeRTOS\inc\FreeRTOSConfig.h)(0x690BEA39)
@@ -193,9 +193,9 @@ I (..\FreeRTOS\inc\deprecated_definitions.h)(0x66962B64)
 I (..\FreeRTOS\port\inc\portmacro.h)(0x66962B64)
 I (..\FreeRTOS\inc\mpu_wrappers.h)(0x66962B64)
 I (..\API\General_AuxiliaryFunc.h)(0x69106A38)
-I (..\Application\Chassis\Chassis_APIFunction.h)(0x6949037E)
+I (..\Application\Chassis\Chassis_APIFunction.h)(0x69492A4A)
 I (..\STM32\BSP\TIM_Config.h)(0x68F0B5FF)
-F (..\Application\Chassis\Chassis_APIFunction.h)(0x6949037E)()
+F (..\Application\Chassis\Chassis_APIFunction.h)(0x69492A4A)()
 F (..\Application\Gimbal\Gimbal_Task.c)(0x69295354)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\gimbal_task.o --omf_browse ..\stm32\output\gimbal_task.crf --depend ..\stm32\output\gimbal_task.d)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
@@ -211,11 +211,11 @@ I (..\FreeRTOS\inc\list.h)(0x66962B64)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (..\Global\GlobalDeclare_Gimbal.h)(0x6922FE89)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 F (..\Application\Gimbal\Gimbal_Task.h)(0x68CD6D0C)()
 F (..\Application\Shooter\Shooter_Task.c)(0x68CD6D23)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\shooter_task.o --omf_browse ..\stm32\output\shooter_task.crf --depend ..\stm32\output\shooter_task.d)
 F (..\Application\Shooter\Shooter_Task.h)(0x68CD6D2E)()
-F (..\OtherTask\DebugTask.c)(0x6948F9F4)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\debugtask.o --omf_browse ..\stm32\output\debugtask.crf --depend ..\stm32\output\debugtask.d)
+F (..\OtherTask\DebugTask.c)(0x69492B13)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\debugtask.o --omf_browse ..\stm32\output\debugtask.crf --depend ..\stm32\output\debugtask.d)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
@@ -230,8 +230,8 @@ I (..\FreeRTOS\inc\list.h)(0x66962B64)
 I (..\Communication\USART_Communication.h)(0x68F47B85)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_Gimbal.h)(0x6922FE89)
 I (..\OtherTask\DebugTask.h)(0x68F0D616)
 I (..\Communication\CAN_Communication.h)(0x69043605)
@@ -269,7 +269,7 @@ I (..\STM32\Driver\FWLib\inc\stm32f4xx_dac.h)(0x61F25A30)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_dcmi.h)(0x61F25A31)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_fsmc.h)(0x61F25A36)
 I (..\API\General_AuxiliaryFunc.h)(0x69106A38)
-I (..\Application\Chassis\Chassis_APIFunction.h)(0x6949037E)
+I (..\Application\Chassis\Chassis_APIFunction.h)(0x69492A4A)
 F (..\OtherTask\DebugTask.h)(0x68F0D616)()
 F (..\OtherTask\ReceiverTask.c)(0x6906D05F)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\receivertask.o --omf_browse ..\stm32\output\receivertask.crf --depend ..\stm32\output\receivertask.d)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
@@ -336,11 +336,11 @@ I (..\STM32\Driver\FWLib\inc\stm32f4xx_can.h)(0x61F25A2E)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_dac.h)(0x61F25A30)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_dcmi.h)(0x61F25A31)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_fsmc.h)(0x61F25A36)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Communication\USART_Communication.h)(0x68F47B85)
 F (..\OtherTask\SendDataTask.h)(0x68F48333)()
-F (..\User\main.c)(0x690FF960)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\main.o --omf_browse ..\stm32\output\main.crf --depend ..\stm32\output\main.d)
+F (..\User\main.c)(0x69492B35)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\main.o --omf_browse ..\stm32\output\main.crf --depend ..\stm32\output\main.d)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (L:\Keil\ARM\ARMCC\include\stdint.h)(0x6025237E)
@@ -398,8 +398,8 @@ I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
 I (L:\Keil\ARM\ARMCC\include\stdio.h)(0x60252374)
 I (..\Communication\USART_Communication.h)(0x68F47B85)
 I (..\Communication\CAN_Communication.h)(0x69043605)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
@@ -456,7 +456,7 @@ I (L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h)(0x5A8E1FE2)
 I (L:\Keil\ARM\ARMCC\include\math.h)(0x60252378)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (..\Global\GlobalDeclare_Gimbal.h)(0x6922FE89)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (..\FreeRTOS\inc\FreeRTOSConfig.h)(0x690BEA39)
@@ -465,7 +465,7 @@ I (..\FreeRTOS\inc\portable.h)(0x66962B64)
 I (..\FreeRTOS\inc\deprecated_definitions.h)(0x66962B64)
 I (..\FreeRTOS\port\inc\portmacro.h)(0x66962B64)
 I (..\FreeRTOS\inc\mpu_wrappers.h)(0x66962B64)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
 I (..\Communication\USART_Communication.h)(0x68F47B85)
 F (..\Communication\USART_Communication.h)(0x68F47B85)()
 F (..\Communication\CAN_Communication.c)(0x692EF4BA)(--c99 -c --cpu Cortex-M4.fp.sp -g -O0 -Otime --apcs=interwork --split_sections -I ..\STM32\Driver\CMSIS -I ..\User -I ..\STM32\Driver\FWLib -I ..\STM32\Driver\FWLib\inc -I ..\STM32\BSP -I ..\General -I ..\Communication -I ..\FreeRTOS\inc -I ..\FreeRTOS\port\inc -I ..\Global -I ..\Other -I ..\Application\Chassis -I ..\Application\Gimbal -I ..\Application\Shooter -I ..\API -I ..\OtherTask-I.\RTE\_Target-IL:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include-D__UVISION_VERSION="535" -D_RTE_ -DSTM32F407xx -D_RTE_ -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DARM_MATH_CM4 -D__CC_ARM -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING -D__TARGET_FPU_VFP -D__FPU_PRESENT="1"-o ..\stm32\output\can_communication.o --omf_browse ..\stm32\output\can_communication.crf --depend ..\stm32\output\can_communication.d)
@@ -505,8 +505,8 @@ I (..\STM32\Driver\FWLib\inc\stm32f4xx_dcmi.h)(0x61F25A31)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_fsmc.h)(0x61F25A36)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)
 I (..\FreeRTOS\inc\FreeRTOSConfig.h)(0x690BEA39)
@@ -557,9 +557,9 @@ I (..\STM32\Driver\FWLib\inc\stm32f4xx_can.h)(0x61F25A2E)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_dac.h)(0x61F25A30)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_dcmi.h)(0x61F25A31)
 I (..\STM32\Driver\FWLib\inc\stm32f4xx_fsmc.h)(0x61F25A36)
-I (..\Global\GlobalDeclare_Chassis.h)(0x69491F84)
+I (..\Global\GlobalDeclare_Chassis.h)(0x6949289C)
 I (L:\Keil\ARM\ARMCC\include\stdbool.h)(0x6025237C)
-I (..\API\Algorithm.h)(0x692EE590)
+I (..\API\Algorithm.h)(0x694926C9)
 I (..\Global\GlobalDeclare_General.h)(0x69318A34)
 I (..\FreeRTOS\inc\FreeRTOS.h)(0x66962B64)
 I (L:\Keil\ARM\ARMCC\include\stddef.h)(0x6025237E)

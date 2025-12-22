@@ -214,6 +214,26 @@ bool _ChIsEnter_SlowSitDownMode_RCControl(Chassis_ModeChooseParameter_StructType
 bool _ChIsEnter_FollowMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara)
 {
     //待补充（记得把StandUp模式加进去）
+    
+    /*如果左拨杆不在上位，不进入*/
+    if(IsLeftLevelUp() == false)
+    {return false;}
+
+
+
+    return false;
+}
+
+/**
+  * @brief  遥控器模式下，检测是否需要进入离地模式的函数
+  * @note   待补充
+  * @param  ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
+  * @retval false：不进入OffGroundMode
+  *         true： 进入OffGroundMode
+*/
+bool _ChIsEnter_OffGroundMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara)
+{
+
 
     return false;
 }
@@ -253,6 +273,9 @@ ChassisMode_EnumTypeDef ChassisModeChoose_RCControl(Chassis_ModeChooseParameter_
 
     else if(_ChIsEnter_FollowMode_RCControl(ST_ModeChoosePara) == true)
     {ModeTemp = CHMode_RC_Follow;}         //进入RC底盘跟随模式
+
+    else if (_ChIsEnter_OffGroundMode_RCControl(ST_ModeChoosePara) == true)
+    {ModeTemp = CHMode_RC_OffGround;}         //进入RC底盘离地模式
 
     return ModeTemp;
 }
@@ -503,9 +526,6 @@ void ChModeControl_FollowMode_RCControl(void)
 
     //待补充：Follow模式的控制策略
 
-
-
-    
 // 	else if( g_stDBus.stRC.SW_L == RC_SW_UP && abs(X_Offset) <= RC_CH_VALUE_CHASSIS_DEAD )
 // 	{
 // 		Chassis_Follow();   //底盘跟随模式
@@ -515,6 +535,22 @@ void ChModeControl_FollowMode_RCControl(void)
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
     CH_MotionUpdateAndProcess(GST_RMCtrl);
+}
+
+/**
+  * @brief  遥控器模式下，离地模式控制函数
+  * @note   离地模式下的控制策略
+  * @param  无
+  * @retval 无
+*/
+void ChModeControl_OffGroundMode_RCControl(void)
+{
+    //to do sth
+    //1、位移Des、速度Des清零
+    //2、腿长Des要不要变？
+    //3、腿部前馈力要不要变？PID参数要不要变？
+    
+    //4、LQR除了腿部角度、角速度以外的参数全部清零
 }
 
 /**
@@ -560,6 +596,11 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow)
         /*RC底盘跟随模式*/
         case CHMode_RC_Follow:
             ChModeControl_FollowMode_RCControl();
+            break;
+
+        /*RC离地模式*/
+        case CHMode_RC_OffGround:
+            ChModeControl_OffGroundMode_RCControl();
             break;
     }
 }

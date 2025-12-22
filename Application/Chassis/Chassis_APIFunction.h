@@ -26,6 +26,9 @@ typedef struct
     float MC_LegLenAvgFB;           //腿长平均值，单位mm，MC_表示ModeChoose
     float MC_VelFB;                 //底盘速度反馈值，向前为正，单位m/s，MC_表示ModeChoose
 
+    float MC_Leg1F_N;               //左腿腿部支持力反馈值，单位N，MC_表示ModeChoose
+    float MC_Leg2F_N;               //右腿腿部支持力反馈值，单位N，MC_表示ModeChoose
+
     /*AutoSafe模式需要用到的参数*/
     uint16_t MC_HubMotor1Rx_fps;    //轮毂电机1通讯帧率，MC_表示ModeChoose
     uint16_t MC_HubMotor2Rx_fps;    //轮毂电机2通讯帧率，MC_表示ModeChoose
@@ -61,6 +64,7 @@ void Chassis_RobotCtrlDataReset(void);
 void CH_LegLinkageCal_Process(void);
 void CH_LQRCal_Process(void);
 void CH_VMCCal_Process(void);
+void CH_OffGroundCal_Process(void);
 
 /**********************************底盘其他相关函数********************************************/
 
