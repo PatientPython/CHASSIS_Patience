@@ -37,13 +37,13 @@ typedef enum
     // CHMode_OffGround,   //底盘模式：离地//待补充
 }ChassisMode_EnumTypeDef;
 
-/*底盘运动状态相关枚举*/
+/*底盘运动方向相关枚举*/
 typedef enum
 {
-    MoveState_Brake,
-    MoveState_Forward,
-    MoveState_Backward
-}Chassis_MoveState_EnumTypeDef;
+    MoveDirection_Brake,
+    MoveDirection_Forward,
+    MoveDirection_Backward
+}Chassis_MoveDirection_EnumTypeDef;
 //#endregion
 
 
@@ -249,8 +249,8 @@ typedef struct
     bool F_OffGround;                                 //底盘离地标志位，true表示离地，false表示未离地
     _CH_ModeStartTime_StructTypeDef ST_ModeStartTime; //底盘各模式开始时间结构体
 
-    bool F_DirectionInvert;                      //底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
-    Chassis_MoveState_EnumTypeDef EN_MoveState;  //底盘运动状态枚举变量，表示当前底盘是刹车、前进还是后退
+    bool F_DirectionInvert;                         //底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
+    Chassis_MoveDirection_EnumTypeDef EM_MoveDirection; //底盘运动方向枚举变量，表示当前底盘是刹车、前进还是后退
 }CHData_StructTypeDef;
 
 //#endregion
@@ -323,6 +323,7 @@ extern float PID_LegLen_KdNorm;
 //#endregion
 
 //#region /****底盘平移、旋转控制相关*****************************/
+
 extern float ChMove_StillVelTH;
 extern float ChMove_VelDesMax;
 extern float ChMove_Acc_Moving;
@@ -333,9 +334,26 @@ extern float ChMove_VelMovingChangeRateMax;
 extern float ChMove_VelBrakingChangeRateMax;
 extern float ChMove_BrakeVelLimitTH;
 
+extern float ChMove_YawAngleVelMaxTH;
 extern float ChMove_TurnYawVel_Normal;
+extern float ChMove_YawAngleVelAddStep;
 //#endregion
 
+//#region /****底盘小陀螺相关*****************************/
+
+extern float RCTopMode_EnterVelMinTH;
+extern float RCTopMode_EnterDelayTime;
+extern float RCTopMode_TopAngleVelDesMax;
+extern float RCTopMode_TopAngleVelAddStep;
+extern float RCTopMode_TopAngleVelBrakeStep;
+extern float RCTopMode_ExitAngleVelTH;
+//#endregion
+
+//#region /****SlowSitDown相关*****************************/
+
+extern float SlowSitDown_YawAngleVelBrakeStep;
+extern float SlowSitDown_LegFFForceDecStep;
+//#endregion
 
 //#region /******************底盘其他相关参数***********************************/
 
@@ -352,7 +370,6 @@ extern float LegLenHigh;
 
 extern float LegFFForce_Norm;
 extern float LegFFForce_SlowSitDown;
-extern float LegFFForce_SlowSitDownStep;
 //#endregion
 
 //#region /*********************底盘运动控制相关-辅助变量************************/

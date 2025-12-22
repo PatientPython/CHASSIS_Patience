@@ -12,3 +12,10 @@
 ..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\deprecated_definitions.h
 ..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\port\inc\portmacro.h
 ..\stm32\output\globaldeclare_chassis.o: ..\FreeRTOS\inc\mpu_wrappers.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\arm_math.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_version.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\Pack\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\ARM\ARMCC\Bin\..\include\string.h
+..\stm32\output\globaldeclare_chassis.o: L:\Keil\ARM\ARMCC\Bin\..\include\math.h

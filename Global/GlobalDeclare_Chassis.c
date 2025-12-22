@@ -12,6 +12,7 @@
 #include "GlobalDeclare_General.h"
 #include "Algorithm.h"
 #include "FreeRTOS.h"
+#include <arm_math.h>
 
 /****************************************宏定义、常量定义（不需要修改）****************************************/
 /*FreeRTOS任务相关*/
@@ -65,7 +66,7 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque; //关节电机最大
 //#endregion
 
 
-/****************************************宏定义、常量定义（可能需要修改）***************************************/
+/****************************************宏定义、常量定义（非控制策略Strategy相关）（可能需要修改）***************************************/
 //#region /****TD相关系数****************************************/
 #define TD_SampleTime   SampleTime_Default  //TD采样时间，单位秒
 
@@ -110,7 +111,7 @@ float PID_LegLen_KdNorm    = 20000.0f;         //腿长PID：正常时的Kd值
 
 //#endregion
 
-//#region /****零点补偿、前馈力补偿、腿长相关**********************/
+//#region /****腿长、零点补偿、腿部前馈力相关**********************/
 /*腿长相关*/
 float LegLenMin   = 108.0f;   //腿长最小值，单位mm
 float LegLenMinTH = 6.0f;     //腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
@@ -125,9 +126,7 @@ float ChassisRollAngleZP  = 0.6f;  //底盘Roll轴零点补偿值，单位度
 
 /*腿部前馈力补偿相关*/
 float LegFFForce_Norm            = 80.0f;   //正常时的腿部前馈力，单位N，用于补偿重力对腿部的影响
-
-float LegFFForce_SlowSitDown     = 5.0f;    //缓慢坐下模式的腿部前馈力，单位N，用于补偿重力对腿部的影响
-float LegFFForce_SlowSitDownStep = 0.05f;   //缓慢坐下模式的腿部前馈力的步进增加值
+float LegFFForce_SlowSitDown     = 5.0f;    //缓慢坐下模式的腿部前馈力，单位N
 //#endregion
 
 //#region /****底盘模式控制策略相关*******************************/
@@ -136,9 +135,11 @@ uint16_t CHMode_RC_StandUp_TotalTime    = 600;    //起立模式的总持续时�
 
 //#endregion
 
+
+/****************************************宏定义、常量定义（控制策略Strategy相关）（可能需要修改）***************************************/
 //#region /****底盘平移、旋转控制相关*****************************/
-float ChMove_StillVelTH     = 0.24f;            //静止速度阈值，小于这个值认为是静止状态
-float ChMove_VelDesMax      = 1.8f;             //速度最大值
+float ChMove_StillVelTH     = 0.24f;            //静止速度阈值，小于这个值认为是静止状态，单位m/s
+float ChMove_VelDesMax      = 1.8f;             //速度最大值，单位m/s
 float ChMove_Acc_Moving     = 2.0f;             //运动加速度（理论值，实际上会更小一些）
 float ChMove_Acc_Brake      = 10.0f;            //刹车加速度（理论值，实际上会更小一些）
 float ChMove_VelDesMin      = 1.4f;             //目标速度最小值
@@ -147,7 +148,23 @@ float ChMove_VelMovingChangeRateMax  = 0.65f;   //速度变化最大值
 float ChMove_VelBrakingChangeRateMax = 1.5f;    //刹车时速度变化最大值
 float ChMove_BrakeVelLimitTH = 0.9f;            //刹车时目标速度限制阈值
 
-float ChMove_TurnYawVel_Normal = 90.0f;         //正常模式下的转向偏航角速度，单位度每秒
+float ChMove_TurnYawVel_Normal = 120.0f;        //正常模式下的转向偏航角速度，单位deg/s
+float ChMove_YawAngleVelAddStep = 3.0f;         //转向偏航角速度步进值，单位deg
+//#endregion
+
+//#region /****底盘小陀螺相关*****************************/
+float RCTopMode_EnterVelMinTH  = 0.8f;   //进入小陀螺模式的速度最小阈值（小于这个值允许进入小陀螺），单位m/s
+float RCTopMode_EnterDelayTime = 800.0f; //进入小陀螺模式的延时时间，单位ms
+float RCTopMode_ExitAngleVelTH = 180.0f; //允许退出小陀螺模式的角速度阈值（需要大于ChMove_TurnYawVel_Normal），单位deg
+
+float RCTopMode_TopAngleVelDesMax = 14.0f * R2A; //小陀螺模式下的最大转向偏航角速度目标值，单位deg/s
+float RCTopMode_TopAngleVelAddStep = 0.4f;       //小陀螺模式下，角速度步进值，单位deg
+float RCTopMode_TopAngleVelBrakeStep = 1.0f;     //小陀螺模式下，角速度刹车步进值，单位deg
+//#endregion
+
+//#region /****SlowSitDown相关*****************************/
+float SlowSitDown_YawAngleVelBrakeStep = 2.0f;   //缓慢坐下模式的偏航角速度刹车步进值，单位deg
+float SlowSitDown_LegFFForceDecStep = 0.05f;     //缓慢坐下模式的腿部前馈力的步进减少值
 //#endregion
 
 /********************************************变量定义(不需要修改)********************************************/

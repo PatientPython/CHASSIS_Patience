@@ -51,6 +51,7 @@
         (23) FF     FeedForward     前馈
         (24) Para   Parameter       参数  
         (25) tmp    Temp            临时的
+        (26) dec    decrease        减少
         () EncoderPPR   Pulses Per Revolution     每转一圈的脉冲数（编码器相关数据）
         () ESC          Electronic Speed Control  电调
 
