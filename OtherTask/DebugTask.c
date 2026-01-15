@@ -86,9 +86,9 @@ void VofaPrint(void)
 /*4*/   (float)GstCH_LegLen1PID.Des,
 /*5*/   (float)GstCH_LegLen1PID.FB,
 /*6*/   (float)GstCH_LegLen1PID.U,
-/*7*/   (float)G_fTest,
-/*8*/   (float)GSTCH_Data.VelDes,
-/*9*/   (float)GSTCH_Data.YawAngleVelFB
+/*7*/   (float)G_u8Test,
+/*8*/   (float)G_u16Test,
+/*9*/   (float)G_u32Test
     );
 }
 

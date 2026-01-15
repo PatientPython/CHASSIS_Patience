@@ -1,37 +1,29 @@
 {
-    "configurations": [
-        {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "L:\\Keil\\ARM\\ARMCC\\include",
-                "L:\\Keil\\ARM\\ARMCC\\include\\rw",
-                "L:\\Keil\\Pack\\ARM\\CMSIS-DSP\\1.16.2\\Include",
-                "L:\\Keil\\Pack\\ARM\\CMSIS-DSP\\1.16.2\\Include\\dsp",
-                "L:\\Keil\\Pack\\ARM\\CMSIS\\5.3.0\\CMSIS\\Include",
-                "L:\\aaareallearn\\RoboMaster\\111aaa重构\\CHASSIS_LuCkY\\STM32\\Driver\\CMSIS",
-                "L:\\aaareallearn\\RoboMaster\\111aaa重构\\CHASSIS_LuCkY\\STM32\\Driver\\FWLib",
-                "L:\\aaareallearn\\RoboMaster\\111aaa重构\\CHASSIS_LuCkY\\STM32\\Driver\\FWLib\\inc"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "USE_STDPERIPH_DRIVER",
-                "STM32F40_41xxx",
-                "ARM_MATH_CM4",
-                "__CC_ARM",
-                "ARM_MATH_MATRIX_CHECK",
-                "ARM_MATH_ROUNDING",
-                "__TARGET_FPU_VFP",
-                "__FPU_PRESENT=1",
-                "__FPU_USED=1"
-            ],
-            "compilerPath": "L:\\VSCode\\mingw64\\bin\\gcc.exe",
-            "cStandard": "c99",
-            "cppStandard": "gnu++14",
-            "intelliSenseMode": "${default}"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "windows-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/**"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE",
+        "USE_STDPERIPH_DRIVER",
+        "STM32F40_41xxx",
+        "ARM_MATH_CM4",
+        "__CC_ARM",
+        "ARM_MATH_MATRIX_CHECK",
+        "ARM_MATH_ROUNDING",
+        "__TARGET_FPU_VFP",
+        "__FPU_PRESENT=1",
+        "__FPU_USED=1"
+      ],
+      "compilerPath": "C:/mingw64/bin/gcc.exe",
+      "cStandard": "${default}",
+      "cppStandard": "${default}",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
 }

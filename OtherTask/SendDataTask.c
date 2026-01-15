@@ -26,17 +26,17 @@ const static TickType_t S_SendDataTaskPeriod = 1;     //任务周期，单位ms
 */
 void SendDataTask(void* arg)
 {
-while(1)
-{
-    /****************任务内容****************/
-    UA2Tx_SendDataToIMU1();     //向云台云控IMU1发送数据
-    UA4Tx_SendDataToIMU2();     //向底盘云控IMU2发送数据
-    CANTx_SendCurrentToMotor(); //向除了关节电机外的各个电机发送电流
-    
-    /***********任务帧率计数器自增************/
-    GST_SystemMonitor.SendDataTask_cnt++;
+  while(1)
+  {
+      /****************任务内容****************/
+      UA2Tx_SendDataToIMU1();     //向云台云控IMU1发送数据
+      UA4Tx_SendDataToIMU2();     //向底盘云控IMU2发送数据
+      CANTx_SendCurrentToMotor(); //向除了关节电机外的各个电机发送电流
+      
+      /***********任务帧率计数器自增************/
+      GST_SystemMonitor.SendDataTask_cnt++;
 
-    /****************任务延时****************/
-    vTaskDelay(S_SendDataTaskPeriod);
-}
+      /****************任务延时****************/
+      vTaskDelay(S_SendDataTaskPeriod);
+  }
 }

@@ -18,6 +18,10 @@
 #include "Chassis_Task.h"
 #include "TIM_Config.h"
 #include "SendDataTask.h"
+
+/**** 任务句柄 ****/
+// 任务句柄是一个指针，用于标识任务的身份。
+// watermark（高水位线）用于监测任务的栈使用情况，数值越大表示剩余栈空间越多。
 TaskHandle_t DebugTaskHandle;
 uint32_t DebugTaskHighWaterMark;
 TaskHandle_t ReceiverTaskHandle;
@@ -33,6 +37,7 @@ int main()
     /****************************测试使用上边界****************************/
     BSP_All_Init(); //底层外设初始化
     
+    // 调用 xTaskCreate 把函数变成“任务”，并分配优先级和内存。
     xTaskCreate(ReceiverTask,"ReceiverTask",600,NULL,30,&ReceiverTaskHandle);
     xTaskCreate(ChassisTask,"ChassisTask",1000,NULL,25,&ChassisTaskHandle);
     xTaskCreate(SendDataTask,"SendDataTask",600,NULL,20,&SendDataTaskHandle);
@@ -43,8 +48,10 @@ int main()
     ChassisTaskHighWaterMark    = uxTaskGetStackHighWaterMark(ChassisTaskHandle);
     SendDataTaskHighWaterMark   = uxTaskGetStackHighWaterMark(SendDataTaskHandle);
 
-    RunTimeReset(); //任务开始前重置系统计时器
-    vTaskStartScheduler(); //开启任务调度器
+    RunTimeReset(); // 任务开始前重置系统计时器
+    // 开启任务调度器
+    // 一旦执行这行，while(1) 就不再起作用，CPU 的控制权交给了 FreeRTOS。
+    vTaskStartScheduler(); 
     /****************************测试使用下边界****************************/
 
     /* 后续需要干的事情

@@ -27,7 +27,7 @@ void ReceiverTask(void* arg)
 {
 while(1)
 {
-    if(GF_USART1_RxDone == true)    //串口1接收完成，则进行接收任务
+    if(GF_USART1_RxDone == true)    //串口1接收完成，则进行接收任务。也是用了DMA接收方式
     {
         GF_USART1_RxDone = false;   //清除串口1接收完成标志位
         UA1Rx_ReceiverDataProcess();//串口1接收数据处理，解析到GST_Receiver结构体中
