@@ -20,6 +20,9 @@ float PID_RollComp_Kp_tmp = 0.0f;  // Roll补偿PID临时Kp变量
 float PID_RollComp_Ki_tmp = 0.0f;  // Roll补偿PID临时Ki变量
 float PID_RollComp_Kd_tmp = 0.0f;  // Roll补偿PID临时Kd变量
 
+float TD_YawAngle_r_tmp = 0.0f;      // Yaw角TD临时速度因子变量
+float TD_YawAngle_h0_tmp = 0.0f;     // Yaw角TD临时滤波因子变量
+
 // // #pragma region 检测当前条件是否满足进入某模式的函数
 //* 目前包括七个模式的判断函数：
 //* 1. 手动安全模式：_ChIsEnter_ManualSafeMode_RCControl
@@ -398,27 +401,37 @@ void ChModeControl_StandUpMode_RCControl(void) {
     GSTCH_Data.Leg2ForceDes =
         GST_RMCtrl.STCH_Default.Leg2FFForce + LegLenPIDForce_Norm_2 - RollCompForce_Norm_2;
 
-    //! **遥控器控制部分 */ 
+    //! **前后移动遥控器控制部分 */ 
     //* 在这里面将传来的信号映射到了[-1, 1]
-    float StickX_Norm =
-        RCChannelToNorm(GST_Receiver.ST_RC.JoyStickL_X);  // 左负右正
+    // float StickX_Norm =
+    //     RCChannelToNorm(GST_Receiver.ST_RC.JoyStickL_X);  // 左负右正
     float StickY_Norm =
         RCChannelToNorm(GST_Receiver.ST_RC.JoyStickL_Y);  // 下负上正
-
-    //* 正常运行的角速度是120°/s，摆杆角度越大越接近120
-    float YawAngleVelDes_tmp = StickX_Norm * ChMove_TurnYawVel_Normal;
-    YawAngleDes_tmp += YawAngleVelDes_tmp * GCH_TaskTime;
 
     //* 正常运行的速度是1.8m/s，摆杆角度越大越接近1m/s
     float DisVelDes_tmp = StickY_Norm * ChMove_VelDesMax;
     DisDes_tmp += DisVelDes_tmp * GCH_TaskTime;
+
+    //! **左右转弯遥控器控制部分 */ 
+    if (IsLeftJoyStickLeft()==true){
+        float YawAngleStep_tmp = 1000;
+        YawAngleDes_tmp += YawAngleStep_tmp * GCH_TaskTime;
+    }
+
+    TD_SetInput(&GstCH_YawAngleTD, YawAngleDes_tmp);
+    GstCH_YawAngleTD.r = TD_YawAngle_r_tmp;
+    GstCH_YawAngleTD.h0 = TD_YawAngle_h0_tmp;
+    GstCH_YawAngleTD.SampleTime = GCH_TaskTime;
+    TD_Cal(&GstCH_YawAngleTD);
+
+    float YawAngleVelFollow = GstCH_YawAngleTD.x2;  // 目标偏航角速度跟随值
 
     //! 目标值赋值
     GSTCH_Data.DisDes = DisDes_tmp;     // 目标位移
     GSTCH_Data.VelDes = DisVelDes_tmp;  // 目标速度
     //* 我期望的是正转或者反转一定的角度，所以控制的是相对角度而不是绝对角度
     GSTCH_Data.YawDeltaDes = YawAngleDes_tmp;                 // 目标偏航角度
-    GSTCH_Data.YawAngleVelDes = YawAngleVelDes_tmp;           // 目标偏航角速度
+    GSTCH_Data.YawAngleVelDes = YawAngleVelFollow;           // 目标偏航角速度跟随值
 
     //* 其他目标值 
     GSTCH_Data.PitchAngleDes = 0.0f;                          // 目标俯仰角度

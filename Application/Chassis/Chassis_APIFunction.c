@@ -326,6 +326,7 @@ void Chassis_AllFBDataUpdate(void) {
     GSTCH_JM4.TorqueFB = GstCH_IMU2.ST_Rx.JM4_TorqueFB;
 
     /*************** IMU2-底盘运动姿态数据更新 ***************/
+    GSTCH_Data.YawAngleFB = GstCH_IMU2.ST_Rx.YawAngle; // XXX 新增
     GSTCH_Data.YawAngleVelFB =
         _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.YawAngleVel, &GstCH_YawAngleVelLPF);
     GSTCH_Data.PitchAngleFB = GstCH_IMU2.ST_Rx.PitchAngle;

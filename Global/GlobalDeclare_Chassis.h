@@ -211,6 +211,7 @@ typedef struct {
 
     float YawDeltaDes;     // 底盘偏转角目标增量，上往下看逆时针为正，单位度
     float YawAngleVelDes;  // 底盘偏转速度目标值，上往下看逆时针为正，单位度/s
+    float YawAngleFB;      // [new] 底盘偏转角反馈值，上往下看逆时针为正，单位度
     float YawAngleVelFB;   // 底盘偏转速度反馈值，上往下看逆时针为正，单位度/s
 
     float Theta1Des;  // 左腿与绝对垂直方向夹角目标值，向后摆为正，单位度
@@ -312,6 +313,7 @@ extern LPF_StructTypeDef GstCH_Leg2F_N_LPF;
 
 extern TD_StructTypeDef GstCH_LegLen1TD;
 extern TD_StructTypeDef GstCH_LegLen2TD;
+extern TD_StructTypeDef GstCH_YawAngleTD;
 
 extern float TD_LegLen_rStandUp;
 extern float TD_LegLen_rNorm;

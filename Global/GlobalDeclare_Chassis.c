@@ -86,6 +86,8 @@ const float JointMotorMAXTorque =
 #define TD_LegLen_h0 \
     1 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
 
+
+
 float TD_LegLen_rStandUp = 20.0f;    // 腿长TD：起立模式下的速度因子
 float TD_LegLen_rNorm = 20.0f;        // 腿长TD：正常模式下的速度因子
 float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速度因子
@@ -281,6 +283,8 @@ TD_StructTypeDef GstCH_LegLen1TD = {
     TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 左腿长度TD结构体，以m米为单位
 TD_StructTypeDef GstCH_LegLen2TD = {
     TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 右腿长度TD结构体，以m米为单位
+TD_StructTypeDef GstCH_YawAngleTD;  // 底盘Yaw角TD结构体
+
 // // #pragma endregion
 
 // // #pragma region /****PID控制相关*****************************/
