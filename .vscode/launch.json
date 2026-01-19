@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "e:/CODE_project/BalanceSoldier/ChassisControl/CHASSIS_Patience_ChassisControl/Application/Chassis",
-      "program": "e:/CODE_project/BalanceSoldier/ChassisControl/CHASSIS_Patience_ChassisControl/Application/Chassis/build/Debug/outDebug",
+      "cwd": "e:/CODE_project/BalanceSoldier/ChassisControl/CHASSIS_Patience/Application/Chassis",
+      "program": "e:/CODE_project/BalanceSoldier/ChassisControl/CHASSIS_Patience/Application/Chassis/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

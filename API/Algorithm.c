@@ -220,7 +220,9 @@ void TD_Cal(TD_StructTypeDef* TDptr) {
  * @param  TDptr：TD_StructTypeDef类型的指针，要获取的TD结构体指针
  * @retval TD的输出值x1，即平滑跟踪值
  */
-float TD_GetOutput(TD_StructTypeDef* TDptr) { return TDptr->x1; }
+float TD_GetOutput(TD_StructTypeDef* TDptr) { 
+    return TDptr->x1; 
+}
 
 /**
  * @brief  TD的重置函数
@@ -489,8 +491,6 @@ float LegLinkage_GetL0dot(LegLinkageCal_StructTypeDef* LegPtr) {
  */
 //* 获取虚拟摆杆与竖直方向夹角的微分
 
-// XXX 这块原先写的是T_Matrix12、T_Matrix22，但其实是雅可比矩阵J的元素，改成J_Matrix更合适
-
 float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr,
                              RobotSide_EnumTypeDef LegSide) {
     float Theta_dot_Temp = 0.0f;
@@ -500,7 +500,7 @@ float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr,
     float J_Matrix12 =
         LegPtr->l1 * MM2M * MyCos(LegPtr->phi0 - LegPtr->phi3) * 
         MySin(LegPtr->phi1 - LegPtr->phi2) / 
-        (LegPtr->L0 * MM2M * MySin(LegPtr->phi3 - LegPtr->phi2));  
+        (LegPtr->L0 * MM2M * MySin(LegPtr->phi3 - LegPtr->phi2));  // XXX 这块原先写的是T_Matrix12、T_Matrix22，但其实是雅可比矩阵J的元素，改成J_Matrix更合适
 
     // J22 = L4*cos(phi0-phi2)*sin(phi3-phi4) / [L0*sin(phi3-phi2)]
     float J_Matrix22 =
@@ -822,8 +822,7 @@ float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index) {
  * @param  AccZ_Body：机体Z轴加速度值，单位：m/s²
  * @retval 无
  */
-void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd,
-                              float AccZ_Body) {
+void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd, float AccZ_Body) {
     pOffGrd->ZAcc_Body = AccZ_Body;
 }
 
@@ -834,147 +833,52 @@ void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd,
  * @param  PitchAngle：俯仰角值，单位：度
  * @retval 无
  */
-void OffGround_PitchAngleUpdate(OffGround_StructTypeDef* pOffGrd,
-                                float PitchAngle) {
+void OffGround_PitchAngleUpdate(OffGround_StructTypeDef* pOffGrd, float PitchAngle) {
     pOffGrd->PitchAngle = PitchAngle;
-}
-
-/**
- * @brief  离地检测的俯仰角速度更新函数
- * @note   根据传入的俯仰角速度值，更新OffGround结构体中的俯仰角速度
- * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @param  PitchAngleVel：俯仰角速度值，单位：度/s
- * @retval 无
- */
-void OffGround_PitchAngleVelUpdate(OffGround_StructTypeDef* pOffGrd,
-                                   float PitchAngleVel) {
-    pOffGrd->PitchAngleVel = PitchAngleVel;
 }
 
 /**
  * @brief  离地检测中，五连杆相关的数据更新函数
  * @note
  * 根据传入的五连杆计算参数结构体，更新离地检测结构体中需要的五连杆相关数据
- * @param
- * LegPtr[in]：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
+ * @param  LegPtr[in]：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
+ * @param  Ctr_LegPtr[in]：LegLinkageCal_StructTypeDef类型的指针，另一条腿的五连杆计算参数结构体指针
  * @param  LegSide：RobotSide_EnumTypeDef类型的枚举值，表示左腿还是右腿
  * @param  pOffGrd[out]：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+ * @param  Ctr_LegSide：RobotSide_EnumTypeDef类型的枚举值，表示另一条腿
  * @retval 无
  */
-void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr,
-                                       OffGround_StructTypeDef* pOffGrd,
-                                       RobotSide_EnumTypeDef LegSide) {
-    /*把上次的值保存下来*/
+void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, 
+                                       LegLinkageCal_StructTypeDef Ctr_LegPtr, 
+                                       OffGround_StructTypeDef* pOffGrd, 
+                                       RobotSide_EnumTypeDef LegSide, 
+                                       RobotSide_EnumTypeDef Ctr_LegSide) {
+    //* 机体竖直加速度 ZAcc_Body
+    //* 摆杆与地面竖直方向的夹角 phi_L/phi_R
+    //* 摆杆长度 L0_L/L0_R 
+    //* 左腿地面支持力 N_L
+    //* N_L = 0.5 * m_total * (g + ZAcc_Body) 
+    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_L} * cos{phi_L} 
+    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_R} * cos{phi_R}
+    //* 右腿地面支持力 N_R
+    //* N_R = 0.5 * m_total * (g + ZAcc_Body) 
+    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_R} * cos{phi_R} 
+    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_L} * cos{phi_L}
+    /*先把上次的值存起来*/
     pOffGrd->L0_dot_pre = pOffGrd->L0_dot;
-    pOffGrd->Phi_dot_pre = pOffGrd->Phi_dot;
+    pOffGrd->Ctr_L0_dot_pre = pOffGrd->Ctr_L0_dot;
 
-    /*把离地检测中需要的、五连杆相关的数据写入*/
-    pOffGrd->L1 = LegPtr.l1 * MM2M;
-    pOffGrd->L4 = LegPtr.l4 * MM2M;
-
-    pOffGrd->Phi1 = LegPtr.phi1;
-    pOffGrd->Phi2 = LegPtr.phi2;
-    pOffGrd->Phi3 = LegPtr.phi3;
-    pOffGrd->Phi4 = LegPtr.phi4;
-
-    pOffGrd->Phi0 = LegPtr.phi0;
-
-    // 待优化：下面这些数据未经过滤波处理，可能会有噪声，后续可以考虑加个滤波器
-    pOffGrd->L0 = LegLinkage_GetL0Length(&LegPtr) * MM2M;
+    //* TODO 更新腿长相关变量 (下面这些数据未经过滤波处理，可能会有噪声，后续可以考虑加个滤波器)
     pOffGrd->L0_dot = LegLinkage_GetL0dot(&LegPtr);
-    pOffGrd->L0_ddot =
-        (pOffGrd->L0_dot - pOffGrd->L0_dot_pre) / pOffGrd->SampleTime;
-
+    pOffGrd->L0_ddot = (pOffGrd->L0_dot - pOffGrd->L0_dot_pre) / pOffGrd->SampleTime;
+    pOffGrd->Ctr_L0_dot = LegLinkage_GetL0dot(&Ctr_LegPtr);
+    pOffGrd->Ctr_L0_ddot = (pOffGrd->Ctr_L0_dot - pOffGrd->Ctr_L0_dot_pre) / pOffGrd->SampleTime;
+    //* 更新相对机体摆杆角度相关变量
     pOffGrd->Theta = LegLinkage_GetTheta(&LegPtr, LegSide);
-    pOffGrd->Theta_dot = LegLinkage_GetThetadot(&LegPtr, LegSide);
-
-    pOffGrd->Phi =
-        pOffGrd->Theta -
-        pOffGrd
-            ->PitchAngle;  // 地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
-    pOffGrd->Phi_dot =
-        pOffGrd->Theta_dot -
-        pOffGrd
-            ->PitchAngleVel;  // 地面坐标系下，摆杆与竖直方向夹角的微分（注意需要减去机体俯仰角速度）
-    pOffGrd->Phi_ddot =
-        (pOffGrd->Phi_dot - pOffGrd->Phi_dot_pre) /
-        pOffGrd->SampleTime;  // 地面坐标系下，摆杆与竖直方向夹角的二阶微分
-}
-
-/**
- * @brief  离地检测中，关节电机力矩数据更新函数
- * @note   根据传入的关节电机力矩值，更新离地检测结构体中需要的关节电机力矩数据
- * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @param  T1：五连杆中phi1关节电机力矩，单位：N·m
- * @param  T4：五连杆中phi4关节电机力矩，单位：N·m
- * @retval 无
- */
-void OffGround_TorqueDataUpdate(OffGround_StructTypeDef* pOffGrd, float T1,
-                                float T4) {
-    pOffGrd->T1 = T1;
-    pOffGrd->T4 = T4;
-}
-
-/**
- * @brief  离地检测中，获取F和Tp的真实值
- * @note   根据传入的关节电机力矩，计算得到真实的F和Tp值
- * @param  pOffGrd[out]：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @retval 无
- */
-void OffGround_GetRealFAndTp(OffGround_StructTypeDef* pOffGrd) {
-    float J_Matrix_Inverse[2][2];  // 这个矩阵是VMC转化矩阵的逆矩阵
-
-    /*将离地检测需要使用的数值写入临时变量*/
-    float L1 = pOffGrd->L1;
-    float L4 = pOffGrd->L4;
-    float L0 = pOffGrd->L0;
-
-    float Phi1 = pOffGrd->Phi1;
-    float Phi2 = pOffGrd->Phi2;
-    float Phi3 = pOffGrd->Phi3;
-    float Phi4 = pOffGrd->Phi4;
-    float Phi0 = pOffGrd->Phi0;
-
-    /*计算逆矩阵的各个元素*/
-    float Sigma1 =
-        L4 * (MyCos(Phi0 - Phi2) * MySin(Phi0 - Phi3) * MySin(Phi3 - Phi4) -
-              MyCos(Phi0 - Phi3) * MySin(Phi0 - Phi2) * MySin(Phi3 - Phi4));
-    float Sigma2 =
-        L1 * (MyCos(Phi0 - Phi2) * MySin(Phi0 - Phi3) * MySin(Phi1 - Phi2) -
-              MyCos(Phi0 - Phi3) * MySin(Phi0 - Phi2) * MySin(Phi1 - Phi2));
-    float Sigma3 = MySin(Phi2 - Phi3);
-
-    J_Matrix_Inverse[0][0] = -MyCos(Phi0 - Phi2) * Sigma3 / Sigma2;
-    J_Matrix_Inverse[0][1] = MyCos(Phi0 - Phi3) * Sigma3 / Sigma1;
-    J_Matrix_Inverse[1][0] = L0 * MySin(Phi0 - Phi2) * Sigma3 / Sigma2;
-    J_Matrix_Inverse[1][1] = -L0 * MySin(Phi0 - Phi3) * Sigma3 / Sigma1;
-
-    /*计算真实的F和Tp值，传给输出变量*/
-    float T1 = pOffGrd->T1;
-    float T4 = pOffGrd->T4;
-    pOffGrd->F_Leg = J_Matrix_Inverse[0][0] * T1 + J_Matrix_Inverse[0][1] * T4;
-    pOffGrd->Tp_Leg = J_Matrix_Inverse[1][0] * T1 + J_Matrix_Inverse[1][1] * T4;
-}
-
-/**
- * @brief  离地检测中，获取腿对轮子的竖直作用力P
- * @note   函数内部直接把计算出来的值赋给OffGround结构体中的F_P变量
- * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @retval 腿对轮子的竖直作用力P，单位：N
- */
-float OffGround_GetLegToWheelForce(OffGround_StructTypeDef* pOffGrd) {
-    float G_l =
-        pOffGrd->M_l * pOffGrd->g;  // 单个腿部重力 = 腿部重量 * 重力加速度
-
-    float Phi =
-        pOffGrd
-            ->Phi;  // 地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
-    float F = pOffGrd->F_Leg;    // 腿部沿杆方向的力
-    float Tp = pOffGrd->Tp_Leg;  // 腿部力矩
-    float L0 = pOffGrd->L0;      // 摆杆长度
-
-    float F_P = G_l + F * MyCos(Phi) + Tp * MySin(Phi) / L0;
-    return F_P;
+    pOffGrd->Ctr_Theta = LegLinkage_GetTheta(&Ctr_LegPtr, Ctr_LegSide);
+    //* 更新相对地面摆杆角度相关变量
+    pOffGrd->Phi = pOffGrd->Theta - pOffGrd->PitchAngle;  // 地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
+    pOffGrd->Ctr_Phi = pOffGrd->Ctr_Theta - pOffGrd->PitchAngle;  // 地面坐标系下，另一条腿的摆杆与竖直方向夹角（注意需要减去机体俯仰角）
 }
 
 /**
@@ -984,75 +888,21 @@ float OffGround_GetLegToWheelForce(OffGround_StructTypeDef* pOffGrd) {
  * @retval 地面地面支持力F_N，单位：N
  */
 float OffGround_GetSupportForce(OffGround_StructTypeDef* pOffGrd) {
-    float F_P = OffGround_GetLegToWheelForce(pOffGrd);  // 腿对轮子的竖直作用力
-    float G_w =
-        pOffGrd->M_w * pOffGrd->g;  // 单个轮子重力 = 轮子重量 * 重力加速度
-
-    float M_w = pOffGrd->M_w;              // 轮子质量
-    float ZAcc_Body = pOffGrd->ZAcc_Body;  // 机体Z轴加速度
-    float Phi =
-        pOffGrd
-            ->Phi;  // 地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
-    float Phi_dot =
-        pOffGrd->Phi_dot * A2R;  // 摆杆角速度（注意需要减去机体俯仰角速度）
-    float Phi_ddot = pOffGrd->Phi_ddot * A2R;  // 摆杆角加速度
-    float L0 = pOffGrd->L0;                    // 摆杆长度
-    float L0_dot = pOffGrd->L0_dot;            // 摆杆长度变化率（摆杆长度速度）
-    float L0_ddot = pOffGrd->L0_ddot;          // 摆杆长度加速度
-
-    float ZAcc_Wheel = ZAcc_Body - L0_ddot * MyCos(Phi) +
-                       2 * L0_dot * Phi_dot * MySin(Phi)  // 轮子Z轴加速度
-                       + L0 * Phi_ddot * MySin(Phi) +
-                       L0 * Phi_dot * Phi_dot * MyCos(Phi);
-
-    pOffGrd->F_N = F_P + G_w +
-                   M_w * ZAcc_Wheel;  // 地面支持力F_N = 腿对轮子的竖直作用力P +
-                                      // 轮子重力G_w + 轮子质量 * 轮子Z轴加速度
-
-    // 注意正方向问题，到车上这些角度都得重新试一下
-    // 老代码里面是右边没有负号，左边有，Theta和Theta_dot
-    // Pitch都是一样的不用变
-    // 我的代码里面定义的都是向后为正，需要和老代码的方向对应上
-
-    // 	LpFilter(&OffGroundRight_struct.L0_ddot_fliter);
-    // 	LpFilter(&OffGroundRight_struct.Theta_ddot_fliter);
-    // 	LpFilter(&OffGroundRight_struct.F_N_fliter);
-
-    // 	LpFilter(&OffGroundLeft_struct.L0_ddot_fliter );
-    // 	LpFilter(&OffGroundLeft_struct.Theta_ddot_fliter );
-    // 	LpFilter(&OffGroundLeft_struct.F_N_fliter);
-
-    // 	if( OffGroundRight_struct.F_N_fliter.out <= 20 &&
-    // OffGroundLeft_struct.F_N_fliter.out <= 20 )
-    // 	{
-    // 		OffGround_Flag = 1;
-    // 	}
-    // 	else if( (OffGroundRight_struct.F_N_fliter.out >= 30 &&
-    // OffGroundLeft_struct.F_N_fliter.out >= 30)&&(OffGround_Flag == 1) )
-    // 	{
-    // 		OffGround_Flag = 0;
-    // 	}
-    // 	if(OffGroundRight_struct.F_N_fliter.out <= 30)
-    // 	{
-    // 		Right_OffGround_Flag = 1;
-    // 	}
-    // 	else if(OffGroundRight_struct.F_N_fliter.out >=60)
-    // 	{
-    // 		Right_OffGround_Flag = 0;
-    // 	}
-    // 	if(OffGroundLeft_struct.F_N_fliter.out <= 30)
-    // 	{
-    // 		Left_OffGround_Flag = 1;
-    // 	}
-    // 	else if(OffGroundLeft_struct.F_N_fliter.out >=60)
-    // 	{
-    // 		Left_OffGround_Flag = 0;
-    // 	}
-    // 	if(g_chassis_jump_mode == Jump_Compress_Mode)
-    // 	{
-    // 		OffGround_Flag = 0;
-    // 	}
-
+    //* 机体竖直加速度 ZAcc_Body
+    //* 摆杆与地面竖直方向的夹角 phi_L/phi_R
+    //* 摆杆长度 L0_L/L0_R 
+    //* 左腿地面支持力 N_L
+    //* N_L = 0.5 * m_total * (g + ZAcc_Body) 
+    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_L} * cos{phi_L} 
+    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_R} * cos{phi_R}
+    //* 右腿地面支持力 N_R
+    //* N_R = 0.5 * m_total * (g + ZAcc_Body) 
+    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_R} * cos{phi_R} 
+    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_L} * cos{phi_L}
+    float ZAcc_Body = pOffGrd->ZAcc_Body;
+    pOffGrd->F_N = 0.5f * m_total * (pOffGrd->g + ZAcc_Body) 
+                   - CH_Phys_OffGrd_CorCoeff * pOffGrd->L0_ddot * MyCos(pOffGrd->Phi) 
+                   - CH_Phys_OffGrd_CplCoeff * pOffGrd->Ctr_L0_ddot * MyCos(pOffGrd->Ctr_Phi);
     return pOffGrd->F_N;
 }
 

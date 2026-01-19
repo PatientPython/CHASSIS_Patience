@@ -36,6 +36,7 @@ typedef enum {
     CHMode_RC_SlowSitDown,  // 底盘模式：缓慢坐下
     CHMode_RC_Follow,       // 底盘模式：跟随（随云台转动）
     CHMode_RC_OffGround,    // 底盘模式：离地
+    CHMode_RC_TouchGround, //遥控器底盘模式：触地（特指离地后触地）
     // 待补充
 } ChassisMode_EnumTypeDef;
 
@@ -58,6 +59,8 @@ typedef struct {
     uint32_t RC_Free;         // RC遥控器控制下，自由模式开始时间，单位毫秒
     uint32_t RC_SlowSitDown;  // RC遥控器控制下，缓慢坐下模式开始时间，单位毫秒
     uint32_t RC_Follow;       // RC遥控器控制下，跟随模式开始时间，单位毫秒
+    uint32_t RC_OffGround;      //RC遥控器控制下，离地模式开始时间，单位毫秒
+    uint32_t RC_TouchGround;    //RC遥控器控制下，触地模式开始时间，单位毫秒
 } _CH_ModeStartTime_StructTypeDef;
 
 /*IMU2底盘云控数据处理结构体类型定义，包括发送和接收(注意4字节对齐)(32位单片机默认)*/
@@ -314,6 +317,7 @@ extern LPF_StructTypeDef GstCH_Leg2F_N_LPF;
 extern TD_StructTypeDef GstCH_LegLen1TD;
 extern TD_StructTypeDef GstCH_LegLen2TD;
 extern TD_StructTypeDef GstCH_YawAngleTD;
+extern TD_StructTypeDef GstCH_DisTD;
 
 extern float TD_LegLen_rStandUp;
 extern float TD_LegLen_rNorm;
@@ -381,8 +385,10 @@ extern float LegLenMinTH;
 extern float LegLenLow;
 extern float LegLenMid;
 extern float LegLenHigh;
+extern float LegLenOffGround;
 
-/* 物理参数定义（用于动态前馈力计算） */
+//* 用于前馈力计算 
+extern const float m_total;
 extern const float CH_Phys_EffMass;
 extern const float CH_Phys_InertialCoeff;
 
@@ -390,6 +396,12 @@ extern const float LegFFForce_Gravity_1;
 extern const float LegFFForce_Gravity_2;
 extern float LegFFForce_Inertial_1;
 extern float LegFFForce_Inertial_2;
+
+//* 用于地面支持力估计、离地检测 
+extern const float CH_Phys_OffGrd_CorCoeff;
+extern const float CH_Phys_OffGrd_CplCoeff;
+
+//* 用于缓慢坐下模式的腿部前馈力计算 
 extern float LegFFForce_SlowSitDown;
 // // #pragma endregion
 
@@ -430,8 +442,8 @@ extern CHData_StructTypeDef GSTCH_Data;
 /**********机器人机械结构相关****************/
 // 换车时需修改
 #define WheelRadius (72.0f * MM2M)  // 轮子的半径，单位米
-// 换车时需修改
-#define WheelMass 2.4f  // 单个轮子的质量，单位kg
+// XXX 换车时需修改(写在了全局变量里面)
+// #define WheelMass 2.4f  // 单个轮子的质量，单位kg
 
 /*************电机、电调相关****************/
 #define HM_ReductionRatio Motor_3508GearboxReductionRatio  // 轮毂电机减速比

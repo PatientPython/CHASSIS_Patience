@@ -31,25 +31,36 @@
  * @retval 无
  */
 //* 底盘五连杆解算处理函数
-void CH_LegLinkageCal_Process(void) {
+void CH_LegKinematics_Process(void) {
     /*更新五连杆解算的phi1、phi4数据*/
-    LegLinkage_AngleDataUpdate(&GstCH_LegLinkCal1, GSTCH_JM3.AngleFB,
-                               GSTCH_JM1.AngleFB);  // 更新左侧数据
-    LegLinkage_AngleDataUpdate(&GstCH_LegLinkCal2, GSTCH_JM2.AngleFB,
-                               GSTCH_JM4.AngleFB);  // 更新右侧数据
+    LegLinkage_AngleDataUpdate(&GstCH_LegLinkCal1, GSTCH_JM3.AngleFB, GSTCH_JM1.AngleFB);  // 更新左侧数据
+    LegLinkage_AngleDataUpdate(&GstCH_LegLinkCal2, GSTCH_JM2.AngleFB, GSTCH_JM4.AngleFB);  // 更新右侧数据
 
     /*更新五连杆解算的phi1_dot、phi4_dot数据*/
-    LegLinkage_AngleVelDataUpdate(&GstCH_LegLinkCal1, GSTCH_JM3.AngleVelFB,
-                                  GSTCH_JM1.AngleVelFB);  // 更新左侧数据
-    LegLinkage_AngleVelDataUpdate(&GstCH_LegLinkCal2, GSTCH_JM2.AngleVelFB,
-                                  GSTCH_JM4.AngleVelFB);  // 更新右侧数据
+    LegLinkage_AngleVelDataUpdate(&GstCH_LegLinkCal1, GSTCH_JM3.AngleVelFB, GSTCH_JM1.AngleVelFB);  // 更新左侧数据
+    LegLinkage_AngleVelDataUpdate(&GstCH_LegLinkCal2, GSTCH_JM2.AngleVelFB, GSTCH_JM4.AngleVelFB);  // 更新右侧数据
 
     /*五连杆正运动学解算*/
     //* 虚拟摆杆长和角度数据存到了LegLinkageCal_StructTypeDef里面
-    LegLinkage_ForwardKinematicsCal(
-        &GstCH_LegLinkCal1);  // 左腿五连杆运动学正解
-    LegLinkage_ForwardKinematicsCal(
-        &GstCH_LegLinkCal2);  // 右腿五连杆运动学正解
+    LegLinkage_ForwardKinematicsCal(&GstCH_LegLinkCal1);  // 左腿五连杆运动学正解
+    LegLinkage_ForwardKinematicsCal(&GstCH_LegLinkCal2);  // 右腿五连杆运动学正解
+
+    /*************** 底盘五连杆解算相关数据更新 ***************/
+    GSTCH_Data.LegLen1FB = LegLinkage_GetLegLength(&GstCH_LegLinkCal1) * MM2M;  // 获取左腿实际长度
+    GSTCH_Data.LegLen2FB = LegLinkage_GetLegLength(&GstCH_LegLinkCal2) * MM2M;  // 获取右腿实际长度
+
+    GSTCH_Data.Theta1FB = LegLinkage_GetTheta(&GstCH_LegLinkCal1, LeftSide);  // 获取左腿与垂直方向夹角
+    GSTCH_Data.Theta2FB = LegLinkage_GetTheta(&GstCH_LegLinkCal2, RightSide);  // 获取右腿与垂直方向夹角
+
+    float Theta1_dotRawValue = LegLinkage_GetThetadot(&GstCH_LegLinkCal1, LeftSide);  // 获取左腿Theta角速度，原始值
+    float Theta2_dotRawValue = LegLinkage_GetThetadot(&GstCH_LegLinkCal2, RightSide);  // 获取右腿Theta角速度，原始值
+    GSTCH_Data.Theta1AngleVelFB = _Ch_FBData_LPF(Theta1_dotRawValue, &GstCH_Theta1dotLPF);  // 低通滤波处理
+    GSTCH_Data.Theta2AngleVelFB = _Ch_FBData_LPF(Theta2_dotRawValue, &GstCH_Theta2dotLPF);  // 低通滤波处理
+
+    float xC1_dotRawValue = LegLinkage_GetxCdot(&GstCH_LegLinkCal1, LeftSide);  // 获取左边五连杆解算C点x坐标的微分，原始值
+    float xC2_dotRawValue = LegLinkage_GetxCdot(&GstCH_LegLinkCal2, RightSide);  // 获取右边五连杆解算C点x坐标的微分，原始值
+    GSTCH_Data.xC1_dot = _Ch_FBData_LPF(xC1_dotRawValue, &GstCH_xC1dotLPF);  // 低通滤波处理
+    GSTCH_Data.xC2_dot = _Ch_FBData_LPF(xC2_dotRawValue, &GstCH_xC2dotLPF);  // 低通滤波处理
 }
 
 /**
@@ -65,30 +76,17 @@ void CH_LQRCal_Process(void) {
         &GstCH_LQRCal,
         GSTCH_Data.DisDes - GSTCH_Data.DisFB,  // 位移误差
         GSTCH_Data.VelDes - GSTCH_Data.VelFB,  // 速度误差（位移一阶导）
-        GSTCH_Data.YawDeltaDes *
-            A2R,  // 偏转角增量（相当于YawAngleDes - YawAngleFB）
-        (GSTCH_Data.YawAngleVelDes - GSTCH_Data.YawAngleVelFB) *
-            A2R,  // 偏转角速度误差
+        GSTCH_Data.YawDeltaDes * A2R,  // 偏转角增量（相当于YawAngleDes - YawAngleFB）
+        (GSTCH_Data.YawAngleVelDes - GSTCH_Data.YawAngleVelFB) * A2R,  // 偏转角速度误差
         //* 将相对于车身的虚拟摆杆角度转化成了相对于地面的虚拟摆杆角度
-        (GSTCH_Data.Theta1Des - (GSTCH_Data.Theta1FB - GSTCH_Data.PitchAngleFB +
-                                 ChassisPitchAngleZP)) *
-            A2R,  // 左腿摆角误差
-        (GSTCH_Data.Theta1AngleVelDes -
-         (GSTCH_Data.Theta1AngleVelFB - GSTCH_Data.PitchAngleVelFB)) *
-            A2R,  // 左腿摆角速度误差
-        (GSTCH_Data.Theta2Des - (GSTCH_Data.Theta2FB - GSTCH_Data.PitchAngleFB +
-                                 ChassisPitchAngleZP)) *
-            A2R,  // 右腿摆角误差
-        (GSTCH_Data.Theta2AngleVelDes -
-         (GSTCH_Data.Theta2AngleVelFB - GSTCH_Data.PitchAngleVelFB)) *
-            A2R,  // 右腿摆角速度误差
+        (GSTCH_Data.Theta1Des - (GSTCH_Data.Theta1FB - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP)) * A2R,  // 左腿摆角误差
+        (GSTCH_Data.Theta1AngleVelDes - (GSTCH_Data.Theta1AngleVelFB - GSTCH_Data.PitchAngleVelFB)) * A2R,  // 左腿摆角速度误差
+        (GSTCH_Data.Theta2Des - (GSTCH_Data.Theta2FB - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP)) * A2R,  // 右腿摆角误差
+        (GSTCH_Data.Theta2AngleVelDes - (GSTCH_Data.Theta2AngleVelFB - GSTCH_Data.PitchAngleVelFB)) * A2R,  // 右腿摆角速度误差
         //* 将相对于车身的虚拟摆杆角度转化成了相对于地面的虚拟摆杆角度
         //* 因为底盘质心不在几何中心，ChassisPitchAngleZP用于修正正常平衡时产生的角度偏置
-        (GSTCH_Data.PitchAngleDes - GSTCH_Data.PitchAngleFB +
-         ChassisPitchAngleZP) *
-            A2R,  // 俯仰角误差
-        (GSTCH_Data.PitchAngleVelDes - GSTCH_Data.PitchAngleVelFB) *
-            A2R  // 俯仰角速度误差
+        (GSTCH_Data.PitchAngleDes - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP) * A2R,  // 俯仰角误差
+        (GSTCH_Data.PitchAngleVelDes - GSTCH_Data.PitchAngleVelFB) * A2R  // 俯仰角速度误差
     );
 
     /*更新LQR的K矩阵*/
@@ -96,9 +94,7 @@ void CH_LQRCal_Process(void) {
     // GSTCH_Data.LegLen2FB); //根据腿长更新K矩阵
     //* 刚开始腿长是0，然后K矩阵直接就是代入的默认值 LQR_DefaultK_Matrix
     LQR_K_MatrixUpdate(&GstCH_LQRCal, 0.0f, 0.0f);
-    // TODO
-    // 待修改：暂时不根据腿长更新K矩阵，直接用默认值，后面需要使用拟合时，先写了这个函数里面的拟合，然后解除上面的函数注释，删除该行
-
+    // TODO 待修改：暂时不根据腿长更新K矩阵，直接用默认值，后面需要使用拟合时，先写了这个函数里面的拟合，然后解除上面的函数注释，删除该行
     /*调用LQR计算函数*/
     //* 得到了虚拟摆杆力矩和轮毂电机力矩，存储在u_Vector[4]里面
     //* 使用 LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index)
@@ -115,12 +111,8 @@ void CH_LQRCal_Process(void) {
 //* 底盘VMC计算处理函数
 void CH_VMCCal_Process(void) {
     /*VMC的F矩阵（虚拟摆杆力和力矩那个矩阵）更新*/
-    VMC_FMatrixUpdate(&GstCH_Leg1VMC, GSTCH_Data.Leg1ForceDes,
-                      GSTCH_Data.Leg1TorqueDes,
-                      LeftSide);  // 左腿VMC的F矩阵更新
-    VMC_FMatrixUpdate(&GstCH_Leg2VMC, GSTCH_Data.Leg2ForceDes,
-                      GSTCH_Data.Leg2TorqueDes,
-                      RightSide);  // 右腿VMC的F矩阵更新
+    VMC_FMatrixUpdate(&GstCH_Leg1VMC, GSTCH_Data.Leg1ForceDes, GSTCH_Data.Leg1TorqueDes, LeftSide);  // 左腿VMC的F矩阵更新
+    VMC_FMatrixUpdate(&GstCH_Leg2VMC, GSTCH_Data.Leg2ForceDes, GSTCH_Data.Leg2TorqueDes, RightSide);  // 右腿VMC的F矩阵更新
 
     /*VMC计算：把等效摆杆的力、力矩转化为关节电机的力矩*/
     VMC_Cal(&GstCH_Leg1VMC, &GstCH_LegLinkCal1);  // 左腿VMC计算
@@ -134,28 +126,28 @@ void CH_VMCCal_Process(void) {
  * @retval 无
  */
 //* 底盘离地检测计算处理函数
-void CH_OffGroundCal_Process(void) {
+void CH_SupportForce_Process(void) {
     /*左腿离地检测相关变量的计算*/
     OffGround_BodyZAccUpdate(&GstCH_OffGround1, GSTCH_Data.AccZFB);
     OffGround_PitchAngleUpdate(&GstCH_OffGround1, GSTCH_Data.PitchAngleFB);
-    OffGround_PitchAngleVelUpdate(&GstCH_OffGround1,
-                                  GSTCH_Data.PitchAngleVelFB);
-    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal1, &GstCH_OffGround1,
-                                      LeftSide);
-    OffGround_TorqueDataUpdate(&GstCH_OffGround1, GSTCH_JM3.TorqueFB,
-                               GSTCH_JM1.TorqueFB);
-    OffGround_GetRealFAndTp(&GstCH_OffGround1);
+    //* 支持力估算需要使用另一个腿的变量 
+    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal1, GstCH_LegLinkCal2, &GstCH_OffGround1, LeftSide, RightSide);
 
     /*右腿离地检测相关变量的计算*/
     OffGround_BodyZAccUpdate(&GstCH_OffGround2, GSTCH_Data.AccZFB);
     OffGround_PitchAngleUpdate(&GstCH_OffGround2, GSTCH_Data.PitchAngleFB);
-    OffGround_PitchAngleVelUpdate(&GstCH_OffGround2,
-                                  GSTCH_Data.PitchAngleVelFB);
-    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal2, &GstCH_OffGround2,
-                                      RightSide);
-    OffGround_TorqueDataUpdate(&GstCH_OffGround2, GSTCH_JM2.TorqueFB,
-                               GSTCH_JM4.TorqueFB);
-    OffGround_GetRealFAndTp(&GstCH_OffGround2);
+    //* 支持力估算需要使用另一个腿的变量
+    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal2, GstCH_LegLinkCal1, &GstCH_OffGround2, RightSide, LeftSide);
+    
+    /***************** 离地检测相关数据更新 *****************/
+    //* XXX 由于是循环执行，所以虽然没有更新Z轴加速度等但是可以在这个里面更新离地状态 
+    float Leg1F_N_RawValue = OffGround_GetSupportForce(&GstCH_OffGround1);  // 左腿腿部支持力反馈原始值，单位N
+    float Leg2F_N_RawValue = OffGround_GetSupportForce(&GstCH_OffGround2);  // 右腿腿部支持力反馈原始值，单位N
+    GSTCH_Data.Leg1F_N = _Ch_FBData_LPF(Leg1F_N_RawValue, &GstCH_Leg1F_N_LPF);  // 低通滤波处理
+    GSTCH_Data.Leg2F_N = _Ch_FBData_LPF(Leg2F_N_RawValue, &GstCH_Leg2F_N_LPF);  // 低通滤波处理
+    // TODO 测一下离地状态下的支持力变化的最大值和最小值
+    // GSTCH_Data.F_OffGround1 = _Ch_OffGroundStateFlagGet(GSTCH_Data.F_OffGround1, GSTCH_Data.Leg1F_N); //左腿离地状态更新
+    // GSTCH_Data.F_OffGround2 = _Ch_OffGroundStateFlagGet(GSTCH_Data.F_OffGround2, GSTCH_Data.Leg2F_N); //右腿离地状态更新
 }
 
 /**
@@ -165,17 +157,25 @@ void CH_OffGroundCal_Process(void) {
  * @retval 无
  */
 //* 底盘侧向惯性前馈力计算处理函数
-void CH_FFInertialForceCal_Process(void) {
+void CH_InertialFF_Process(void) {
     // 当前腿长，单位m
-    float l_current =
-        (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f * MM2M;
+    float l_current = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f * MM2M;
     float YawRate = GSTCH_Data.YawAngleVelFB * A2R;  // 偏航角速度，单位rad/s
     float v_forward = GSTCH_Data.VelFB;              // 前进速度，单位m/s
-    //* F_bl,inertial = InertialCoeff * l_current * YawRate * v_forward 
+    //* F_bl,inertial = InertialCoeff * l_current * YawRate * v_forward
     LegFFForce_Inertial_1 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
     LegFFForce_Inertial_2 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
 }
-
+/**
+ * @brief  底盘龙伯格观测器处理函数
+ * @note   调用CH_LobObserver_Cal对底盘进行龙伯格观测器处理
+ * @param  无
+ * @retval 无
+ */
+void CH_VelocityObs_Process(void) {
+    GSTCH_Data.VelFB = _Ch_VelFB_Process();  // 底盘速度滤波、观测处理
+    GSTCH_Data.DisFB += GSTCH_Data.VelFB * GCH_TaskTime;  // 位移 = 上次位移 + 速度*时间
+}
 /**
  * @brief  轮毂电机扭矩转电流计算处理函数
  * @note   基于Kt常数和电调映射比例，将 TorqueDes 转换为 CurrentDes
@@ -288,6 +288,29 @@ float _Ch_VelFB_Process(void) {
 }
 
 /**
+  * @brief  底盘离地状态标志获取函数
+  * @note   根据当前腿部支持力值和上次离地状态标志，判断当前离地状态标志
+  *         如果上次状态为未离地，且当前支持力小于25N，则认为离地
+  *         如果上次状态为离地，则要求支持力大于70N，认为落地
+  *         防止在临界值频繁切换状态
+  * @param  F_OffGroundPre：上次离地状态标志，true表示离地，false表示未离地
+  * @param  LegF_N：当前腿部支持力值，单位N
+  * @retval 当前离地状态标志，true表示离地，false表示触地
+*/
+bool _Ch_OffGroundStateFlagGet(bool F_OffGroundPre, float LegF_N)
+{
+    bool F_OffGroundNext = F_OffGroundPre;
+
+    // TODO 测试之后看N变化的最大值最小值来写这个判断函数
+    if(F_OffGroundPre == false && LegF_N <= 25.0f)
+    {F_OffGroundNext = true;}//支持力过小，认为离地
+    else if(F_OffGroundPre == true && LegF_N >= 70.0f)
+    {F_OffGroundNext = false;}//支持力恢复，认为落地
+
+    return F_OffGroundNext;
+}
+
+/**
  * @brief  更新底盘相关数据的反馈值
  * @note   底盘相关，正式结构体数据的反馈值，在这里进行更新汇总处理
  *         主要的底盘相关正式结构体有：
@@ -299,14 +322,10 @@ float _Ch_VelFB_Process(void) {
  * @retval 无
  */
 //* 更新底盘相关数据的反馈值
-void Chassis_AllFBDataUpdate(void) {
+void CH_FBData_Parse(void) {
     /***************** 轮毂电机相关数据更新 *****************/
-    _HM_FBData_Parse(
-        LeftSide, &GSTCH_HM1, &GstCH_HM1RxC620Data,
-        &GstCH_HM1_AngleVelLPF);  // 处理电调反馈数据，然后分发到正式结构体、变量
-    _HM_FBData_Parse(
-        RightSide, &GSTCH_HM2, &GstCH_HM2RxC620Data,
-        &GstCH_HM2_AngleVelLPF);  // 处理电调反馈数据，然后分发到正式结构体、变量
+    _HM_FBData_Parse(LeftSide, &GSTCH_HM1, &GstCH_HM1RxC620Data, &GstCH_HM1_AngleVelLPF);  // 处理电调反馈数据，然后分发到正式结构体、变量
+    _HM_FBData_Parse(RightSide, &GSTCH_HM2, &GstCH_HM2RxC620Data, &GstCH_HM2_AngleVelLPF);  // 处理电调反馈数据，然后分发到正式结构体、变量
 
     /**************** IMU2-关节电机数据更新 ****************/
     GSTCH_JM1.AngleFB = GstCH_IMU2.ST_Rx.JM1_AngleFB;
@@ -326,63 +345,14 @@ void Chassis_AllFBDataUpdate(void) {
     GSTCH_JM4.TorqueFB = GstCH_IMU2.ST_Rx.JM4_TorqueFB;
 
     /*************** IMU2-底盘运动姿态数据更新 ***************/
-    GSTCH_Data.YawAngleFB = GstCH_IMU2.ST_Rx.YawAngle; // XXX 新增
-    GSTCH_Data.YawAngleVelFB =
-        _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.YawAngleVel, &GstCH_YawAngleVelLPF);
+    GSTCH_Data.YawAngleFB = GstCH_IMU2.ST_Rx.YawAngle;  // XXX 新增
+    GSTCH_Data.YawAngleVelFB = _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.YawAngleVel, &GstCH_YawAngleVelLPF);
     GSTCH_Data.PitchAngleFB = GstCH_IMU2.ST_Rx.PitchAngle;
-    GSTCH_Data.PitchAngleVelFB =
-        _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.PitchAngleVel, &GstCH_PitchAngleVelLPF);
+    GSTCH_Data.PitchAngleVelFB = _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.PitchAngleVel, &GstCH_PitchAngleVelLPF);
 
     GSTCH_Data.RollAngleFB = GstCH_IMU2.ST_Rx.RollAngle;
-    GSTCH_Data.AccXFB =
-        -GstCH_IMU2.ST_Rx.AccX;  // 底盘云控反着安装，所以取负号 //换车时需修改
-    GSTCH_Data.AccZFB =
-        GstCH_IMU2.ST_Rx.AccZ;  // 底盘垂直加速度反馈值，向上为正，单位m/s²
-
-    /*************** 底盘五连杆解算相关数据更新 ***************/
-    GSTCH_Data.LegLen1FB =
-        LegLinkage_GetLegLength(&GstCH_LegLinkCal1) * MM2M;  // 获取左腿实际长度
-    GSTCH_Data.LegLen2FB =
-        LegLinkage_GetLegLength(&GstCH_LegLinkCal2) * MM2M;  // 获取右腿实际长度
-
-    GSTCH_Data.Theta1FB = LegLinkage_GetTheta(
-        &GstCH_LegLinkCal1, LeftSide);  // 获取左腿与垂直方向夹角
-    GSTCH_Data.Theta2FB = LegLinkage_GetTheta(
-        &GstCH_LegLinkCal2, RightSide);  // 获取右腿与垂直方向夹角
-
-    float Theta1_dotRawValue = LegLinkage_GetThetadot(
-        &GstCH_LegLinkCal1, LeftSide);  // 获取左腿Theta角速度，原始值
-    float Theta2_dotRawValue = LegLinkage_GetThetadot(
-        &GstCH_LegLinkCal2, RightSide);  // 获取右腿Theta角速度，原始值
-    GSTCH_Data.Theta1AngleVelFB = _Ch_FBData_LPF(
-        Theta1_dotRawValue, &GstCH_Theta1dotLPF);  // 低通滤波处理
-    GSTCH_Data.Theta2AngleVelFB = _Ch_FBData_LPF(
-        Theta2_dotRawValue, &GstCH_Theta2dotLPF);  // 低通滤波处理
-
-    float xC1_dotRawValue = LegLinkage_GetxCdot(
-        &GstCH_LegLinkCal1,
-        LeftSide);  // 获取左边五连杆解算C点x坐标的微分，原始值
-    float xC2_dotRawValue = LegLinkage_GetxCdot(
-        &GstCH_LegLinkCal2,
-        RightSide);  // 获取右边五连杆解算C点x坐标的微分，原始值
-    GSTCH_Data.xC1_dot =
-        _Ch_FBData_LPF(xC1_dotRawValue, &GstCH_xC1dotLPF);  // 低通滤波处理
-    GSTCH_Data.xC2_dot =
-        _Ch_FBData_LPF(xC2_dotRawValue, &GstCH_xC2dotLPF);  // 低通滤波处理
-
-    /***************** 其他底盘相关数据更新 *****************/
-    GSTCH_Data.VelFB = _Ch_VelFB_Process();  // 底盘速度滤波、观测处理
-    GSTCH_Data.DisFB +=
-        GSTCH_Data.VelFB * GCH_TaskTime;  // 位移 = 上次位移 + 速度*时间
-
-    float Leg1F_N_RawValue = OffGround_GetSupportForce(
-        &GstCH_OffGround1);  // 左腿腿部支持力反馈原始值，单位N
-    float Leg2F_N_RawValue = OffGround_GetSupportForce(
-        &GstCH_OffGround2);  // 右腿腿部支持力反馈原始值，单位N
-    GSTCH_Data.Leg1F_N =
-        _Ch_FBData_LPF(Leg1F_N_RawValue, &GstCH_Leg1F_N_LPF);  // 低通滤波处理
-    GSTCH_Data.Leg2F_N =
-        _Ch_FBData_LPF(Leg2F_N_RawValue, &GstCH_Leg2F_N_LPF);  // 低通滤波处理
+    GSTCH_Data.AccXFB = -GstCH_IMU2.ST_Rx.AccX;  // 底盘云控反着安装，所以取负号 //换车时需修改
+    GSTCH_Data.AccZFB = GstCH_IMU2.ST_Rx.AccZ;  // 底盘垂直加速度反馈值，向上为正，单位m/s²
 }
 // // #pragma endregion
 // // #pragma region(未实现)各种Des目标数据的修改、处理、更新相关函数
@@ -655,30 +625,6 @@ void Chassis_RobotCtrlDataReset(void) {
 // }
 //}
 
-/**
- * @brief  底盘模式选择参数结构体更新函数
- * @note
- * 更新用于底盘模式切换判断的各项参数，包括模式状态、运行时间、腿长、速度、支持力及通讯频率等
- * @param  pPara：Chassis_ModeChooseParameter_StructTypeDef类型的参数结构体指针
- * @retval 无
- */
-//* 模式选择参数结构体更新函数
-void CH_ModeChooseParaStructUpdate(
-    Chassis_ModeChooseParameter_StructTypeDef* pPara) {
-    pPara->MC_ModePre = GEMCH_ModePre;
-    pPara->MC_TimeNow = RunTimeGet();
-    // pPara->MC_ST_ModeStartTime = ;
-    pPara->MC_LegLenAvgFB =
-        (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f;
-    pPara->MC_VelFB = GSTCH_Data.VelFB;
-    pPara->MC_Leg1F_N = GSTCH_Data.Leg1F_N;
-    pPara->MC_Leg2F_N = GSTCH_Data.Leg2F_N;
-
-    pPara->MC_HubMotor1Rx_fps = GST_SystemMonitor.HubMotor1Rx_fps;
-    pPara->MC_HubMotor2Rx_fps = GST_SystemMonitor.HubMotor2Rx_fps;
-    pPara->MC_UART4Rx_fps = GST_SystemMonitor.UART4Rx_fps;
-}
-
 //* 底盘运动模式更新函数
 // 在keil里面看GEMCH_Mode和GEMCH_ModePre就能观察状态了
 /**
@@ -688,16 +634,13 @@ void CH_ModeChooseParaStructUpdate(
  * @retval 无
  */
 void CH_ChassisModeUpdate(void) {
-    Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara;
-
-    CH_ModeChooseParaStructUpdate(
-        &ST_ModeChoosePara);  // 更新底盘模式选择参数结构体
+    Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara_tmp;
+    ChassisStratgy_ModeChooseParaStructUpdate(&ST_ModeChoosePara_tmp);  // 更新底盘模式选择参数结构体
     //* 实现的是局部变量：ModeTemp、MC_ModePre 向全局变量
     // GEMCH_ModePre、GEMCH_Mode 赋值
     GEMCH_ModePre = GEMCH_Mode;
     //! 这个函数会在这里检测当前是否有遥控器指令指示需要切换到什么状态
-    GEMCH_Mode =
-        ChassisModeChoose_RCControl(ST_ModeChoosePara);  // 调用底盘模式选择函数
+    GEMCH_Mode = ChassisStratgy_ModeChoose_RCControl(ST_ModeChoosePara_tmp);  // 调用底盘模式选择函数
     ChassisStratgy_ModeStartTimeUpdate(&GSTCH_Data, GEMCH_Mode, GEMCH_ModePre);
 }
 // // #pragma endregion

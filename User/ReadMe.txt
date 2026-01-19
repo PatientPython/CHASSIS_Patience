@@ -52,6 +52,7 @@
         (24) Para   Parameter       参数  
         (25) tmp    Temp            临时的
         (26) dec    decrease        减少
+        (27) Ctr    counter-part   另一方的、对方的（用于地面支持力估计）
         () EncoderPPR   Pulses Per Revolution     每转一圈的脉冲数（编码器相关数据）
         () ESC          Electronic Speed Control  电调
 

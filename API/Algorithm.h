@@ -97,8 +97,7 @@ typedef struct {
 /*一阶低通滤波器结构体*/
 typedef struct {
     /*需要初始化赋值的成员*/
-    float
-        Alpha;  // 滤波系数，越小滤波越强（如果滤波系数赋值了，则CutOffFreq和SampleTime无效）
+    float Alpha;  // 滤波系数，越小滤波越强（如果滤波系数赋值了，则CutOffFreq和SampleTime无效）
 
     float CutOffFreq;  // 滤波器截止频率
     float SampleTime;  // 采样时间，单位：秒
@@ -119,45 +118,29 @@ typedef struct {
 /*离地检测算法结构体*/
 typedef struct {
     /*需要初始化赋值的成员*/
-    float M_w;  // 单个轮子的质量，单位千克
-    float
-        M_l;  // 单个腿部五连杆的质量，单位千克（注意原解算是忽略了腿部质量的，这里加上了，如果可以忽略的话直接给0就行）
     float g;  // 当地重力加速度，单位：m/s²
     float SampleTime;  // 采样时间，单位：秒
 
     /*不需要初始化赋值的成员*/
-    float L1, L4;                  // 五连杆中大腿杆的长度，单位：米
-    float Phi1, Phi2, Phi3, Phi4;  // 五连杆各杆夹角，单位：度
-    float Phi0;        // 五连杆坐标系下，等效摆杆与水平线夹角，单位：度
-    float L0;          // 等效摆杆长度，单位：米
     float PitchAngle;  // 底盘俯仰角，单位：度
-    float
-        Theta;  // 五连杆坐标系下，摆杆与竖直方向的角度（注意不是地面坐标系），单位：度
-    float PitchAngleVel;  // 底盘俯仰角速度，单位：度/s
+    float Theta;  // 五连杆坐标系下，摆杆与竖直方向的角度（注意不是地面坐标系），单位：度
+    float Ctr_Theta;  // 另一条腿的摆杆与竖直方向夹角，单位：度
 
     float L0_dot;      // 等效摆杆长度的速度，单位：m/s
     float L0_dot_pre;  // 等效摆杆长度的速度上次值，单位：m/s
     float L0_ddot;     // 等效摆杆长度的加速度，单位：m/s²
 
-    float Theta_dot;  // 五连杆坐标系下，摆杆与竖直方向的角速度，单位：度/s
-    float
-        Theta_dot_pre;  // 五连杆坐标系下，摆杆与竖直方向的角速度上次值，单位：度/s
-    float Theta_ddot;  // 五连杆坐标系下，摆杆与竖直方向的角加速度，单位：度/s²
-
     float Phi;          // 地面坐标系下，摆杆与竖直方向夹角，单位：度
-    float Phi_dot;      // 摆杆角速度，单位：度/s
-    float Phi_dot_pre;  // 摆杆角速度上次值，单位：度/s
-    float Phi_ddot;     // 摆杆角加速度，单位：度/s²
-
-    float T1, T4;  // 五连杆中phi1、phi4关节电机力矩，单位：N·m
-
-    float F_Leg;   // 等效摆杆沿杆的力，单位：N
-    float Tp_Leg;  // 等效摆杆的扭矩，单位：N·m
-
-    float ZAcc_Wheel;  // 轮子Z轴加速度，单位：m/s²
+    float Ctr_Phi;      // 另一条腿的摆杆与竖直方向夹角，单位：度
     float ZAcc_Body;   // 底盘Z轴加速度，单位：m/s²
 
     float F_N;  // 地面给轮子的支持力，单位：N
+
+    /*支持力估算额外需要的变量*/
+    float Ctr_phi; // counter-part phi 另一条腿的摆杆与竖直方向夹角，单位：度
+    float Ctr_L0_dot; // counter-part L0_dot 另一条腿的等效摆杆长度速度，单位：m/s
+    float Ctr_L0_dot_pre; // counter-part L0_dot_pre 另一条腿的等效摆杆长度速度上次值，单位：m/s
+    float Ctr_L0_ddot; // counter-part L0_ddot 另一条腿的等效摆杆长度加速度，单位：m/s²
 } OffGround_StructTypeDef;
 // // #pragma endregion
 
@@ -207,27 +190,19 @@ void LQR_xVector_DataUpdate(LQR_StructTypeDef* LQRptr, float DisErr,
 void LQR_Cal(LQR_StructTypeDef* LQRptr);
 float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index);
 
-void VMC_FMatrixUpdate(VMC_StructTypeDef* VMCptr, float Force, float Torque,
-                       RobotSide_EnumTypeDef LegSide);
+void VMC_FMatrixUpdate(VMC_StructTypeDef* VMCptr, float Force, float Torque, RobotSide_EnumTypeDef LegSide);
 void VMC_Cal(VMC_StructTypeDef* VMCptr, LegLinkageCal_StructTypeDef* LegPtr);
 float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index);
 
-void LuenbergerObserver_UniformVelocityModel(
-    LuenbergerObserver_StructTypeDef* observer);
-
-void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd,
-                              float AccZ_Body);
-void OffGround_PitchAngleUpdate(OffGround_StructTypeDef* pOffGrd,
-                                float PitchAngle);
-void OffGround_PitchAngleVelUpdate(OffGround_StructTypeDef* pOffGrd,
-                                   float PitchAngleVel);
-void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr,
-                                       OffGround_StructTypeDef* pOffGrd,
-                                       RobotSide_EnumTypeDef LegSide);
-void OffGround_TorqueDataUpdate(OffGround_StructTypeDef* pOffGrd, float T1,
-                                float T4);
-void OffGround_GetRealFAndTp(OffGround_StructTypeDef* pOffGrd);
-float OffGround_GetLegToWheelForce(OffGround_StructTypeDef* pOffGrd);
+void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd, float AccZ_Body);
+void OffGround_PitchAngleUpdate(OffGround_StructTypeDef* pOffGrd, float PitchAngle);
+void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, 
+                                       LegLinkageCal_StructTypeDef Ctr_LegPtr, 
+                                       OffGround_StructTypeDef* pOffGrd, 
+                                       RobotSide_EnumTypeDef LegSide, 
+                                       RobotSide_EnumTypeDef Ctr_LegSide);
 float OffGround_GetSupportForce(OffGround_StructTypeDef* pOffGrd);
+
+void LuenbergerObserver_UniformVelocityModel(LuenbergerObserver_StructTypeDef* observer);
 
 #endif

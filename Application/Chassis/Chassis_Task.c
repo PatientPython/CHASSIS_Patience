@@ -52,12 +52,18 @@ void ChassisTask(void* arg) {
  * @retval 无
  */
 void ChassisControl(void) {
-    /* 1. 底盘数据更新（必做：获取传感器数据、解算姿态） */
-    Chassis_AllFBDataUpdate();   // 更新底盘相关数据的反馈值
-    CH_LegLinkageCal_Process();  // 腿部五连杆解算处理
-    CH_OffGroundCal_Process();   // 离地检测计算处理
-    CH_FFInertialForceCal_Process();     // 更新侧向惯性前馈力计算
+    //! 做了一下处理，不再按照结构体数据封装，而是按照数据处理逻辑封装。
+    //! CH_FBData_Parse 只进行对传感器原始数据的解析
+    //! CH_LegKinematics_Process 只进行腿部运动、运动学解算与分发
+    //! CH_SupportForce_Process 只进行地面支持力计算、离地检测
+    //! CH_VelocityObs_Process 可能观测器要单独写个函数放在这里，先预处理在进行运算
+    CH_FBData_Parse();   // 解析传感器的原始反馈数据
+    CH_LegKinematics_Process();  // 腿部五连杆的正运动学运算
+    CH_VelocityObs_Process();    // 当前车身速度计算：使用龙伯格观测器测量当前的移动速度然后更新GSTDCH_Data.VelFB
+    CH_InertialFF_Process();     // 侧向惯性前馈力计算（要求速度信息，需要写在速度观测器之后）
+    CH_SupportForce_Process();   // 地面支持力计算
 
+    // TODO: 后续可添加 模型自适应控制函数
     //* 更新底盘模式选择相关变量、读取当前模式
     // 也就是说这里面包括检查是否需要进入安全模式的逻辑
     CH_ChassisModeUpdate();

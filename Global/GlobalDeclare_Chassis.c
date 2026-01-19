@@ -137,12 +137,12 @@ float PID_LegLen_KdNorm = 0.0f;     // 腿长PID：正常时的Kd值
 
 // // #pragma region /****腿长、零点补偿、腿部前馈力相关**********************/
 /*腿长相关*/
-float LegLenMin = 108.0f;  // 腿长最小值，单位mm
-float LegLenMinTH =
-    6.0f;  // 腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
-float LegLenLow = 140.0f;   // 低腿长，单位mm
-float LegLenMid = 200.0f;   // 中腿长，单位mm
-float LegLenHigh = 290.0f;  // 高腿长，单位mm
+float LegLenMin   = 108.0f;   //腿长最小值，单位mm
+float LegLenMinTH = 6.0f;     //腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
+float LegLenLow  = 140.0f;    //低腿长，单位mm
+float LegLenMid  = 200.0f;    //中腿长，单位mm
+float LegLenHigh = 290.0f;    //高腿长，单位mm
+float LegLenOffGround = 250.0f; //离地腿长，单位mm
 
 /*底盘零点补偿相关*/
 // 换车时需要修改
@@ -151,12 +151,18 @@ float ChassisPitchAngleZP =
 float ChassisRollAngleZP = 0.6f;  // 底盘Roll轴零点补偿值，单位度
 
 /*腿部前馈力补偿相关*/
-/* 物理常数定义（用于动态前馈计算） */
+//* 车身物理常数定义
 const float m_b = 12.5f;               // 机体质量，单位kg
 const float m_l = 1.72f;                // 单腿质量，单位kg
-const float eta_l = 0.300f;            // 单腿质量系数
+const float m_w = 2.4f;               // 单轮质量，单位kg
+const float eta_l = 0.300f;            // 相对于轮轴的单腿质量系数
+const float eta_l_bar = 0.700f;            // 相对于髋关节的单腿质量系数
 const float R_l = 0.2655f;              // 轮间距，单位m
-const float CH_Phys_EffMass = (0.5f * m_b + eta_l * m_l);  // 机体等效质量 (0.5*mb + eta*ml)，单位kg
+const float m_total = m_b + 2.0f * m_l + 2.0f * m_w;  // 底盘总质量，单位kg
+
+//* 计算前馈力时使用的常量
+//* 轮子在地面上不需要重力补偿 
+const float CH_Phys_EffMass = (0.5f * m_b + eta_l * m_l);  // 单腿承担的机体等效质量 (0.5*mb + eta_l*ml)，单位kg
 const float CH_Phys_InertialCoeff = (CH_Phys_EffMass / (2.0f * R_l));  // 惯性力系数 (M_eff / (2*R_l))
 
 // 左右腿静态重力补偿，单位N
@@ -167,7 +173,9 @@ const float LegFFForce_Gravity_2 = CH_Phys_EffMass * GravityAcc_Harbin;
 float LegFFForce_Inertial_1 = 0.0f;  // 正常模式下左腿侧向惯性力补偿，单位N
 float LegFFForce_Inertial_2 = 0.0f;  // 正常模式下右腿侧向惯性力补偿，单位N
 
-
+//* 进行离地检测时使用的常量 
+const float CH_Phys_OffGrd_CorCoeff = 0.5f * (m_w + 2 * m_l * eta_l_bar - m_l); // 对该侧腿支持力的修正系数
+const float CH_Phys_OffGrd_CplCoeff = 0.5f * (m_w + m_l); // 对对侧腿支持力的耦合系数
 
 float LegFFForce_SlowSitDown = 5.0f;  // 缓慢坐下模式的腿部前馈力，单位N
 // // #pragma endregion
@@ -284,6 +292,7 @@ TD_StructTypeDef GstCH_LegLen1TD = {
 TD_StructTypeDef GstCH_LegLen2TD = {
     TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 右腿长度TD结构体，以m米为单位
 TD_StructTypeDef GstCH_YawAngleTD;  // 底盘Yaw角TD结构体
+TD_StructTypeDef GstCH_DisTD;  // 底盘距离TD结构体
 
 // // #pragma endregion
 
@@ -330,19 +339,15 @@ VMC_StructTypeDef GstCH_Leg2VMC;  // 右腿VMC计算结构体
 
 /* 离地检测结构体，INIT顺序为M_w, M_l, g, SampleTime */
 /* 单个轮子质量、腿部质量、当地重力加速度、采样时间 */
-OffGround_StructTypeDef GstCH_OffGround1 = {WheelMass, 0, GravityAcc_Harbin,
-                                            SampleTime_Default};
-OffGround_StructTypeDef GstCH_OffGround2 = {WheelMass, 0, GravityAcc_Harbin,
-                                            SampleTime_Default};
+OffGround_StructTypeDef GstCH_OffGround1 = {GravityAcc_Harbin, SampleTime_Default};
+OffGround_StructTypeDef GstCH_OffGround2 = {GravityAcc_Harbin, SampleTime_Default};
 // // #pragma endregion
 
 // // #pragma region
 // /****其他底盘运动控制相关-正式变量*****************************/
 /*底盘状态枚举*/
-ChassisMode_EnumTypeDef GEMCH_Mode =
-    CHMode_RC_ManualSafe;  // 底盘模式，默认是手动安全模式
-ChassisMode_EnumTypeDef GEMCH_ModePre =
-    CHMode_RC_ManualSafe;  // 上次的底盘模式，默认是手动安全模式
+ChassisMode_EnumTypeDef GEMCH_Mode = CHMode_RC_ManualSafe;  // 底盘模式，默认是手动安全模式
+ChassisMode_EnumTypeDef GEMCH_ModePre = CHMode_RC_ManualSafe;  // 上次的底盘模式，默认是手动安全模式
 
 /*关节电机MIT协议控制结构体。INIT顺序为：ID MITKp MITKd：电机ID
  * MIT协议的位置系数  MIT协议的速度系数*/
@@ -356,7 +361,6 @@ HMData_StructTypeDef GSTCH_HM1 = {HM_ReductionRatio};  // 左轮毂电机控制�
 HMData_StructTypeDef GSTCH_HM2 = {HM_ReductionRatio};  // 右轮毂电机控制结构体
 
 /*底盘数据结构体*/
-CHData_StructTypeDef
-    GSTCH_Data;  // 底盘正式数据结构体，存放和底盘相关的几乎所有数据
+CHData_StructTypeDef GSTCH_Data;  // 底盘正式数据结构体，存放和底盘相关的几乎所有数据
 
 // // #pragma endregion
