@@ -37,7 +37,7 @@ typedef struct {
     } ST_Tx;
 } IMU1Data_StructTypeDef;
 
-// // #pragma region /**** \
+// #pragma region /**** \
                   变量引出extern声明****************************************************************/
 /*FreeRTOS任务相关*/
 extern const TickType_t GGB_TaskPeriod;

@@ -13,7 +13,7 @@
 
 #include "GlobalDeclare_General.h"
 
-// // #pragma region /**** 限幅函数 ***************************/
+// #pragma region /**** 限幅函数 ***************************/
 /**
  * @brief  限幅函数Limit
  * @note   把值限制在Min~Max之间
@@ -30,9 +30,9 @@ float Limit(float RawData, float Min, float Max) {
     else
         return RawData;
 }
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /**** 遥控器是否连接、手势判断相关函数 \
+// #pragma region /**** 遥控器是否连接、手势判断相关函数 \
                 ***************************/
 /**
  * @brief  判断遥控器是否连接的函数
@@ -347,9 +347,9 @@ bool IsInsideEightGesture(void) {
     /****************两个条件都满足，内八手势，返回true****************/
     return true;
 }
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /**** 步进改变数值函数 ***************************/
+// #pragma region /**** 步进改变数值函数 ***************************/
 
 /**
  * @brief  步进改变数值的函数
@@ -383,7 +383,7 @@ float StepChangeValue(float ValueNow, float ValueDes, float Step) {
 
     return ValueNext;
 }
-// // #pragma endregion
+// #pragma endregion
 
 /*******遥控器通道转化为[-1, 1]的归一化数据********/
 

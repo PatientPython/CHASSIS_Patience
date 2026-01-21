@@ -11,7 +11,7 @@
 
 #include "GlobalDeclare_General.h"
 
-// // #pragma region
+// #pragma region
 // /****结构体声明*******************************************************************************/
 /*PID算法结构体*/
 typedef struct {
@@ -107,13 +107,31 @@ typedef struct {
     float Out;    // 滤波器输出值
 } LPF_StructTypeDef;
 
-/*龙伯格观测器结构体：老代码拿过来的，非常神奇的一个东西，我没搞懂*/
+/*卡尔曼滤波结构体*/
 typedef struct {
-    float y_Matrix[2];          // 输出向量，元素为速度原始值、加速度原始值
-    float x_HatMatrix[2];       // 观测器观测值，元素为速度估计值、加速度估计值
-    float x_PriorHatMatrix[2];  // 状态向量先验估计值（还没有数据时的预测值）
-    float L_Matrix[2][2];       // 龙伯格观测器增益矩阵
-} LuenbergerObserver_StructTypeDef;
+    // 轮毂电机力矩补偿系数
+    float K_adapt;
+    // 状态向量 x [0]:vel, [1]:acc
+    float x[2];      
+    // 协方差矩阵 P (2x2)
+    float P[2][2];   
+    // 过程噪声协方差 Q (2x2) - 相信模型的程度
+    float Q[2][2];   
+    // 测量噪声协方差 R (2x2) - 相信传感器的程度
+    float R[2][2];   
+    // 卡尔曼增益 K (2x2)
+    float K[2][2];   
+    // 采样时间
+    float dt; 
+    // 当前底盘速度测量值
+    float x_cur;
+    // 下一时刻底盘速度预测值
+    float x_nxt;
+    // 左腿补偿力矩
+    float TorqueComp_L;
+    // 右腿补偿力矩
+    float TorqueComp_R;
+} KF_StructTypeDef;
 
 /*离地检测算法结构体*/
 typedef struct {
@@ -142,10 +160,11 @@ typedef struct {
     float Ctr_L0_dot_pre; // counter-part L0_dot_pre 另一条腿的等效摆杆长度速度上次值，单位：m/s
     float Ctr_L0_ddot; // counter-part L0_ddot 另一条腿的等效摆杆长度加速度，单位：m/s²
 } OffGround_StructTypeDef;
-// // #pragma endregion
+// #pragma endregion
 
 /*************************************函数声明**************************************/
 
+// PID相关函数全家桶
 void PID_SetDes(PID_StructTypeDef* PIDptr, float NewDes);
 void PID_SetFB(PID_StructTypeDef* PIDptr, float NewFB);
 void PID_SetKpKiKd(PID_StructTypeDef* PIDptr, float NewKp, float NewKi,
@@ -154,16 +173,19 @@ void PID_Cal(PID_StructTypeDef* PIDptr);
 float PID_GetOutput(PID_StructTypeDef* PIDptr);
 void PID_Reset(PID_StructTypeDef* PIDptr, float FBValue);
 
+// TD相关函数全家桶
 void TD_SetInput(TD_StructTypeDef* TDptr, float Input);
 void TD_Setr(TD_StructTypeDef* TDptr, float New_r);
 void TD_Cal(TD_StructTypeDef* TDptr);
 float TD_GetOutput(TD_StructTypeDef* TDptr);
 void TD_Reset(TD_StructTypeDef* TDptr, float FBValue);
 
+// LPF相关函数全家桶
 void LPF_SetInput(LPF_StructTypeDef* LPFptr, float NewInput);
 void LPF_Cal(LPF_StructTypeDef* LPFptr);
 float LPF_GetOutput(LPF_StructTypeDef* LPFptr);
 
+// 五连杆解算相关函数全家桶
 void LegLinkage_AngleDataUpdate(LegLinkageCal_StructTypeDef* LegPtr,
                                 float JMPosValue1, float JMPosValue2);
 void LegLinkage_AngleVelDataUpdate(LegLinkageCal_StructTypeDef* LegPtr,
@@ -179,6 +201,8 @@ float LegLinkage_GetL0dot(LegLinkageCal_StructTypeDef* LegPtr);
 float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr,
                              RobotSide_EnumTypeDef LegSide);
 
+// LQR相关函数全家桶
+void LQR_StructInit(LQR_StructTypeDef* LQRptr, float LegLen1, float LegLen2);
 void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1,
                         float LegLen2);
 void LQR_xVector_DataUpdate(LQR_StructTypeDef* LQRptr, float DisErr,
@@ -190,19 +214,26 @@ void LQR_xVector_DataUpdate(LQR_StructTypeDef* LQRptr, float DisErr,
 void LQR_Cal(LQR_StructTypeDef* LQRptr);
 float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index);
 
+// VMC相关函数全家桶    
 void VMC_FMatrixUpdate(VMC_StructTypeDef* VMCptr, float Force, float Torque, RobotSide_EnumTypeDef LegSide);
 void VMC_Cal(VMC_StructTypeDef* VMCptr, LegLinkageCal_StructTypeDef* LegPtr);
 float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index);
 
-void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd, float AccZ_Body);
-void OffGround_PitchAngleUpdate(OffGround_StructTypeDef* pOffGrd, float PitchAngle);
-void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, 
-                                       LegLinkageCal_StructTypeDef Ctr_LegPtr, 
-                                       OffGround_StructTypeDef* pOffGrd, 
-                                       RobotSide_EnumTypeDef LegSide, 
-                                       RobotSide_EnumTypeDef Ctr_LegSide);
-float OffGround_GetSupportForce(OffGround_StructTypeDef* pOffGrd);
+// 离地检测相关函数全家桶
+void OffGround_StructInit(OffGround_StructTypeDef *pOffGrd, float Mass_Wheel, float Mass_LegLinkage, float g, float SampleTime);
+void OffGround_BodyZAccUpdate(OffGround_StructTypeDef *pOffGrd, float AccZ_Body);
+void OffGround_PitchAngleUpdate(OffGround_StructTypeDef *pOffGrd, float PitchAngle);
+void OffGround_PitchAngleVelUpdate(OffGround_StructTypeDef *pOffGrd, float PitchAngleVel);
+void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, OffGround_StructTypeDef *pOffGrd, RobotSide_EnumTypeDef LegSide);
+void OffGround_TorqueDataUpdate(OffGround_StructTypeDef *pOffGrd, float T1, float T4);
+void OffGround_GetRealFAndTp(OffGround_StructTypeDef *pOffGrd);
+float OffGround_GetLegToWheelForce(OffGround_StructTypeDef *pOffGrd);
+float OffGround_GetSupportForce(OffGround_StructTypeDef *pOffGrd);
 
-void LuenbergerObserver_UniformVelocityModel(LuenbergerObserver_StructTypeDef* observer);
+// 卡尔曼滤波相关函数全家桶
+void KF_ChassisVel_Init(KF_StructTypeDef *KFptr, float dt);
+void KF_ChassisVel_Predict(KF_StructTypeDef* KFptr);
+void KF_ChassisVel_Update(KF_StructTypeDef* KFptr, float v_body_obs, float a_imu);
+
 
 #endif

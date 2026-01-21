@@ -11,7 +11,7 @@
 
 #include "GlobalDeclare_Chassis.h"
 
-// // #pragma region /*底盘模式选择相关参数结构体，存放模式选择需要用到的参数变量*/
+// #pragma region /*底盘模式选择相关参数结构体，存放模式选择需要用到的参数变量*/
 typedef struct {
     // 注意变量命名规则：所有变量名前面都加上MC_前缀，表示ModeChoose
     /*在这里面添加变量后，需要去CH_ModeChooseParaStructUpdate中*/
@@ -31,7 +31,9 @@ typedef struct {
     uint16_t MC_HubMotor2Rx_fps;  // 轮毂电机2通讯帧率，MC_表示ModeChoose
     uint16_t MC_UART4Rx_fps;      // 串口4，即IMU2通讯帧率，MC_表示ModeChoose
 } Chassis_ModeChooseParameter_StructTypeDef;
-// // #pragma endregion
+// #pragma endregion
+
+
 
 /*************************底盘正式结构体的数据修改、处理、更新相关函数************************************/
 /****各种FB反馈数据的修改、处理、更新相关函数*****/
@@ -40,13 +42,13 @@ void CH_FBData_Parse(void);
 
 /****各种Des目标数据的修改、处理、更新相关函数****/
 
-void CH_LegLenDes_Update(RobotControl_StructTypeDef RMCtrl);
-void CH_LQR_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
+// void CH_LegLenDes_Update(RobotControl_StructTypeDef RMCtrl);
+// void CH_LQR_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
 void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
 void CH_InertialFF_Process(void);
 void CH_HMTorqueToCurrent_Process(HMData_StructTypeDef* pHM);
-void HM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
-void JM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
+// void HM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
+// void JM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl);
 
 /************各种数据的重置、清零函数**********/
 
@@ -64,17 +66,15 @@ void CH_LegKinematics_Process(void);
 void CH_LQRCal_Process(void);
 void CH_VMCCal_Process(void);
 void CH_SupportForce_Process(void);
-void CH_VelocityObs_Process(void);
-
-
+void _Ch_VelKF_Process(float AngleVel_Wheel1, float AngleVel_Wheel2);
 
 /**********************************底盘其他相关函数********************************************/
 // TODO 底盘数据低通滤波处理函数（考虑放在哪里）
 float _Ch_FBData_LPF(float RawData, LPF_StructTypeDef* pLPF);
-// TODO 底盘速度观测器函数（考虑放在哪里）
-float _Ch_VelFB_Process(void);
-// uint8_t IsEnterManualCalibration(void);
+
 void CH_ChassisModeUpdate(void);
+// uint8_t IsEnterManualCalibration(void);
+
 
 // void CH_MotionUpdateAndProcess(RobotControl_StructTypeDef RMCtrl);
 

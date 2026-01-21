@@ -50,7 +50,7 @@ void ChassisStratgy_ModeChooseParaStructUpdate(Chassis_ModeChooseParameter_Struc
     pModeChoosePara->MC_UART4Rx_fps     = GST_SystemMonitor.UART4Rx_fps;        //串口4，即IMU2接收帧率
 }
 
-// // #pragma region 检测当前条件是否满足进入某模式的函数
+// #pragma region 检测当前条件是否满足进入某模式的函数
 //* 目前包括七个模式的判断函数：
 //* 1. 手动安全模式：_ChIsEnter_ManualSafeMode_RCControl
 //* 2. 自动安全模式：_ChIsEnter_AutoSafeMode_RCControl
@@ -245,7 +245,7 @@ bool _ChIsEnter_OffGroundMode_RCControl(Chassis_ModeChooseParameter_StructTypeDe
 // bool _ChIsEnter_FollowMode_RCControl(
 //    Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {}
 
-// // #pragma endregion
+// #pragma endregion
 
 //* 底盘模式更新函数。当检测模式条件函数返回真值时将当前模式变量变到对应变量值
 /**
@@ -333,7 +333,7 @@ void ChassisStratgy_ModeStartTimeUpdate(CHData_StructTypeDef* pCHData,
     }
 }
 
-// // #pragma region 模式具体功能实现函数
+// #pragma region 模式具体功能实现函数
 //* 目前包括七个模式的具体功能实现函数：
 //* 1. 手动安全模式：ChModeControl_ManualSafeMode_RCControl
 //* 2. 自动安全模式：ChModeControl_AutoSafeMode_RCControl
@@ -501,8 +501,8 @@ void ChModeControl_StandUpMode_RCControl(void) {
 
     /* 1. 将 LQR 计算结果分发到轮毂电机和 VMC 扭矩目标值 */
     // TODO 左边取负，按照读取的速度预测的
-    GSTCH_HM1.TorqueDes = -LQR_Get_uVector(&GstCH_LQRCal, 0);  // 轮毂电机1扭矩 (L)
-    GSTCH_HM2.TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 1);  // 轮毂电机2扭矩 (R) （右轮镜像安装加负号）
+    GSTCH_HM1.TorqueDes = - LQR_Get_uVector(&GstCH_LQRCal, 0) + GstCH_VelKF.TorqueComp_L;  // 轮毂电机1扭矩 (L)
+    GSTCH_HM2.TorqueDes =   LQR_Get_uVector(&GstCH_LQRCal, 1) + GstCH_VelKF.TorqueComp_R;  // 轮毂电机2扭矩 (R) （右轮镜像安装加负号）
     GSTCH_Data.Leg1TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 2);  // 虚拟摆杆力矩1
     GSTCH_Data.Leg2TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 3);  // 虚拟摆杆力矩2
 
@@ -563,8 +563,8 @@ void ChModeControl_SittingMode_RCControl(void) {
     //* u已经计算出来了（包括轮子转动的扭矩）
 
     /* 1. 将 LQR 计算结果分发到轮毂电机和 VMC 扭矩目标值 */
-    GSTCH_HM1.TorqueDes = -LQR_Get_uVector(&GstCH_LQRCal, 0);  // 轮毂电机1扭矩 (L)
-    GSTCH_HM2.TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 1);  // 轮毂电机2扭矩 (R) 
+    GSTCH_HM1.TorqueDes = - LQR_Get_uVector(&GstCH_LQRCal, 0) + GstCH_VelKF.TorqueComp_L;  // 轮毂电机1扭矩 (L)
+    GSTCH_HM2.TorqueDes =   LQR_Get_uVector(&GstCH_LQRCal, 1) + GstCH_VelKF.TorqueComp_R;  // 轮毂电机2扭矩 (R) 
     GSTCH_Data.Leg1TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 2);  // 虚拟摆杆力矩1
     GSTCH_Data.Leg2TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 3);  // 虚拟摆杆力矩2
 
@@ -586,7 +586,7 @@ void ChModeControl_SittingMode_RCControl(void) {
        GSTCH_Data.LegLen2FB <= (0.120f))
     {
         GSTCH_HM1.CurrentDes = 0;  // 轮毂电机1电流 (L)
-        GSTCH_HM2.CurrentDes = 0;  // 轮毂电机2电流 (R) 
+        GSTCH_HM2.CurrentDes = 0;  // 轮毂电机2电流 (R)
         GSTCH_JM3.TorqueDes = 0;  // 左腿后关节 (phi1)
         GSTCH_JM1.TorqueDes = 0;  // 左腿前关节 (phi4)
         GSTCH_JM2.TorqueDes = 0;  // 右腿前关节 (phi1)
@@ -682,7 +682,7 @@ void ChModeControl_OffGroundMode_RCControl(void) {
 //  * @retval 无
 //  */
 // void ChModeControl_FollowMode_RCControl(void) {}
-// // #pragma endregion
+// #pragma endregion
 
 //* 模式控制最终执行函数。根据当前模式变量的变量值执行对应的模式具体功能实现函数
 /**

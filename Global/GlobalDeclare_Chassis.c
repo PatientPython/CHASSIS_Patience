@@ -26,7 +26,7 @@ const float GCH_TaskTime = (float)GCH_TaskPeriod /
 /*一些默认定义*/
 #define SampleTime_Default GCH_TaskTime  // 默认采样时间，单位秒
 
-// // #pragma region /****关节电机相关*****************************************/
+// #pragma region /****关节电机相关*****************************************/
 /*关节电机ID*/
 // 待修改：这里的ID号在搞新车的时候重新设置，按照左前、右前、左后、右后的顺序设置
 // 换车时需要修改
@@ -38,9 +38,9 @@ const float GCH_TaskTime = (float)GCH_TaskPeriod /
 // 换车时需修改
 const float JointMotorMAXTorque =
     Motor_MG8016Ei6MaxTorque;  // 关节电机最大力矩，单位Nm
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****腿部五连杆解算****************************************/
+// #pragma region /****腿部五连杆解算****************************************/
 /*五连杆结构体初始化宏定义*/
 #define LegLinkageCal_StructINIT(ThighLen, CalfLen, l5, phi1ZP, phi2ZP, \
                                  SampleTime)                            \
@@ -63,9 +63,9 @@ const float JointMotorMAXTorque =
     180.0f + 22.0f  // 右侧phi1，关节电机2（右前）五连杆解算坐标系的零点，单位度
 #define JM4LinkageCalZP \
     -22.0f  // 右侧phi4，关节电机4（右后）五连杆解算坐标系的零点，单位度
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****低通滤波器滤波系数*********************************/
+// #pragma region /****低通滤波器滤波系数*********************************/
 // 换车时需修改
 #define LPF_Alpha_HM_AngleVel 0.091f  // 轮毂电机速度低通滤波器系数
 #define LPF_Alpha_xCdot 0.091f        // 底盘速度补偿低通滤波器系数
@@ -75,25 +75,23 @@ const float JointMotorMAXTorque =
 #define LPF_Alpha_VelTheory 0.1f      // 底盘理论质心水平速度低通滤波器系数
 #define LPF_Alpha_VelComp 0.1f        // 底盘速度补偿低通滤波器系数
 #define LPF_Alpha_LegFN 0.0476f       // 腿部支持力低通滤波器系数
-// // #pragma endregion
+// #pragma endregion
 
 /****************************************宏定义、常量定义（非控制策略Strategy相关）（可能需要修改）***************************************/
-// // #pragma region /****TD相关系数****************************************/
+// #pragma region /****TD相关系数****************************************/
 #define TD_SampleTime SampleTime_Default  // TD采样时间，单位秒
 
-#define TD_LegLen_r \
-    0.0f  // 腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
-#define TD_LegLen_h0 \
-    1 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
+#define TD_LegLen_r \ 0.0f  // 腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
+#define TD_LegLen_h0 \ 1 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
 
 
 
 float TD_LegLen_rStandUp = 20.0f;    // 腿长TD：起立模式下的速度因子
 float TD_LegLen_rNorm = 20.0f;        // 腿长TD：正常模式下的速度因子
 float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速度因子
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****PID相关参数***************************************/
+// #pragma region /****PID相关参数***************************************/
 /*腿长PID相关*/
 #define PID_LegLen_Kp \
     0.0f  // 腿长PID：比例系数Kp，取0表示在外部根据不同模式赋值
@@ -106,6 +104,9 @@ float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速�
 #define PID_LegLen_UdMax PID_LegLen_UMax  // 腿长PID：Kd项输出最大值
 #define PID_LegLen_AddMax 0.01f           // 腿长PID：误差单次累加最大值
 
+// #pragma region /****FK相关参数***************************************/
+
+// #pragma endregion
 // 存储原有值（腿长反馈值是以米为单位的时候）
 // 腿长是以毫米为单位（目标腿长是150等时）这个值会相差1000倍左右
 // float PID_LegLen_KpStandUp = 800.0f;    // 腿长PID：起立状态下Kp值
@@ -133,9 +134,9 @@ float PID_LegLen_KdNorm = 0.0f;     // 腿长PID：正常时的Kd值
 // ST_PID_INIT(fpKp,fpKi,fpKd,fpUMax,fpUiMax,fpUdMax,AddMax)
 //         {0,0,fpKp,fpKi,fpKd,0,0,0,0,0,0,0,fpUMax,fpUMax,fpUiMax,fpUdMax,AddMax}
 
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****腿长、零点补偿、腿部前馈力相关**********************/
+// #pragma region /****腿长、零点补偿、腿部前馈力相关**********************/
 /*腿长相关*/
 float LegLenMin   = 108.0f;   //腿长最小值，单位mm
 float LegLenMinTH = 6.0f;     //腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
@@ -157,7 +158,8 @@ const float m_l = 1.72f;                // 单腿质量，单位kg
 const float m_w = 2.4f;               // 单轮质量，单位kg
 const float eta_l = 0.300f;            // 相对于轮轴的单腿质量系数
 const float eta_l_bar = 0.700f;            // 相对于髋关节的单腿质量系数
-const float R_l = 0.2655f;              // 轮间距，单位m
+const float R_l = 0.2655f;              // 半轮间距，单位m
+const float R_w = 0.072f;               // 轮子半径，单位m
 const float m_total = m_b + 2.0f * m_l + 2.0f * m_w;  // 底盘总质量，单位kg
 
 //* 计算前馈力时使用的常量
@@ -178,16 +180,16 @@ const float CH_Phys_OffGrd_CorCoeff = 0.5f * (m_w + 2 * m_l * eta_l_bar - m_l); 
 const float CH_Phys_OffGrd_CplCoeff = 0.5f * (m_w + m_l); // 对对侧腿支持力的耦合系数
 
 float LegFFForce_SlowSitDown = 5.0f;  // 缓慢坐下模式的腿部前馈力，单位N
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****底盘模式控制策略相关*******************************/
+// #pragma region /****底盘模式控制策略相关*******************************/
 uint16_t CHMode_AllMode_PreProcessTime = 4;  // 各个模式的前置处理时间，单位毫秒
 uint16_t CHMode_RC_StandUp_TotalTime = 600;  // 起立模式的总持续时间，单位毫秒
 
-// // #pragma endregion
+// #pragma endregion
 
 /****************************************宏定义、常量定义（控制策略Strategy相关）（可能需要修改）***************************************/
-// // #pragma region /****底盘平移、旋转控制相关*****************************/
+// #pragma region /****底盘平移、旋转控制相关*****************************/
 float ChMove_StillVelTH =
     0.24f;  // 静止速度阈值，小于这个值认为是静止状态，单位m/s
 float ChMove_VelDesMax = 1.8f;   // 速度最大值，单位m/s
@@ -202,9 +204,9 @@ float ChMove_BrakeVelLimitTH = 0.9f;          // 刹车时目标速度限制阈�
 float ChMove_TurnYawVel_Normal =
     120.0f;  // 正常模式下的转向偏航角速度，单位deg/s
 float ChMove_YawAngleVelAddStep = 3.0f;  // 转向偏航角速度步进值，单位deg
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****底盘小陀螺相关*****************************/
+// #pragma region /****底盘小陀螺相关*****************************/
 float RCTopMode_EnterVelMinTH =
     0.8f;  // 进入小陀螺模式的速度最小阈值（小于这个值允许进入小陀螺），单位m/s
 float RCTopMode_EnterDelayTime = 800.0f;  // 进入小陀螺模式的延时时间，单位ms
@@ -217,49 +219,43 @@ float RCTopMode_TopAngleVelAddStep =
     0.4f;  // 小陀螺模式下，角速度步进值，单位deg
 float RCTopMode_TopAngleVelBrakeStep =
     1.0f;  // 小陀螺模式下，角速度刹车步进值，单位deg
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****SlowSitDown相关*****************************/
+// #pragma region /****SlowSitDown相关*****************************/
 float SlowSitDown_YawAngleVelBrakeStep =
     2.0f;  // 缓慢坐下模式的偏航角速度刹车步进值，单位deg
 float SlowSitDown_LegFFForceDecStep =
     0.05f;  // 缓慢坐下模式的腿部前馈力的步进减少值
-// // #pragma endregion
+
+// TODO 后续删除轮毂电机补偿力矩系数
+float KF_HM_K_adapt = 0.02f;  // 轮毂电机速度卡尔曼滤波器自适应系数
+// #pragma endregion
 
 /********************************************变量定义(不需要修改)********************************************/
-// // #pragma region /****通讯相关************************************************/
+// #pragma region /****通讯相关************************************************/
 /*IMU2通讯相关*/
-IMU2Data_StructTypeDef
-    GstCH_IMU2;  // 底盘云控IMU2的通讯数据结构体，包括接收和发送
+IMU2Data_StructTypeDef GstCH_IMU2;  // 底盘云控IMU2的通讯数据结构体，包括接收和发送
 uint8_t GFCH_IMU2Restart = IMU2RestartNO;  // 底盘云控IMU2重启标志位，默认不重启
 uint8_t GFCH_LegCalibration = 0;           // 腿部校准标志位，1：校准，0：不校准
 
 /*电机/电调通讯相关*/
-C620FeedBackData_StructTypeDef
-    GstCH_HM1RxC620Data;  // 左轮毂电机电调反馈数据结构体
-C620FeedBackData_StructTypeDef
-    GstCH_HM2RxC620Data;  // 右轮毂电机电调反馈数据结构体
-// // #pragma endregion
+C620FeedBackData_StructTypeDef GstCH_HM1RxC620Data;  // 左轮毂电机电调反馈数据结构体
+C620FeedBackData_StructTypeDef GstCH_HM2RxC620Data;  // 右轮毂电机电调反馈数据结构体
+// #pragma endregion
 
-// // #pragma region
-// /****滤波器、观测器相关***************************************/
+// #pragma region
+// /****滤波器相关***************************************/
 /*轮毂电机速度低通滤波器*/
-LPF_StructTypeDef GstCH_HM1_AngleVelLPF = {
-    LPF_Alpha_HM_AngleVel};  // 左轮毂电机速度低通滤波器
-LPF_StructTypeDef GstCH_HM2_AngleVelLPF = {
-    LPF_Alpha_HM_AngleVel};  // 右轮毂电机速度低通滤波器
+LPF_StructTypeDef GstCH_HM1_AngleVelLPF = {LPF_Alpha_HM_AngleVel};  // 左轮毂电机速度低通滤波器
+LPF_StructTypeDef GstCH_HM2_AngleVelLPF = {LPF_Alpha_HM_AngleVel};  // 右轮毂电机速度低通滤波器
 
 /*xC_dot低通滤波器*/
-LPF_StructTypeDef GstCH_xC1dotLPF = {
-    LPF_Alpha_xCdot};  // xC_dot低通滤波器，左腿
-LPF_StructTypeDef GstCH_xC2dotLPF = {
-    LPF_Alpha_xCdot};  // xC_dot低通滤波器，右腿
+LPF_StructTypeDef GstCH_xC1dotLPF = {LPF_Alpha_xCdot};  // xC_dot低通滤波器，左腿
+LPF_StructTypeDef GstCH_xC2dotLPF = {LPF_Alpha_xCdot};  // xC_dot低通滤波器，右腿
 
 /*Theta_dot低通滤波器*/
-LPF_StructTypeDef GstCH_Theta1dotLPF = {
-    LPF_Alpha_Thetadot};  // Theta1_dot低通滤波器，左腿
-LPF_StructTypeDef GstCH_Theta2dotLPF = {
-    LPF_Alpha_Thetadot};  // Theta2_dot低通滤波器，右腿
+LPF_StructTypeDef GstCH_Theta1dotLPF = {LPF_Alpha_Thetadot};  // Theta1_dot低通滤波器，左腿
+LPF_StructTypeDef GstCH_Theta2dotLPF = {LPF_Alpha_Thetadot};  // Theta2_dot低通滤波器，右腿
 
 /*底盘理论质心水平速度低通滤波器*/
 LPF_StructTypeDef GstCH_TheoryVelLPF = {LPF_Alpha_VelTheory};
@@ -267,36 +263,30 @@ LPF_StructTypeDef GstCH_TheoryVelLPF = {LPF_Alpha_VelTheory};
 /*底盘速度补偿低通滤波器*/
 LPF_StructTypeDef GstCH_VelCompLPF = {LPF_Alpha_VelComp};
 
-/*底盘速度龙伯格观测器*/
-LuenbergerObserver_StructTypeDef GstCH_VelObserver;
-
 /*底盘Yaw、Pitch角速度低通滤波器*/
-LPF_StructTypeDef GstCH_YawAngleVelLPF = {
-    LPF_Alpha_YawAngleVel};  // 底盘Yaw轴角速度低通滤波器结构体
-LPF_StructTypeDef GstCH_PitchAngleVelLPF = {
-    LPF_Alpha_PitchAngleVel};  // 底盘Pitch轴角速度低通滤波器结构体
+LPF_StructTypeDef GstCH_YawAngleVelLPF = {LPF_Alpha_YawAngleVel};  // 底盘Yaw轴角速度低通滤波器结构体
+LPF_StructTypeDef GstCH_PitchAngleVelLPF = {LPF_Alpha_PitchAngleVel};  // 底盘Pitch轴角速度低通滤波器结构体
 
 /*腿部支持力低通滤波器*/
-LPF_StructTypeDef GstCH_Leg1F_N_LPF = {
-    LPF_Alpha_LegFN};  // 左腿腿部支持力低通滤波器结构体
-LPF_StructTypeDef GstCH_Leg2F_N_LPF = {
-    LPF_Alpha_LegFN};  // 右腿腿部支持力低通滤波器结构体
-// // #pragma endregion
+LPF_StructTypeDef GstCH_Leg1F_N_LPF = {LPF_Alpha_LegFN};  // 左腿腿部支持力低通滤波器结构体
+LPF_StructTypeDef GstCH_Leg2F_N_LPF = {LPF_Alpha_LegFN};  // 右腿腿部支持力低通滤波器结构体
 
-// // #pragma region /****TD算法相关*****************************/
+/*卡尔曼滤波器*/
+KF_StructTypeDef GstCH_VelKF = {KF_HM_K_adapt};  // 底盘速度卡尔曼滤波器结构体
+// #pragma endregion
+
+// #pragma region /****TD算法相关*****************************/
 /*腿长TD跟踪结构体，初始化顺序：r, h0,
  * SampleTime（速度因子、滤波因子、采样时间）*/
 // 待考虑：这里的TD要不要后面改成用mm为单位的，然后下面的PID也改成mm为单位的（注意修改参数、使用的地方不要*MM2M）
-TD_StructTypeDef GstCH_LegLen1TD = {
-    TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 左腿长度TD结构体，以m米为单位
-TD_StructTypeDef GstCH_LegLen2TD = {
-    TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 右腿长度TD结构体，以m米为单位
+TD_StructTypeDef GstCH_LegLen1TD = {TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 左腿长度TD结构体，以m米为单位
+TD_StructTypeDef GstCH_LegLen2TD = {TD_LegLen_r, TD_LegLen_h0, TD_SampleTime};  // 右腿长度TD结构体，以m米为单位
 TD_StructTypeDef GstCH_YawAngleTD;  // 底盘Yaw角TD结构体
 TD_StructTypeDef GstCH_DisTD;  // 底盘距离TD结构体
 
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****PID控制相关*****************************/
+// #pragma region /****PID控制相关*****************************/
 /*腿长PID控制结构体，初始化顺序：Kp, Ki, Kd, UMax, UpMax, UiMax, UdMax,
  * AddMax：比例系数、积分系数、微分系数、总输出最大值、Kp项输出最大值、Ki项输出最大值、Kd项输出最大值、SumE单次累加的最大值*/
 PID_StructTypeDef GstCH_LegLen1PID = {
@@ -315,9 +305,9 @@ PID_StructTypeDef GstCH_RollCompPID = {
     PID_RollComp_UMax,  PID_RollComp_UpMax, PID_RollComp_UiMax,
     PID_RollComp_UdMax, PID_RollComp_AddMax};  // 底盘Roll轴补偿PID结构体
 
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /****其他底盘运动控制相关-辅助变量*****************************/
 /* 腿部五连杆解算结构体，INIT顺序为ThighLen, CalfLen, l5, phi1ZP, phi2ZP,
  * SampleTime */
@@ -341,9 +331,11 @@ VMC_StructTypeDef GstCH_Leg2VMC;  // 右腿VMC计算结构体
 /* 单个轮子质量、腿部质量、当地重力加速度、采样时间 */
 OffGround_StructTypeDef GstCH_OffGround1 = {GravityAcc_Harbin, SampleTime_Default};
 OffGround_StructTypeDef GstCH_OffGround2 = {GravityAcc_Harbin, SampleTime_Default};
-// // #pragma endregion
 
-// // #pragma region
+/* 卡尔曼滤波器结构体*/
+// #pragma endregion
+
+// #pragma region
 // /****其他底盘运动控制相关-正式变量*****************************/
 /*底盘状态枚举*/
 ChassisMode_EnumTypeDef GEMCH_Mode = CHMode_RC_ManualSafe;  // 底盘模式，默认是手动安全模式
@@ -363,4 +355,4 @@ HMData_StructTypeDef GSTCH_HM2 = {HM_ReductionRatio};  // 右轮毂电机控制�
 /*底盘数据结构体*/
 CHData_StructTypeDef GSTCH_Data;  // 底盘正式数据结构体，存放和底盘相关的几乎所有数据
 
-// // #pragma endregion
+// #pragma endregion

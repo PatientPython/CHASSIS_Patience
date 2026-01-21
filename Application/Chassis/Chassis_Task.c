@@ -59,9 +59,9 @@ void ChassisControl(void) {
     //! CH_VelocityObs_Process 可能观测器要单独写个函数放在这里，先预处理在进行运算
     CH_FBData_Parse();   // 解析传感器的原始反馈数据
     CH_LegKinematics_Process();  // 腿部五连杆的正运动学运算
-    CH_VelocityObs_Process();    // 当前车身速度计算：使用龙伯格观测器测量当前的移动速度然后更新GSTDCH_Data.VelFB
-    CH_InertialFF_Process();     // 侧向惯性前馈力计算（要求速度信息，需要写在速度观测器之后）
-    CH_SupportForce_Process();   // 地面支持力计算
+    CH_SupportForce_Process();   // 离地检测地面支持力计算
+    CH_VelKF_Process();    // 卡尔曼滤波器速度读取和预测自适应控制（要求先有离地标志位，写在离地检测之后；要求先有yaw角速度，写在原始数据反馈之后）
+    CH_InertialFF_Process();     // 侧向惯性前馈力计算（要求速度信息，写在卡尔曼滤波器之后）
 
     // TODO: 后续可添加 模型自适应控制函数
     //* 更新底盘模式选择相关变量、读取当前模式

@@ -20,7 +20,7 @@
 
 /****************************结构体、数组定义（可能需要修改）****************************/
 /*默认的LQR计算K矩阵*/
-// float LQR_DefaultK_Matrix[4][10] = {
+// float LQR_K_Matrix_0.20[4][10] = {
 //     {-4.9782, -7.4064, -2.7824, -1.6201, -22.4452, -2.2603, -8.4339, -1.0402,
 //      29.7838, 1.4493},
 //     {-4.9782, -7.4064, 2.7824, 1.6201, -8.4339, -1.0402, -22.4452, -2.2603,
@@ -30,7 +30,7 @@
 //     {4.7969, 7.0784, 6.8980, 4.0543, -20.6028, -1.1189, 48.4559, 4.1136,
 //      274.6596, 7.8673}};
 
-float LQR_DefaultK_Matrix[4][10] = {
+float LQR_K_Matrix_0.30[4][10] = {
     {-5.1792, -7.3166, -2.4692, -1.4136, -25.6874, -3.0680, -8.9990, -1.5103,
      11.0711, 0.7218},
     {-5.1792, -7.3166, 2.4692, 1.4136, -8.9990, -1.5103, -25.6874, -3.0680,
@@ -40,7 +40,7 @@ float LQR_DefaultK_Matrix[4][10] = {
     {1.6109, 2.2437, 8.0019, 4.7705, -30.6497, -2.3683, 41.7505, 3.6576,
      287.9275, 8.3695}};
      
-// #pragma region PID相关函数全家桶
+#pragma region PID相关函数全家桶
 /**
  * @brief  PID的目标值设置函数
  * @note   用来设置PID结构体中的目标值Des
@@ -145,9 +145,9 @@ void PID_Reset(PID_StructTypeDef* PIDptr, float FBValue) {
     PIDptr->Ud = 0.0f;
     PIDptr->U = 0.0f;
 }
-// #pragma endregion
+#pragma endregion
 
-// #pragma region TD相关函数全家桶
+#pragma region TD相关函数全家桶
 /**
  * @brief  TD的输入值设置函数
  * @note   用来设置TD结构体中的输入值v
@@ -237,9 +237,9 @@ void TD_Reset(TD_StructTypeDef* TDptr, float FBValue) {
     TDptr->x2 = 0.0f;
 }
 
-// #pragma endregion
+#pragma endregion
 
-// #pragma region 五连杆解算相关函数全家桶
+#pragma region 五连杆解算相关函数全家桶
 
 //?
 // 主要功能是正运动学解算出各个参数，为虚拟力和力矩计算做准备，进而算出关节电机应该需要多大的力矩
@@ -528,9 +528,9 @@ float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr,
     }
     return Theta_dot_Temp;
 }
-// #pragma endregion
+#pragma endregion
 
-// #pragma region 低通滤波器LPF相关函数全家桶
+#pragma region 低通滤波器LPF相关函数全家桶
 /**
  * @brief  一阶低通滤波器的输入值设置函数
  * @note   用来设置一阶低通滤波器结构体中的输入值Input
@@ -590,9 +590,9 @@ float LPF_GetOutput(LPF_StructTypeDef* LPFptr) {
     }
     return LPFptr->Out;
 }
-// #pragma endregion
+#pragma endregion
 
-// #pragma region LQR相关函数全家桶
+#pragma region LQR相关函数全家桶
 
 //? 主要功能就是算K矩阵，然后计算当前控制向量u，实现对u的读取
 //? 这里面的函数是在 Chassis_APIFunction 的底盘解算相关部分被使用的
@@ -621,7 +621,7 @@ void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1,
     if ((LegLen1 == 0.0f) || (LegLen2 == 0.0f)) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 10; j++) {
-                LQRptr->K_Matrix[i][j] = LQR_DefaultK_Matrix[i][j];
+                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_0.30[i][j];
             }
         }
     }
@@ -728,9 +728,9 @@ float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index) {
 
     return LQRptr->u_Vector[index];
 }
-// #pragma endregion
+#pragma endregion
 
-// #pragma region VMC相关函数全家桶
+#pragma region VMC相关函数全家桶
 
 // 主要功能是更新虚拟力和力矩，将虚拟力和力矩转化成关节电机力矩，并实现对关节电机力矩的读取
 
@@ -812,129 +812,342 @@ float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index) {
     return VMCptr->T_Matrix[index];
 }
 
-// #pragma endregion
+#pragma endregion
 
-// #pragma region 离地OffGround检测相关函数全家桶
+#pragma region 离地检测相关函数全家桶
 /**
- * @brief  离地检测的机体Z轴加速度更新函数
- * @note   根据传入的Z轴加速度值，更新OffGround结构体中的机体Z轴加速度
- * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @param  AccZ_Body：机体Z轴加速度值，单位：m/s²
- * @retval 无
- */
-void OffGround_BodyZAccUpdate(OffGround_StructTypeDef* pOffGrd, float AccZ_Body) {
+  * @brief  离地检测结构体初始化函数
+  * @note   用于初始化离地检测结构体的各个参数
+  * @param  pOffGrd：指向离地检测结构体的指针
+  * @param  Mass_Wheel：轮子的质量，单位：kg
+  * @param  Mass_LegLinkage：腿部连杆的质量，单位：kg
+  * @param  g：重力加速度，单位：m/s²
+  * @param  SampleTime：采样时间，单位：秒
+  * @retval 无
+*/
+void OffGround_StructInit(OffGround_StructTypeDef *pOffGrd, float Mass_Wheel, float Mass_LegLinkage, float g, float SampleTime)
+{
+    pOffGrd->M_w = Mass_Wheel;
+    pOffGrd->M_l = Mass_LegLinkage;
+    pOffGrd->g = g;
+    pOffGrd->SampleTime = SampleTime;
+}
+
+/**
+  * @brief  离地检测的机体Z轴加速度更新函数
+  * @note   根据传入的Z轴加速度值，更新OffGround结构体中的机体Z轴加速度
+  * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @param  AccZ_Body：机体Z轴加速度值，单位：m/s²
+  * @retval 无
+*/
+void OffGround_BodyZAccUpdate(OffGround_StructTypeDef *pOffGrd, float AccZ_Body)
+{
     pOffGrd->ZAcc_Body = AccZ_Body;
 }
 
 /**
- * @brief  离地检测的俯仰角更新函数
- * @note   根据传入的俯仰角值，更新OffGround结构体中的俯仰角
- * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @param  PitchAngle：俯仰角值，单位：度
- * @retval 无
- */
-void OffGround_PitchAngleUpdate(OffGround_StructTypeDef* pOffGrd, float PitchAngle) {
+  * @brief  离地检测的俯仰角更新函数
+  * @note   根据传入的俯仰角值，更新OffGround结构体中的俯仰角
+  * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @param  PitchAngle：俯仰角值，单位：度
+  * @retval 无
+*/
+void OffGround_PitchAngleUpdate(OffGround_StructTypeDef *pOffGrd, float PitchAngle)
+{
     pOffGrd->PitchAngle = PitchAngle;
 }
 
 /**
- * @brief  离地检测中，五连杆相关的数据更新函数
- * @note
- * 根据传入的五连杆计算参数结构体，更新离地检测结构体中需要的五连杆相关数据
- * @param  LegPtr[in]：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
- * @param  Ctr_LegPtr[in]：LegLinkageCal_StructTypeDef类型的指针，另一条腿的五连杆计算参数结构体指针
- * @param  LegSide：RobotSide_EnumTypeDef类型的枚举值，表示左腿还是右腿
- * @param  pOffGrd[out]：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @param  Ctr_LegSide：RobotSide_EnumTypeDef类型的枚举值，表示另一条腿
- * @retval 无
- */
-void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, 
-                                       LegLinkageCal_StructTypeDef Ctr_LegPtr, 
-                                       OffGround_StructTypeDef* pOffGrd, 
-                                       RobotSide_EnumTypeDef LegSide, 
-                                       RobotSide_EnumTypeDef Ctr_LegSide) {
-    //* 机体竖直加速度 ZAcc_Body
-    //* 摆杆与地面竖直方向的夹角 phi_L/phi_R
-    //* 摆杆长度 L0_L/L0_R 
-    //* 左腿地面支持力 N_L
-    //* N_L = 0.5 * m_total * (g + ZAcc_Body) 
-    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_L} * cos{phi_L} 
-    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_R} * cos{phi_R}
-    //* 右腿地面支持力 N_R
-    //* N_R = 0.5 * m_total * (g + ZAcc_Body) 
-    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_R} * cos{phi_R} 
-    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_L} * cos{phi_L}
-    /*先把上次的值存起来*/
-    pOffGrd->L0_dot_pre = pOffGrd->L0_dot;
-    pOffGrd->Ctr_L0_dot_pre = pOffGrd->Ctr_L0_dot;
-
-    //* TODO 更新腿长相关变量 (下面这些数据未经过滤波处理，可能会有噪声，后续可以考虑加个滤波器)
-    pOffGrd->L0_dot = LegLinkage_GetL0dot(&LegPtr);
-    pOffGrd->L0_ddot = (pOffGrd->L0_dot - pOffGrd->L0_dot_pre) / pOffGrd->SampleTime;
-    pOffGrd->Ctr_L0_dot = LegLinkage_GetL0dot(&Ctr_LegPtr);
-    pOffGrd->Ctr_L0_ddot = (pOffGrd->Ctr_L0_dot - pOffGrd->Ctr_L0_dot_pre) / pOffGrd->SampleTime;
-    //* 更新相对机体摆杆角度相关变量
-    pOffGrd->Theta = LegLinkage_GetTheta(&LegPtr, LegSide);
-    pOffGrd->Ctr_Theta = LegLinkage_GetTheta(&Ctr_LegPtr, Ctr_LegSide);
-    //* 更新相对地面摆杆角度相关变量
-    pOffGrd->Phi = pOffGrd->Theta - pOffGrd->PitchAngle;  // 地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
-    pOffGrd->Ctr_Phi = pOffGrd->Ctr_Theta - pOffGrd->PitchAngle;  // 地面坐标系下，另一条腿的摆杆与竖直方向夹角（注意需要减去机体俯仰角）
+  * @brief  离地检测的俯仰角速度更新函数
+  * @note   根据传入的俯仰角速度值，更新OffGround结构体中的俯仰角速度
+  * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @param  PitchAngleVel：俯仰角速度值，单位：度/s
+  * @retval 无
+*/
+void OffGround_PitchAngleVelUpdate(OffGround_StructTypeDef *pOffGrd, float PitchAngleVel)
+{
+    pOffGrd->PitchAngleVel = PitchAngleVel;
 }
 
 /**
- * @brief  获取离地检测的地面支持力
- * @note   根据OffGround结构体，获取地面支持力F_N的值
- * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
- * @retval 地面地面支持力F_N，单位：N
- */
-float OffGround_GetSupportForce(OffGround_StructTypeDef* pOffGrd) {
-    //* 机体竖直加速度 ZAcc_Body
-    //* 摆杆与地面竖直方向的夹角 phi_L/phi_R
-    //* 摆杆长度 L0_L/L0_R 
-    //* 左腿地面支持力 N_L
-    //* N_L = 0.5 * m_total * (g + ZAcc_Body) 
-    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_L} * cos{phi_L} 
-    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_R} * cos{phi_R}
-    //* 右腿地面支持力 N_R
-    //* N_R = 0.5 * m_total * (g + ZAcc_Body) 
-    //*       - CH_Phys_OffGrd_CorCoeff * \ddot{L0_R} * cos{phi_R} 
-    //*       - CH_Phys_OffGrd_CplCoeff * \ddot{L0_L} * cos{phi_L}
-    float ZAcc_Body = pOffGrd->ZAcc_Body;
-    pOffGrd->F_N = 0.5f * m_total * (pOffGrd->g + ZAcc_Body) 
-                   - CH_Phys_OffGrd_CorCoeff * pOffGrd->L0_ddot * MyCos(pOffGrd->Phi) 
-                   - CH_Phys_OffGrd_CplCoeff * pOffGrd->Ctr_L0_ddot * MyCos(pOffGrd->Ctr_Phi);
+  * @brief  离地检测中，五连杆相关的数据更新函数
+  * @note   根据传入的五连杆计算参数结构体，更新离地检测结构体中需要的五连杆相关数据
+  * @param  LegPtr[in]：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
+  * @param  LegSide：RobotSide_EnumTypeDef类型的枚举值，表示左腿还是右腿
+  * @param  pOffGrd[out]：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @retval 无
+*/
+void OffGround_LegLinkRelateDataUpdate(LegLinkageCal_StructTypeDef LegPtr, OffGround_StructTypeDef *pOffGrd, RobotSide_EnumTypeDef LegSide)
+{
+    /*把上次的值保存下来*/
+    pOffGrd->L0_dot_pre = pOffGrd->L0_dot;
+    pOffGrd->Phi_dot_pre = pOffGrd->Phi_dot;
+
+    /*把离地检测中需要的、五连杆相关的数据写入*/
+    pOffGrd->L1 = LegPtr.l1 * MM2M;
+    pOffGrd->L4 = LegPtr.l4 * MM2M;
+
+    pOffGrd->Phi1 = LegPtr.phi1;
+    pOffGrd->Phi2 = LegPtr.phi2;
+    pOffGrd->Phi3 = LegPtr.phi3;
+    pOffGrd->Phi4 = LegPtr.phi4;
+
+    pOffGrd->Phi0 = LegPtr.phi0;
+    
+    // TODO 下面这些数据未经过滤波处理，可能会有噪声，后续可以考虑加个滤波器
+    pOffGrd->L0      = LegLinkage_GetL0Length(&LegPtr) * MM2M;
+    pOffGrd->L0_dot  = LegLinkage_GetL0dot(&LegPtr);
+    pOffGrd->L0_ddot = (pOffGrd->L0_dot - pOffGrd->L0_dot_pre) / pOffGrd->SampleTime;
+
+    pOffGrd->Theta     = LegLinkage_GetTheta(&LegPtr, LegSide);
+    pOffGrd->Theta_dot = LegLinkage_GetThetadot(&LegPtr, LegSide);
+
+    pOffGrd->Phi      = pOffGrd->Theta - pOffGrd->PitchAngle;        //地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
+    pOffGrd->Phi_dot  = pOffGrd->Theta_dot - pOffGrd->PitchAngleVel; //地面坐标系下，摆杆与竖直方向夹角的微分（注意需要减去机体俯仰角速度）
+    pOffGrd->Phi_ddot = (pOffGrd->Phi_dot - pOffGrd->Phi_dot_pre) / pOffGrd->SampleTime;    //地面坐标系下，摆杆与竖直方向夹角的二阶微分
+}
+
+/**
+  * @brief  离地检测中，关节电机力矩数据更新函数
+  * @note   根据传入的关节电机力矩值，更新离地检测结构体中需要的关节电机力矩数据
+  * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @param  T1：五连杆中phi1关节电机力矩，单位：N·m
+  * @param  T4：五连杆中phi4关节电机力矩，单位：N·m
+  * @retval 无
+*/
+void OffGround_TorqueDataUpdate(OffGround_StructTypeDef *pOffGrd, float T1, float T4)
+{
+    pOffGrd->T1 = T1;
+    pOffGrd->T4 = T4;
+}
+
+/**
+  * @brief  离地检测中，获取F和Tp的真实值
+  * @note   根据传入的关节电机力矩，计算得到真实的F和Tp值
+  * @param  pOffGrd[out]：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @retval 无
+*/
+void OffGround_GetRealFAndTp(OffGround_StructTypeDef *pOffGrd)
+{
+    float J_Matrix_Inverse[2][2]; //这个矩阵是VMC转化矩阵的逆矩阵
+
+    /*将离地检测需要使用的数值写入临时变量*/
+    float L1 = pOffGrd->L1;
+    float L4 = pOffGrd->L4;
+    float L0 = pOffGrd->L0;
+
+    float Phi1 = pOffGrd->Phi1;
+    float Phi2 = pOffGrd->Phi2;
+    float Phi3 = pOffGrd->Phi3;
+    float Phi4 = pOffGrd->Phi4;
+    float Phi0 = pOffGrd->Phi0;
+
+    /*计算逆矩阵的各个元素*/
+    float Sigma1 = L4 * (MyCos(Phi0-Phi2) * MySin(Phi0-Phi3) * MySin(Phi3-Phi4) - MyCos(Phi0-Phi3) * MySin(Phi0-Phi2) * MySin(Phi3-Phi4));
+    float Sigma2 = L1 * (MyCos(Phi0-Phi2) * MySin(Phi0-Phi3) * MySin(Phi1-Phi2) - MyCos(Phi0-Phi3) * MySin(Phi0-Phi2) * MySin(Phi1-Phi2));
+    float Sigma3 = MySin(Phi2 - Phi3);
+
+    J_Matrix_Inverse[0][0] =      -MyCos(Phi0 - Phi2) * Sigma3 / Sigma2;
+    J_Matrix_Inverse[0][1] =       MyCos(Phi0 - Phi3) * Sigma3 / Sigma1;
+    J_Matrix_Inverse[1][0] =  L0 * MySin(Phi0 - Phi2) * Sigma3 / Sigma2;
+    J_Matrix_Inverse[1][1] = -L0 * MySin(Phi0 - Phi3) * Sigma3 / Sigma1;
+
+    /*计算真实的F和Tp值，传给输出变量*/
+    float T1 = pOffGrd->T1;
+    float T4 = pOffGrd->T4;
+    pOffGrd->F_Leg  = J_Matrix_Inverse[0][0] * T1 + J_Matrix_Inverse[0][1] * T4;
+    pOffGrd->Tp_Leg = J_Matrix_Inverse[1][0] * T1 + J_Matrix_Inverse[1][1] * T4;
+}
+
+/**
+  * @brief  离地检测中，获取腿对轮子的竖直作用力P
+  * @note   函数内部直接把计算出来的值赋给OffGround结构体中的F_P变量
+  * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @retval 腿对轮子的竖直作用力P，单位：N
+*/
+float OffGround_GetLegToWheelForce(OffGround_StructTypeDef *pOffGrd)
+{
+    float G_l = pOffGrd->M_l * pOffGrd->g;              //单个腿部重力 = 腿部重量 * 重力加速度
+
+    float Phi = pOffGrd->Phi;     //地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
+    float F  = pOffGrd->F_Leg;    //腿部沿杆方向的力
+    float Tp = pOffGrd->Tp_Leg;   //腿部力矩
+    float L0 = pOffGrd->L0;        //摆杆长度
+
+    float F_P = G_l + F * MyCos(Phi) + Tp * MySin(Phi) / L0;
+    return F_P;
+}
+
+/**
+  * @brief  获取离地检测的地面支持力
+  * @note   根据OffGround结构体，获取地面支持力F_N的值
+  * @param  pOffGrd：OffGround_StructTypeDef类型的指针，离地检测结构体指针
+  * @retval 地面地面支持力F_N，单位：N
+*/
+float OffGround_GetSupportForce(OffGround_StructTypeDef *pOffGrd)
+{
+    float F_P       = OffGround_GetLegToWheelForce(pOffGrd); //腿对轮子的竖直作用力
+    float G_w       = pOffGrd->M_w * pOffGrd->g;    //单个轮子重力 = 轮子重量 * 重力加速度
+
+    float M_w       = pOffGrd->M_w;             //轮子质量
+    float ZAcc_Body = pOffGrd->ZAcc_Body;       //机体Z轴加速度
+    float Phi       = pOffGrd->Phi;             //地面坐标系下，摆杆与竖直方向夹角（注意需要减去机体俯仰角）
+    float Phi_dot   = pOffGrd->Phi_dot * A2R;   //摆杆角速度（注意需要减去机体俯仰角速度）
+    float Phi_ddot  = pOffGrd->Phi_ddot * A2R;  //摆杆角加速度
+    float L0        = pOffGrd->L0;              //摆杆长度
+    float L0_dot    = pOffGrd->L0_dot;          //摆杆长度变化率（摆杆长度速度）
+    float L0_ddot   = pOffGrd->L0_ddot;         //摆杆长度加速度
+
+    float ZAcc_Wheel =  ZAcc_Body - L0_ddot * MyCos(Phi) + 2 * L0_dot * Phi_dot * MySin(Phi) + L0 * Phi_ddot * MySin(Phi) + L0 * Phi_dot * Phi_dot * MyCos(Phi); 
+
+    pOffGrd->F_N    = F_P + G_w + M_w * ZAcc_Wheel; //地面支持力F_N = 腿对轮子的竖直作用力P + 轮子重力G_w + 轮子质量 * 轮子Z轴加速度
+
     return pOffGrd->F_N;
 }
 
-// #pragma endregion
+
+#pragma endregion
+
+#pragma region 卡尔曼滤波器相关函数全家桶
 
 /**
- * @brief  龙伯格观测器计算函数（匀速模型）
- * @note   用来估计底盘速度(老代码拿过来的神奇的东西，我没太搞懂)
- * @param
- * observer：LuenbergerObserver_StructTypeDef类型的指针，龙伯格观测器结构体指针
- * @retval 无
+ * @brief  卡尔曼滤波器初始化
+ * @note   初始化底盘速度卡尔曼滤波器的各个参数
+ * @param  KFptr：KF_StructTypeDef类型的指针，底盘速度卡尔曼滤波器结构体指针
+ * @param  dt：采样时间，单位：秒
  */
-void LuenbergerObserver_UniformVelocityModel(
-    LuenbergerObserver_StructTypeDef* observer) {
-    // 求先验状态向量
-    observer->x_PriorHatMatrix[0] =
-        observer->x_HatMatrix[0] + GCH_TaskTime * observer->x_HatMatrix[1];
-    observer->x_PriorHatMatrix[1] = observer->x_HatMatrix[1];
+void KF_ChassisVel_Init(KF_StructTypeDef *KFptr, float dt) {
+    KFptr->dt = dt;
+    //* x_[0] (2*1)初始状态估计
+    KFptr->x[0] = 0.0f; KFptr->x[1] = 0.0f;
+    
+    //* P_[0] (2*2)初始状态估计误差协方差矩阵
+    //* 传入P的初始值
+    KFptr->P[0][0] = 1.0f; KFptr->P[0][1] = 0.0f;
+    KFptr->P[1][0] = 0.0f; KFptr->P[1][1] = 1.0f;
+    
+    //* Q_c (2*2)过程噪声协方差矩阵（对角矩阵）
+    // 需要调参：模型的不确定度
+    // 假设加速度变化很快，Q[1][1]大；假设匀加速很准确，Q[1][1]小
+    //? 对角矩阵版本（好调参）
+    // 调大Q[0][0]更怀疑模型预测的先验速度，倾向于相信传感器的观测数据
+    // 调大Q[1][1]更怀疑模型预测的先验加速度，倾向于相信传感器的观测数据
+    KFptr->Q[0][0] = 0.001f; KFptr->Q[0][1] = 0.0f;
+    KFptr->Q[1][0] = 0.0f;   KFptr->Q[1][1] = 0.01f; 
+    //? 离散化白噪声加速度模型版本（不好调参） 
+    // 如果假设噪声主要来自加加速度（跃度），根据离散白噪声加速度模型，理论上的Q矩阵如下：
+    // Q = sigma_a^2 * [[dt^3/3, dt^2/2], [dt^2/2, dt]]
+    // float sigma_a = 0.1f; // 假设的加加速度噪声标准差，单位：m/s^3
+    // KFptr->Q[0][0] = MySqr(sigma_a) * MyCube(dt) / 3.0f;
+    // KFptr->Q[0][1] = MySqr(sigma_a) * MySqr(dt) / 2.0f;
+    // KFptr->Q[1][0] = KFptr->Q[0][1];
+    // KFptr->Q[1][1] = MySqr(sigma_a) * dt;
 
-    /*增益矩阵赋值*/
-    // if(OffGround_Flag) //待优化：老代码里的离地标志位，等我写到离地检测了再加
-    // {L11=0.002f;}
-    float L11 = 0.004f;  // 这个值是怎么来的？我也不知道
-    float L22 = 0.01f;   // 这个值是怎么来的？我也不知道
-    observer->L_Matrix[0][0] = L11;
-    observer->L_Matrix[1][1] = L22;
-
-    // 求状态估计
-    observer->x_HatMatrix[0] =
-        (1 - observer->L_Matrix[0][0]) * observer->x_PriorHatMatrix[0] +
-        observer->L_Matrix[0][0] * observer->y_Matrix[0];
-    observer->x_HatMatrix[1] =
-        (1 - observer->L_Matrix[1][1]) * observer->x_PriorHatMatrix[1] +
-        observer->L_Matrix[1][1] * observer->y_Matrix[1];
+    //* R_c (2*2)测量噪声协方差矩阵（对角矩阵）
+    // 需要调参：传感器的噪声
+    // R[0][0] 是轮速编码器的测量噪声，R[1][1] 是IMU加速度计的测量噪声
+    // IMU加速度计是BMI088情况下，噪声比较小，具体可以看底盘云控代码+查手册，建议从0.0001开始调
+    KFptr->R[0][0] = 0.05f;  KFptr->R[0][1] = 0.0f;
+    KFptr->R[1][0] = 0.0f;   KFptr->R[1][1] = 0.0001f;
 }
+
+/**
+ * @brief  卡尔曼滤波器时间更新（预测）
+ * @note   状态方程：x_k = F * x_{k-1} 采用匀加速模型：F = [[1, dt], [0, 1]]
+ * @param  kf：KF_StructTypeDef类型的指针，底盘速度卡尔曼滤波器结构体指针
+ */
+void KF_ChassisVel_Predict(KF_StructTypeDef *KFptr) {
+    //* 1. 计算先验状态估计 x_k_prior = F * x_{k-1}
+    // 写入x_{k-1}
+    float v_old = KFptr->x[0];
+    float a_old = KFptr->x[1];
+    
+    // 计算 x_k_prior : v = v + a*dt, a = a
+    KFptr->x[0] = v_old + a_old * KFptr->dt;
+    KFptr->x[1] = a_old;
+
+    //* 2. 计算先验状态估计误差协方差矩阵: P_k_prior = F * [P_{k-1}] * F^T + Q
+    // 写入P_{k-1}
+    float p00 = KFptr->P[0][0];
+    float p01 = KFptr->P[0][1];
+    float p10 = KFptr->P[1][0];
+    float p11 = KFptr->P[1][1];
+    float dt = KFptr->dt;
+
+    // 计算 P_k_prior
+    KFptr->P[0][0] = p00 + dt*(p10 + p01) + dt*dt*p11 + KFptr->Q[0][0];
+    KFptr->P[0][1] = p01 + dt*p11 + KFptr->Q[0][1];
+    KFptr->P[1][0] = p10 + dt*p11 + KFptr->Q[1][0];
+    KFptr->P[1][1] = p11 + KFptr->Q[1][1];
+}
+
+/**
+ * @brief  卡尔曼滤波器测量更新 (校正)
+ * @note   传感器融合：
+ *         K = P_k_prior * H^T * S^{-1} = P * S^{-1}
+ *         S = H * P_k_prior * H^T + R_c = P + R_c  
+ *         因为 H 是单位矩阵，简化了很多计算
+ * @param  kf：KF_StructTypeDef类型的指针，底盘速度卡尔曼滤波器结构体指针
+ * @param  v_body_obs：轮速编码器测量的底盘线速度，单位：m/s
+ * @param  a_imu：IMU加速度计测量的底盘线加速度，单位：m/s^2
+ */
+void KF_ChassisVel_Update(KF_StructTypeDef *KFptr, float v_body_obs, float a_imu) {
+    //* 1. 计算卡尔曼增益 K
+    // 计算K的分母 S = H * P_k_prior * H^T + R_c = P + R_c (因为H是单位阵)
+    float S00 = KFptr->P[0][0] + KFptr->R[0][0];
+    float S01 = KFptr->P[0][1] + KFptr->R[0][1];
+    float S10 = KFptr->P[1][0] + KFptr->R[1][0];
+    float S11 = KFptr->P[1][1] + KFptr->R[1][1];
+
+    // 计算S的逆矩阵 (2x2矩阵求逆)
+    // 求S的行列式
+    float det = S00*S11 - S01*S10;
+    
+    // 如果行列式过小，说明矩阵奇异，跳过本次更新
+    if (MyAbsf(det) < 1e-12f) {
+        return; 
+    }
+
+    // 计算S的逆矩阵元素
+    float invS00 =  S11 / det;
+    float invS01 = -S01 / det;
+    float invS10 = -S10 / det;
+    float invS11 =  S00 / det;
+
+    // 计算卡尔曼增益 K = P_k_prior * H^T * S^{-1} = P * S^{-1}
+    KFptr->K[0][0] = KFptr->P[0][0]*invS00 + KFptr->P[0][1]*invS10;
+    KFptr->K[0][1] = KFptr->P[0][0]*invS01 + KFptr->P[0][1]*invS11;
+    KFptr->K[1][0] = KFptr->P[1][0]*invS00 + KFptr->P[1][1]*invS10;
+    KFptr->K[1][1] = KFptr->P[1][0]*invS01 + KFptr->P[1][1]*invS11;
+
+    //* 2. 计算后验状态估计 x_k = x_k_prior + K * (z_k - H * x_k_prior) 
+    // 写入观测向量 z_k
+    float z0 = v_body_obs;
+    float z1 = a_imu;
+
+    // 测量值残差 y = z_k - H * x_k_prior
+    float y0 = z0 - KFptr->x[0];
+    float y1 = z1 - KFptr->x[1];
+
+    // 更新后验状态估计 x_k = x_k_prior + K * y
+    KFptr->x[0] += KFptr->K[0][0]*y0 + KFptr->K[0][1]*y1;
+    KFptr->x[1] += KFptr->K[1][0]*y0 + KFptr->K[1][1]*y1;
+
+    //* 3.更新后验状态估计误差协方差矩阵 P = (I - K * H) * P_k_prior = (I - K) * P_k_prior
+    // 计算 I - K
+    float I_K00 = 1.0f - KFptr->K[0][0];
+    float I_K01 =      - KFptr->K[0][1];
+    float I_K10 =      - KFptr->K[1][0];
+    float I_K11 = 1.0f - KFptr->K[1][1];
+
+    // 临时保存P，防止计算过程中被覆盖
+    float P_new[2][2]; 
+    P_new[0][0] = I_K00*KFptr->P[0][0] + I_K01*KFptr->P[1][0];
+    P_new[0][1] = I_K00*KFptr->P[0][1] + I_K01*KFptr->P[1][1];
+    P_new[1][0] = I_K10*KFptr->P[0][0] + I_K11*KFptr->P[1][0];
+    P_new[1][1] = I_K10*KFptr->P[0][1] + I_K11*KFptr->P[1][1];
+    
+    memcpy(KFptr->P, P_new, sizeof(P_new));
+}
+
+#pragma endregion

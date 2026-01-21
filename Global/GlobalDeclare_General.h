@@ -166,14 +166,14 @@ typedef struct {
     int32_t ValueSum;  // 编码器值累计和
 } EncoderData_StructTypeDef;
 
-// // #pragma region
+// #pragma region
 // /****枚举声明*********************************************************************************/
 /*机器人左右侧枚举类型*/
 typedef enum {
     LeftSide,  // 左侧
     RightSide  // 右侧
 } RobotSide_EnumTypeDef;
-// // #pragma endregion
+// #pragma endregion
 
 /********************************不需要修改的变量引出extern声明********************************/
 /*************机器人整体控制结构体*************/

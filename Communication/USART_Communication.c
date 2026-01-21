@@ -84,7 +84,7 @@ const uint16_t CRC16_Table[256] = {
     0x3de3, 0x2c6a, 0x1ef1, 0x0f78};
 
 /****************************函数****************************/
-// // #pragma region /********CRC校验相关函数********/
+// #pragma region /********CRC校验相关函数********/
 /**
  * @brief  CRC16校验中计算输入数据的CRC8校验字
  * @note   CRC16校验的辅助函数
@@ -144,9 +144,9 @@ void _CRC16_Append(uint8_t* pchMessage, uint32_t dwLength) {
     pchMessage[dwLength - 2] = (uint8_t)(wCRC & 0x00ff);
     pchMessage[dwLength - 1] = (uint8_t)((wCRC >> 8) & 0x00ff);
 }
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /********串口通讯相关函数********/
+// #pragma region /********串口通讯相关函数********/
 /**
  * @brief  串口6调用DMA发送数据函数
  * @note   该函数暂时没有用到，作为备用函数
@@ -426,4 +426,4 @@ void UA4Tx_SendDataToIMU2(void) {
     DMA_Cmd(UART4_TX_STREAM, ENABLE);  // 启用串口DMA发送
 }
 
-// // #pragma endregion
+// #pragma endregion

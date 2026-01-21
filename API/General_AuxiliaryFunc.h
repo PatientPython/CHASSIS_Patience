@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 #include "GlobalDeclare_General.h"
-// // #pragma region /**** 遥控器相关函数 ***************************/
+// #pragma region /**** 遥控器相关函数 ***************************/
 /**************遥控器是否连接**************/
 
 bool IsRCConnected(void);
@@ -53,11 +53,11 @@ bool IsRollerDown(void);
 /**************双摇杆相关**************/
 
 bool IsInsideEightGesture(void);
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /**** 步进改变数值函数 *************************/
+// #pragma region /**** 步进改变数值函数 *************************/
 float StepChangeValue(float ValueNow, float ValueDes, float Step);
-// // #pragma endregion
+// #pragma endregion
 
 /************限幅函数************/
 

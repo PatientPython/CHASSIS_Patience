@@ -16,7 +16,7 @@
 #include "FreeRTOS.h"
 #include "GlobalDeclare_General.h"
 
-// // #pragma region
+// #pragma region
 // /****枚举声明************************************************************************/
 /*底盘模式相关枚举*/
 typedef enum {
@@ -46,9 +46,9 @@ typedef enum {
     MoveDirection_Forward,
     MoveDirection_Backward
 } Chassis_MoveDirection_EnumTypeDef;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /****结构体声明************************************************************************/
 /*模式开始时间结构体：实际在CHData_StructTypeDef中使用*/
 typedef struct {
@@ -192,8 +192,7 @@ typedef struct {
     int8_t TempFB;      // 电机温度反馈值，单位：°C
 
     float TorqueDes;  // 电机力矩目标值，向前转为正，单位：Nm
-    int16_t
-        CurrentDes;  // 电机电流目标值，注意单位不是mA也不是A，是直接给电调的电流值
+    int16_t CurrentDes;  // 电机电流目标值，注意单位不是mA也不是A，是直接给电调的电流值
                      // TODO
     // 电调手册上写了，这个值的范围是-16384到16384，代表-20A到20A的电流输出。
 } HMData_StructTypeDef;
@@ -214,7 +213,7 @@ typedef struct {
 
     float YawDeltaDes;     // 底盘偏转角目标增量，上往下看逆时针为正，单位度
     float YawAngleVelDes;  // 底盘偏转速度目标值，上往下看逆时针为正，单位度/s
-    float YawAngleFB;      // [new] 底盘偏转角反馈值，上往下看逆时针为正，单位度
+    // float YawAngleFB;      // [new] 底盘偏转角反馈值，上往下看逆时针为正，单位度
     float YawAngleVelFB;   // 底盘偏转速度反馈值，上往下看逆时针为正，单位度/s
 
     float Theta1Des;  // 左腿与绝对垂直方向夹角目标值，向后摆为正，单位度
@@ -248,23 +247,23 @@ typedef struct {
     float AccZFB;       // 底盘垂直加速度反馈值，向上为正，单位m/s²
 
     /*底盘控制策略相关*/
-    _CH_ModeStartTime_StructTypeDef
-        ST_ModeStartTime;  // 底盘各模式开始时间结构体
+    _CH_ModeStartTime_StructTypeDef ST_ModeStartTime;  // 底盘各模式开始时间结构体
 
-    bool
-        F_DirectionInvert;  // 底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
-    Chassis_MoveDirection_EnumTypeDef
-        EM_MoveDirection;  // 底盘运动方向枚举变量，表示当前底盘是刹车、前进还是后退
+    bool F_DirectionInvert;  // 底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
+    Chassis_MoveDirection_EnumTypeDef EM_MoveDirection;  // 底盘运动方向枚举变量，表示当前底盘是刹车、前进还是后退
 
     /*其他一些变量*/
     float Leg1F_N;  // 左腿腿部支持力反馈值，单位N
     float Leg2F_N;  // 右腿腿部支持力反馈值，单位N
-} CHData_StructTypeDef;
-// // #pragma endregion
 
-// // #pragma region
+    bool F_OffGround1;  // 左腿离地状态标志位，true表示离地，false表示未离地
+    bool F_OffGround2;  // 右腿离地状态标志位，true表示离地，false表示未离地
+} CHData_StructTypeDef;
+// #pragma endregion
+
+// #pragma region
 // /****变量引出extern声明****************************************************************/
-// // #pragma region
+// #pragma region
 // /****************************时间相关********************************/
 /*ChassisTask的任务周期、任务时间*/
 
@@ -275,9 +274,9 @@ extern const float GCH_TaskTime;
 extern uint16_t CHMode_AllMode_PreProcessTime;
 extern uint16_t CHMode_RC_StandUp_TotalTime;
 
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /****************************通讯相关*********************************/
 
 extern IMU2Data_StructTypeDef GstCH_IMU2;
@@ -286,9 +285,9 @@ extern uint8_t GFCH_LegCalibration;
 
 extern C620FeedBackData_StructTypeDef GstCH_HM1RxC620Data;
 extern C620FeedBackData_StructTypeDef GstCH_HM2RxC620Data;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /*************************低通滤波器、观测器相关***********************/
 
 extern LPF_StructTypeDef GstCH_HM1_AngleVelLPF;
@@ -309,9 +308,9 @@ extern LPF_StructTypeDef GstCH_PitchAngleVelLPF;
 
 extern LPF_StructTypeDef GstCH_Leg1F_N_LPF;
 extern LPF_StructTypeDef GstCH_Leg2F_N_LPF;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /************************TD算法相关**********************************/
 
 extern TD_StructTypeDef GstCH_LegLen1TD;
@@ -323,9 +322,9 @@ extern float TD_LegLen_rStandUp;
 extern float TD_LegLen_rNorm;
 extern float TD_LegLen_rSlowSitDown;
 
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /************************PID算法相关*********************************/
 
 extern PID_StructTypeDef GstCH_LegLen1PID;
@@ -337,9 +336,9 @@ extern float PID_LegLen_KdStandUp;
 extern float PID_LegLen_KpNorm;
 extern float PID_LegLen_KdNorm;
 
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****底盘平移、旋转控制相关*****************************/
+// #pragma region /****底盘平移、旋转控制相关*****************************/
 
 extern float ChMove_StillVelTH;
 extern float ChMove_VelDesMax;
@@ -354,9 +353,9 @@ extern float ChMove_BrakeVelLimitTH;
 extern float ChMove_YawAngleVelMaxTH;
 extern float ChMove_TurnYawVel_Normal;
 extern float ChMove_YawAngleVelAddStep;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****底盘小陀螺相关*****************************/
+// #pragma region /****底盘小陀螺相关*****************************/
 
 extern float RCTopMode_EnterVelMinTH;
 extern float RCTopMode_EnterDelayTime;
@@ -364,15 +363,15 @@ extern float RCTopMode_TopAngleVelDesMax;
 extern float RCTopMode_TopAngleVelAddStep;
 extern float RCTopMode_TopAngleVelBrakeStep;
 extern float RCTopMode_ExitAngleVelTH;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region /****SlowSitDown相关*****************************/
+// #pragma region /****SlowSitDown相关*****************************/
 
 extern float SlowSitDown_YawAngleVelBrakeStep;
 extern float SlowSitDown_LegFFForceDecStep;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /******************底盘其他相关参数***********************************/
 
 extern const float JointMotorMAXTorque;
@@ -403,9 +402,9 @@ extern const float CH_Phys_OffGrd_CplCoeff;
 
 //* 用于缓慢坐下模式的腿部前馈力计算 
 extern float LegFFForce_SlowSitDown;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /*********************底盘运动控制相关-辅助变量************************/
 
 extern LegLinkageCal_StructTypeDef GstCH_LegLinkCal1;
@@ -418,9 +417,9 @@ extern VMC_StructTypeDef GstCH_Leg2VMC;
 
 extern OffGround_StructTypeDef GstCH_OffGround1;
 extern OffGround_StructTypeDef GstCH_OffGround2;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /*****************其他底盘运动控制相关-正式变量************************/
 
 extern ChassisMode_EnumTypeDef GEMCH_Mode;
@@ -435,9 +434,9 @@ extern HMData_StructTypeDef GSTCH_HM1;
 extern HMData_StructTypeDef GSTCH_HM2;
 
 extern CHData_StructTypeDef GSTCH_Data;
-// // #pragma endregion
+// #pragma endregion
 
-// // #pragma region
+// #pragma region
 // /****宏定义引出声明（一般不需要修改）****************************************************/
 /**********机器人机械结构相关****************/
 // 换车时需修改
@@ -462,7 +461,7 @@ extern CHData_StructTypeDef GSTCH_Data;
 /**********GFCH_IMU2Restart的取值***********/
 #define IMU2RestartYES 0xF  // IMU2要重启
 #define IMU2RestartNO 0x0   // IMU2不重启
-// // #pragma endregion
+// #pragma endregion
 
 #define LegLen_StandUp_Practice 0.30f  // 单位：m，自己的设定的站立目标腿长
 #endif

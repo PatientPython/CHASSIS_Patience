@@ -60,6 +60,17 @@ float MySqr(float Value)
 }
 
 /**
+ * @brief 立方计算函数
+ * @note   没有什么特殊的，只是封装了看起来更顺眼
+ * @param  Value：float类型的数，用来计算的值
+ * @retval 计算结果，float类型的数
+ */
+float MyCube(float Value)
+{
+    return Value * Value * Value;
+}
+
+/**
   * @brief  archtan计算函数
   * @note   实际上是调用了math库的函数，重写一下看起来更简单顺眼
   * @param  Y：float类型的数，y坐标值

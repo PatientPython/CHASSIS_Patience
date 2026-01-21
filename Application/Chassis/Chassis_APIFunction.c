@@ -21,7 +21,7 @@
 #include "GlobalDeclare_General.h"
 #include "TIM_Config.h"
 
-// // #pragma region 底盘的解算相关函数：只解算，不更改正式结构体的值
+// #pragma region 底盘的解算相关函数：只解算，不更改正式结构体的值
 /**
  * @brief  底盘腿部五连杆解算处理函数
  * @note   第一步：更新五连杆解算的数据，主要是phi1、phi4
@@ -92,7 +92,7 @@ void CH_LQRCal_Process(void) {
     /*更新LQR的K矩阵*/
     // LQR_K_MatrixUpdate(&GstCH_LQRCal, GSTCH_Data.LegLen1FB,
     // GSTCH_Data.LegLen2FB); //根据腿长更新K矩阵
-    //* 刚开始腿长是0，然后K矩阵直接就是代入的默认值 LQR_DefaultK_Matrix
+    //* 刚开始腿长是0，然后K矩阵直接就是代入的几个默认值中的一个 LQR_DefaultK_Matrix
     LQR_K_MatrixUpdate(&GstCH_LQRCal, 0.0f, 0.0f);
     // TODO 待修改：暂时不根据腿长更新K矩阵，直接用默认值，后面需要使用拟合时，先写了这个函数里面的拟合，然后解除上面的函数注释，删除该行
     /*调用LQR计算函数*/
@@ -130,14 +130,18 @@ void CH_SupportForce_Process(void) {
     /*左腿离地检测相关变量的计算*/
     OffGround_BodyZAccUpdate(&GstCH_OffGround1, GSTCH_Data.AccZFB);
     OffGround_PitchAngleUpdate(&GstCH_OffGround1, GSTCH_Data.PitchAngleFB);
-    //* 支持力估算需要使用另一个腿的变量 
-    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal1, GstCH_LegLinkCal2, &GstCH_OffGround1, LeftSide, RightSide);
+    OffGround_PitchAngleVelUpdate(&GstCH_OffGround1, GSTCH_Data.PitchAngleVelFB);
+    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal1, &GstCH_OffGround1, LeftSide);
+    OffGround_TorqueDataUpdate(&GstCH_OffGround1, GSTCH_JM3.TorqueFB, GSTCH_JM1.TorqueFB);
+    OffGround_GetRealFAndTp(&GstCH_OffGround1);
 
     /*右腿离地检测相关变量的计算*/
     OffGround_BodyZAccUpdate(&GstCH_OffGround2, GSTCH_Data.AccZFB);
     OffGround_PitchAngleUpdate(&GstCH_OffGround2, GSTCH_Data.PitchAngleFB);
-    //* 支持力估算需要使用另一个腿的变量
-    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal2, GstCH_LegLinkCal1, &GstCH_OffGround2, RightSide, LeftSide);
+    OffGround_PitchAngleVelUpdate(&GstCH_OffGround2, GSTCH_Data.PitchAngleVelFB);
+    OffGround_LegLinkRelateDataUpdate(GstCH_LegLinkCal2, &GstCH_OffGround2, RightSide);
+    OffGround_TorqueDataUpdate(&GstCH_OffGround2, GSTCH_JM2.TorqueFB, GSTCH_JM4.TorqueFB);
+    OffGround_GetRealFAndTp(&GstCH_OffGround2);
     
     /***************** 离地检测相关数据更新 *****************/
     //* XXX 由于是循环执行，所以虽然没有更新Z轴加速度等但是可以在这个里面更新离地状态 
@@ -146,8 +150,8 @@ void CH_SupportForce_Process(void) {
     GSTCH_Data.Leg1F_N = _Ch_FBData_LPF(Leg1F_N_RawValue, &GstCH_Leg1F_N_LPF);  // 低通滤波处理
     GSTCH_Data.Leg2F_N = _Ch_FBData_LPF(Leg2F_N_RawValue, &GstCH_Leg2F_N_LPF);  // 低通滤波处理
     // TODO 测一下离地状态下的支持力变化的最大值和最小值
-    // GSTCH_Data.F_OffGround1 = _Ch_OffGroundStateFlagGet(GSTCH_Data.F_OffGround1, GSTCH_Data.Leg1F_N); //左腿离地状态更新
-    // GSTCH_Data.F_OffGround2 = _Ch_OffGroundStateFlagGet(GSTCH_Data.F_OffGround2, GSTCH_Data.Leg2F_N); //右腿离地状态更新
+    GSTCH_Data.F_OffGround1 = _Ch_OffGroundStateFlagGet(GSTCH_Data.F_OffGround1, GSTCH_Data.Leg1F_N); //左腿离地状态更新
+    GSTCH_Data.F_OffGround2 = _Ch_OffGroundStateFlagGet(GSTCH_Data.F_OffGround2, GSTCH_Data.Leg2F_N); //右腿离地状态更新
 }
 
 /**
@@ -166,16 +170,26 @@ void CH_InertialFF_Process(void) {
     LegFFForce_Inertial_1 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
     LegFFForce_Inertial_2 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
 }
+
 /**
- * @brief  底盘龙伯格观测器处理函数
- * @note   调用CH_LobObserver_Cal对底盘进行龙伯格观测器处理
+ * @brief  底盘卡尔曼滤波速度融合处理函数
+ * @note   调用_Ch_VelKF_Process对底盘速度进行卡尔曼滤波融合处理
  * @param  无
  * @retval 无
  */
-void CH_VelocityObs_Process(void) {
-    GSTCH_Data.VelFB = _Ch_VelFB_Process();  // 底盘速度滤波、观测处理
+void CH_VelKF_Process(void) {
+    float YawAngleVel = GSTCH_Data.YawAngleVelFB;
+    float AngleVel_Wheel1 = GSTCH_HM1.AngleVelFB;  // 左轮轮毂电机角速度，单位rad/s
+    float AngleVel_Wheel2 = GSTCH_HM2.AngleVelFB;  // 右轮轮毂电机角速度，单位rad/s
+    _Ch_VelKF_Process(AngleVel_Wheel1, AngleVel_Wheel2);
+    GSTCH_Data.VelFB = GstCH_VelKF.x_cur;   // 底盘速度滤波、观测处理
     GSTCH_Data.DisFB += GSTCH_Data.VelFB * GCH_TaskTime;  // 位移 = 上次位移 + 速度*时间
+    float AngleVel_Wheel1_nxt = (GstCH_VelKF.x_nxt - R_l * YawAngleVel) / R_w;  // 预测的左轮轮毂电机角速度，单位rad/s
+    float AngleVel_Wheel2_nxt = (GstCH_VelKF.x_nxt + R_l * YawAngleVel) / R_w;  // 预测的右轮轮毂电机角速度，单位rad/s
+    GstCH_VelKF.TorqueComp_L = GstCH_VelKF.K_adapt * (AngleVel_Wheel1_nxt - AngleVel_Wheel1);  // 左轮轮毂电机速度误差补偿力矩
+    GstCH_VelKF.TorqueComp_R = GstCH_VelKF.K_adapt * (AngleVel_Wheel2_nxt - AngleVel_Wheel2);  // 右轮轮毂电机速度误差补偿力矩
 }
+
 /**
  * @brief  轮毂电机扭矩转电流计算处理函数
  * @note   基于Kt常数和电调映射比例，将 TorqueDes 转换为 CurrentDes
@@ -196,11 +210,11 @@ void CH_HMTorqueToCurrent_Process(HMData_StructTypeDef* pHM) {
     pHM->CurrentDes = (int16_t)send_Value;
 }
 
-// // #pragma endregion
+// #pragma endregion
 
 // 底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值
 
-// // #pragma region 各种FB反馈数据的修改、处理、更新相关函数
+// #pragma region 各种FB反馈数据的修改、处理、更新相关函数
 /**
  * @brief  用来解析轮毂电机反馈的数据，然后分发到正式结构体、变量
  * @param  Side：RobotSide_EnumTypeDef类型的枚举值，表示左轮毂还是右轮毂
@@ -212,15 +226,10 @@ void CH_HMTorqueToCurrent_Process(HMData_StructTypeDef* pHM) {
  * @retval 无
  */
 //* 最后获得的是pHM里面的滤波后的速度（左右轮取反处理）、温度、电流反馈值
-void _HM_FBData_Parse(RobotSide_EnumTypeDef Side, HMData_StructTypeDef* pHM,
-                      C620FeedBackData_StructTypeDef* pESC,
-                      LPF_StructTypeDef* pLPF) {
+void _HM_FBData_Parse(RobotSide_EnumTypeDef Side, HMData_StructTypeDef* pHM, C620FeedBackData_StructTypeDef* pESC, LPF_StructTypeDef* pLPF) {
     /*计算原始速度值*/
-    float ReductionGearboxAngleVel =
-        pESC->AngleVelFB /
-        pHM->ReductionRatio;  // 减速箱输出轴角速度，单位r/min
-    float RawAngleVel = ReductionGearboxAngleVel * 2 * PI /
-                        60.0f;  // 减速箱输出轴角速度，单位rad/s
+    float ReductionGearboxAngleVel = pESC->AngleVelFB / pHM->ReductionRatio;  // 减速箱输出轴角速度，单位r/min
+    float RawAngleVel = ReductionGearboxAngleVel * 2 * PI / 60.0f;  // 减速箱输出轴角速度，单位rad/s
 
     /*低通滤波处理速度值*/
     LPF_SetInput(pLPF, RawAngleVel);  // 设置低通滤波器输入值
@@ -253,38 +262,43 @@ float _Ch_FBData_LPF(float RawData, LPF_StructTypeDef* pLPF) {
 }
 
 /**
- * @brief  底盘速度处理函数
- * @note   使用龙伯格观测器观测底盘速度，并进行速度补偿
- *         最终得到平滑的底盘速度反馈值
- * @param  无
- * @retval 处理后的平滑底盘速度值，单位m/s
+ * @brief  底盘速度卡尔曼滤波(KF)融合处理函数
+ * @note   1. 融合轮毂电机测速（含腿部运动学相对速度）与IMU角速度积分。
+ *         2. 动态检测离地或打滑状态，实时调节观测噪声矩阵 R 以维持稳态。
+ *         3. 同时返回预测步(Predict)和更新步(Update)的速度值。
+ * @param  AngleVel_Wheel1：左轮轮毂电机角速度，单位rad/s
+ * @param  AngleVel_Wheel2：右轮轮毂电机角速度，单位rad/s
+ * @retval KF_Result_t 包含两个成员的结构体：
+ *             - x_nxt: 预测速度（IMU积分预估，x_k|k-1）
+ *             - x_cur: 最优估计速度（传感器融合更新后，x_k|k）
  */
 //* 底盘速度处理函数
-float _Ch_VelFB_Process(void) {
-    /*底盘速度补偿值的获取*/
-    float ChVelComp = (GSTCH_Data.xC1_dot + GSTCH_Data.xC2_dot) /
-                      2.0f;  // 底盘补偿速度原始值，单位m/s
-    ChVelComp = _Ch_FBData_LPF(ChVelComp, &GstCH_VelCompLPF);
+void _Ch_VelKF_Process(float AngleVel_Wheel1, float AngleVel_Wheel2) {
+    // 1. 获取测量数据
+    float v_wheel = (AngleVel_Wheel1 + AngleVel_Wheel2) / 2.0f * WheelRadius; // 轮子测量的线速度（角速度是低通后的不用再低通了）
+    float a_imu = GSTCH_Data.AccXFB; // IMU测量的机体加速度
+    float v_rel_leg = (GSTCH_Data.xC1_dot + GSTCH_Data.xC2_dot) / 2.0f; // 运动学补偿 (腿对轮子的相对速度)
 
-    /*底盘速度观测值的处理*/
-    float HMAngleVelAvg = (GSTCH_HM1.AngleVelFB + GSTCH_HM2.AngleVelFB) /
-                          2.0f;  // 轮毂电机角速度平均值，单位rad/s
-    float ChassisVel_TheoryRaw =
-        HMAngleVelAvg * WheelRadius;  // 底盘理论质心水平速度原始值，单位m/s
-    float ChVel_Theory =
-        _Ch_FBData_LPF(ChassisVel_TheoryRaw,
-                       &GstCH_TheoryVelLPF);  // 底盘理论质心水平速度滤波处理
+    // 重要：观测到的底盘速度 = 轮速 + 腿部摆动速度
+    // 这样观测值的物理意义才与 KF 预测的底盘速度(由IMU积分而来)保持一致
+    float v_body_obs = v_wheel + v_rel_leg;
 
-    GstCH_VelObserver.y_Matrix[0] =
-        ChVel_Theory;  // 观测器输入值赋值，底盘速度理论原始值，单位m/s
-    GstCH_VelObserver.y_Matrix[1] =
-        GSTCH_Data.AccXFB;  // 观测器输入值赋值，底盘加速度原始值，单位m/s²
-    LuenbergerObserver_UniformVelocityModel(
-        &GstCH_VelObserver);  // 调用龙伯格观测器计算，神奇的老代码的东西
+    // 2. 离地与打滑处理 (动态调节 R 矩阵)
+    if(GSTCH_Data.F_OffGround1 || GSTCH_Data.F_OffGround2) {
+        // 离地了，轮速观测值不可信，大幅增加 R[0][0]，使 KF 信任 IMU 积分
+        GstCH_VelKF.R[0][0] = 1000.0f; 
+    } else {
+        // 正常状态
+        GstCH_VelKF.R[0][0] = 0.05f; 
+    }
 
-    /*计算最终底盘速度反馈值*/
-    return GstCH_VelObserver.x_HatMatrix[0] +
-           ChVelComp;  // 底盘速度 = 观测器估计速度 + 补偿速度
+    // 3. 执行速度预测
+    KF_ChassisVel_Predict(&GstCH_VelKF);
+    GstCH_VelKF.x_nxt = GstCH_VelKF.x[0];
+
+    // 4. 执行速度更新
+    KF_ChassisVel_Update(&GstCH_VelKF, v_body_obs, a_imu);
+    GstCH_VelKF.x_cur = GstCH_VelKF.x[0];
 }
 
 /**
@@ -324,6 +338,7 @@ bool _Ch_OffGroundStateFlagGet(bool F_OffGroundPre, float LegF_N)
 //* 更新底盘相关数据的反馈值
 void CH_FBData_Parse(void) {
     /***************** 轮毂电机相关数据更新 *****************/
+    //* 更新轮毂电机结构体数据，对角速度做了低通滤波处理
     _HM_FBData_Parse(LeftSide, &GSTCH_HM1, &GstCH_HM1RxC620Data, &GstCH_HM1_AngleVelLPF);  // 处理电调反馈数据，然后分发到正式结构体、变量
     _HM_FBData_Parse(RightSide, &GSTCH_HM2, &GstCH_HM2RxC620Data, &GstCH_HM2_AngleVelLPF);  // 处理电调反馈数据，然后分发到正式结构体、变量
 
@@ -345,17 +360,16 @@ void CH_FBData_Parse(void) {
     GSTCH_JM4.TorqueFB = GstCH_IMU2.ST_Rx.JM4_TorqueFB;
 
     /*************** IMU2-底盘运动姿态数据更新 ***************/
-    GSTCH_Data.YawAngleFB = GstCH_IMU2.ST_Rx.YawAngle;  // XXX 新增
     GSTCH_Data.YawAngleVelFB = _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.YawAngleVel, &GstCH_YawAngleVelLPF);
     GSTCH_Data.PitchAngleFB = GstCH_IMU2.ST_Rx.PitchAngle;
     GSTCH_Data.PitchAngleVelFB = _Ch_FBData_LPF(GstCH_IMU2.ST_Rx.PitchAngleVel, &GstCH_PitchAngleVelLPF);
 
     GSTCH_Data.RollAngleFB = GstCH_IMU2.ST_Rx.RollAngle;
-    GSTCH_Data.AccXFB = -GstCH_IMU2.ST_Rx.AccX;  // 底盘云控反着安装，所以取负号 //换车时需修改
-    GSTCH_Data.AccZFB = GstCH_IMU2.ST_Rx.AccZ;  // 底盘垂直加速度反馈值，向上为正，单位m/s²
+    GSTCH_Data.AccXFB = - GstCH_IMU2.ST_Rx.AccX;  // 底盘云控反着安装，所以取负号 //换车时需修改
+    GSTCH_Data.AccZFB =   GstCH_IMU2.ST_Rx.AccZ;  // 底盘垂直加速度反馈值，向上为正，单位m/s²
 }
-// // #pragma endregion
-// // #pragma region(未实现)各种Des目标数据的修改、处理、更新相关函数
+// #pragma endregion
+// #pragma region(未实现)各种Des目标数据的修改、处理、更新相关函数
 // TODO 更新目标值实现
 /**
  * @brief  更新腿长目标值（TD算法）
@@ -387,8 +401,8 @@ void CH_FBData_Parse(void) {
  */
 //* 更新VMC相关数据的目标值
 void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {}
-// // #pragma endregion
-// // #pragma region 各种数据的重置、清零函数
+// #pragma endregion
+// #pragma region 各种数据的重置、清零函数
 
 /**各项目标数据的清零、重置**/
 /**
@@ -608,8 +622,8 @@ void Chassis_RobotCtrlDataReset(void) {
 }
 //! 与安全模式相关
 
-// // #pragma endregion
-// // #pragma region 底盘其他相关函数
+// #pragma endregion
+// #pragma region 底盘其他相关函数
 /**
  * @brief  手动校准状态检测函数
  * @note   检测当前是否处于手动校准状态
@@ -643,4 +657,4 @@ void CH_ChassisModeUpdate(void) {
     GEMCH_Mode = ChassisStratgy_ModeChoose_RCControl(ST_ModeChoosePara_tmp);  // 调用底盘模式选择函数
     ChassisStratgy_ModeStartTimeUpdate(&GSTCH_Data, GEMCH_Mode, GEMCH_ModePre);
 }
-// // #pragma endregion
+// #pragma endregion

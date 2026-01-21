@@ -16,9 +16,10 @@ float MySin(float AngleInDegree);
 float MyCos(float AngleInDegree);
 float MyAtan(float Value);
 
-/************平方、平方根************/
+/************平方、立方、平方根************/
 
 float MySqr(float Value);
+float MyCube(float Value);
 float MySqrt(float Value);
 
 /************其他************/
