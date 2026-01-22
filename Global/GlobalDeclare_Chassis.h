@@ -184,7 +184,7 @@ typedef struct {
 /*轮毂电机数据结构体*/
 typedef struct {
     /*需要初始化赋值的成员*/
-    const float ReductionRatio;  // 减速比
+    float ReductionRatio;  // 减速比
 
     /*不需要初始化赋值的成员*/
     float AngleVelFB;   // 电机减速箱输出的角速度反馈值，向前为正，单位：rad/s
@@ -192,6 +192,7 @@ typedef struct {
     int8_t TempFB;      // 电机温度反馈值，单位：°C
 
     float TorqueDes;  // 电机力矩目标值，向前转为正，单位：Nm
+    float TorqueAdapt; // 电机力矩补偿值，向前转为正，单位：Nm
     int16_t CurrentDes;  // 电机电流目标值，注意单位不是mA也不是A，是直接给电调的电流值
                      // TODO
     // 电调手册上写了，这个值的范围是-16384到16384，代表-20A到20A的电流输出。
@@ -288,14 +289,13 @@ extern C620FeedBackData_StructTypeDef GstCH_HM2RxC620Data;
 // #pragma endregion
 
 // #pragma region
-// /*************************低通滤波器、观测器相关***********************/
+// /*************************低通滤波器、卡尔曼滤波器相关***********************/
 
 extern LPF_StructTypeDef GstCH_HM1_AngleVelLPF;
 extern LPF_StructTypeDef GstCH_HM2_AngleVelLPF;
 
 extern LPF_StructTypeDef GstCH_TheoryVelLPF;
 extern LPF_StructTypeDef GstCH_VelCompLPF;
-extern LuenbergerObserver_StructTypeDef GstCH_VelObserver;
 
 extern LPF_StructTypeDef GstCH_xC1dotLPF;
 extern LPF_StructTypeDef GstCH_xC2dotLPF;
@@ -308,6 +308,8 @@ extern LPF_StructTypeDef GstCH_PitchAngleVelLPF;
 
 extern LPF_StructTypeDef GstCH_Leg1F_N_LPF;
 extern LPF_StructTypeDef GstCH_Leg2F_N_LPF;
+
+extern KF_StructTypeDef GstCH_VelKF;
 // #pragma endregion
 
 // #pragma region
@@ -386,6 +388,10 @@ extern float LegLenMid;
 extern float LegLenHigh;
 extern float LegLenOffGround;
 
+extern const float m_w;
+extern const float R_l;
+extern const float R_w;
+
 //* 用于前馈力计算 
 extern const float m_total;
 extern const float CH_Phys_EffMass;
@@ -440,9 +446,9 @@ extern CHData_StructTypeDef GSTCH_Data;
 // /****宏定义引出声明（一般不需要修改）****************************************************/
 /**********机器人机械结构相关****************/
 // 换车时需修改
-#define WheelRadius (72.0f * MM2M)  // 轮子的半径，单位米
+// #define WheelRadius (72.0f * MM2M)  // 轮子的半径，单位米
 // XXX 换车时需修改(写在了全局变量里面)
-// #define WheelMass 2.4f  // 单个轮子的质量，单位kg
+// #define m_w 2.4f  // 单个轮子的质量，单位kg
 
 /*************电机、电调相关****************/
 #define HM_ReductionRatio Motor_3508GearboxReductionRatio  // 轮毂电机减速比
@@ -464,4 +470,14 @@ extern CHData_StructTypeDef GSTCH_Data;
 // #pragma endregion
 
 #define LegLen_StandUp_Practice 0.30f  // 单位：m，自己的设定的站立目标腿长
+
+/********************************************************** 函数声明 **********************************************************/
+
+void Chassis_AllParaInit(void);
+
+bool GSTCH_DataGet_F_OffGround1(CHData_StructTypeDef CHData);
+bool GSTCH_DataGet_F_OffGround2(CHData_StructTypeDef CHData);
+
+
+
 #endif

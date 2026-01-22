@@ -20,7 +20,7 @@
 
 /****************************结构体、数组定义（可能需要修改）****************************/
 /*默认的LQR计算K矩阵*/
-// float LQR_K_Matrix_0.20[4][10] = {
+// float LQR_K_Matrix_zero_point_two[4][10] = {
 //     {-4.9782, -7.4064, -2.7824, -1.6201, -22.4452, -2.2603, -8.4339, -1.0402,
 //      29.7838, 1.4493},
 //     {-4.9782, -7.4064, 2.7824, 1.6201, -8.4339, -1.0402, -22.4452, -2.2603,
@@ -30,7 +30,7 @@
 //     {4.7969, 7.0784, 6.8980, 4.0543, -20.6028, -1.1189, 48.4559, 4.1136,
 //      274.6596, 7.8673}};
 
-float LQR_K_Matrix_0.30[4][10] = {
+float LQR_K_Matrix_zero_point_three[4][10] = {
     {-5.1792, -7.3166, -2.4692, -1.4136, -25.6874, -3.0680, -8.9990, -1.5103,
      11.0711, 0.7218},
     {-5.1792, -7.3166, 2.4692, 1.4136, -8.9990, -1.5103, -25.6874, -3.0680,
@@ -40,7 +40,50 @@ float LQR_K_Matrix_0.30[4][10] = {
     {1.6109, 2.2437, 8.0019, 4.7705, -30.6497, -2.3683, 41.7505, 3.6576,
      287.9275, 8.3695}};
      
-#pragma region PID相关函数全家桶
+// #pragma region PID相关函数全家桶
+
+/**
+  * @brief  PID结构体初始化函数
+  * @note   用来初始化PID结构体的各个参数
+  * @param  PIDptr：PID_StructTypeDef类型的指针，要初始化的PID结构体指针
+  * @param  Kp：比例系数Kp
+  * @param  Ki：积分系数Ki
+  * @param  Kd：微分系数Kd
+  * @param  UMax：总输出最大值
+  * @param  UpMax：Kp项输出最大值
+  * @param  UiMax：Ki项输出最大值
+  * @param  UdMax：Kd项输出最大值
+  * @param  AddMax：SumE单次累加的最大值
+  * @retval 无
+*/
+void PID_StructInit(PID_StructTypeDef* PIDptr, float Kp, float Ki, float Kd,
+                    float UMax, float UpMax, float UiMax, float UdMax,
+                    float AddMax)
+{
+    PIDptr->Kp     = Kp;
+    PIDptr->Ki     = Ki;
+    PIDptr->Kd     = Kd;
+
+    PIDptr->UMax   = UMax;
+    PIDptr->UpMax  = UpMax;
+    PIDptr->UiMax  = UiMax;
+    PIDptr->UdMax  = UdMax;
+
+    PIDptr->AddMax = AddMax;
+
+    PIDptr->Des    = 0.0f;
+    PIDptr->FB     = 0.0f;
+
+    PIDptr->Err    = 0.0f;
+    PIDptr->PreErr = 0.0f;
+    PIDptr->SumErr = 0.0f;
+
+    PIDptr->Up     = 0.0f;
+    PIDptr->Ui     = 0.0f;
+    PIDptr->Ud     = 0.0f;
+    PIDptr->U      = 0.0f;
+}
+
 /**
  * @brief  PID的目标值设置函数
  * @note   用来设置PID结构体中的目标值Des
@@ -145,9 +188,26 @@ void PID_Reset(PID_StructTypeDef* PIDptr, float FBValue) {
     PIDptr->Ud = 0.0f;
     PIDptr->U = 0.0f;
 }
-#pragma endregion
+// #pragma endregion
 
-#pragma region TD相关函数全家桶
+// #pragma region TD相关函数全家桶
+
+/**  
+  * @brief  TD算法结构体初始化函数
+  * @note   用于初始化TD算法结构体的各个参数
+  * @param  pTD：指向TD算法结构体的指针
+  * @param  r：速度因子
+  * @param  h0：滤波因子
+  * @param  SampleTime：采样时间，单位秒
+  * @retval 无
+*/
+void TD_StructInit(TD_StructTypeDef* TDptr, float r, float h0, float SampleTime)
+{
+    TDptr->r = r;
+    TDptr->h0 = h0;
+    TDptr->SampleTime = SampleTime;
+}
+
 /**
  * @brief  TD的输入值设置函数
  * @note   用来设置TD结构体中的输入值v
@@ -237,23 +297,59 @@ void TD_Reset(TD_StructTypeDef* TDptr, float FBValue) {
     TDptr->x2 = 0.0f;
 }
 
-#pragma endregion
+// #pragma endregion
 
-#pragma region 五连杆解算相关函数全家桶
+// #pragma region 五连杆解算相关函数全家桶
+
+/**
+  * @brief  腿部五连杆解算结构体初始化函数
+  * @note   用来初始化腿部五连杆解算结构体的各个参数
+  * @param  LegPtr：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
+  * @param  l1：连杆1的长度，单位：mm
+  * @param  l2：连杆2的长度，单位：mm
+  * @param  l3：连杆3的长度，单位：mm
+  * @param  l4：连杆4的长度，单位：mm
+  * @param  l5：连杆5的长度，单位：mm
+  * @param  phi1ZP：phi1角度零点偏移值，单位：度
+  * @param  phi4ZP：phi4角度零点偏移值，单位：度
+  * @param  SampleTime：采样时间，单位秒
+  * @retval 无
+*/
+void LegLinkage_StructInit(LegLinkageCal_StructTypeDef* LegPtr,
+                              float l1, float l2, float l3, float l4, float l5,
+                              float phi1ZP, float phi4ZP,
+                              float SampleTime)
+{
+    LegPtr->l1 = l1;
+    LegPtr->l2 = l2;
+    LegPtr->l3 = l3;
+    LegPtr->l4 = l4;
+    LegPtr->l5 = l5;
+
+    LegPtr->phi1ZP = phi1ZP;
+    LegPtr->phi4ZP = phi4ZP;
+
+    LegPtr->SampleTime = SampleTime;
+
+    LegPtr->phi1 = 0.0f;
+    LegPtr->phi4 = 0.0f;
+    LegPtr->phi2 = 0.0f;
+    LegPtr->phi3 = 0.0f;
+    LegPtr->phi0 = 0.0f;
+    LegPtr->phi1_dot = 0.0f;
+    LegPtr->phi4_dot = 0.0f;
+    LegPtr->L0 = 0.0f;
+}
 
 //?
 // 主要功能是正运动学解算出各个参数，为虚拟力和力矩计算做准备，进而算出关节电机应该需要多大的力矩
 /**
  * @brief  腿部五连杆解算：phi1、phi4角度数据更新函数
- * @note
- * 用来更新腿部五连杆解算结构体中的phi1、phi4，即腿部角度数据（具体定义见ReadMe中的算法说明）
+ * @note   用来更新腿部五连杆解算结构体中的phi1、phi4，即腿部角度数据（具体定义见ReadMe中的算法说明）
  *         把关节电机的原始角度数据加上对应的坐标系零点，得到五连杆解算的phi1、phi4数据
- * @param
- * LegPtr：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
- * @param
- * JMAngleVel1：phi1对应的关节电机的原始角度，单位：度。取GSTCH_JMx.AngleFB
- * @param
- * JMAngleVel2：phi4对应的关节电机的原始角度，单位：度。取GSTCH_JMx.AngleFB
+ * @param  LegPtr：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
+ * @param  JMAngleVel1：phi1对应的关节电机的原始角度，单位：度。取GSTCH_JMx.AngleFB
+ * @param  JMAngleVel2：phi4对应的关节电机的原始角度，单位：度。取GSTCH_JMx.AngleFB
  * @retval 无
  */
 //* 更新phi1、phi4角度数据
@@ -528,9 +624,27 @@ float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr,
     }
     return Theta_dot_Temp;
 }
-#pragma endregion
+// #pragma endregion
 
-#pragma region 低通滤波器LPF相关函数全家桶
+// #pragma region 低通滤波器LPF相关函数全家桶
+
+/**  
+  * @brief  低通滤波器初始化函数
+  * @note   用于初始化低通滤波器结构体的各个参数
+  *         注意如果Alpha赋值了，则CutOffFreq和SampleTime无效
+  * @param  pLPF：指向低通滤波器结构体的指针
+  * @param  Alpha：低通滤波器系数
+  * @param  CutOffFreq：低通滤波器截止频率，单位Hz
+  * @param  SampleTime：采样时间，单位秒
+  * @retval 无
+*/
+void LPF_StructInit(LPF_StructTypeDef* LPFptr, float Alpha, float CutOffFreq, float SampleTime)
+{
+    LPFptr->Alpha = Alpha;
+    LPFptr->CutOffFreq = CutOffFreq;
+    LPFptr->SampleTime = SampleTime;
+}
+
 /**
  * @brief  一阶低通滤波器的输入值设置函数
  * @note   用来设置一阶低通滤波器结构体中的输入值Input
@@ -590,9 +704,9 @@ float LPF_GetOutput(LPF_StructTypeDef* LPFptr) {
     }
     return LPFptr->Out;
 }
-#pragma endregion
+// #pragma endregion
 
-#pragma region LQR相关函数全家桶
+// #pragma region LQR相关函数全家桶
 
 //? 主要功能就是算K矩阵，然后计算当前控制向量u，实现对u的读取
 //? 这里面的函数是在 Chassis_APIFunction 的底盘解算相关部分被使用的
@@ -621,7 +735,7 @@ void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1,
     if ((LegLen1 == 0.0f) || (LegLen2 == 0.0f)) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 10; j++) {
-                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_0.30[i][j];
+                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_zero_point_three[i][j];
             }
         }
     }
@@ -728,9 +842,9 @@ float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index) {
 
     return LQRptr->u_Vector[index];
 }
-#pragma endregion
+// #pragma endregion
 
-#pragma region VMC相关函数全家桶
+// #pragma region VMC相关函数全家桶
 
 // 主要功能是更新虚拟力和力矩，将虚拟力和力矩转化成关节电机力矩，并实现对关节电机力矩的读取
 
@@ -812,9 +926,9 @@ float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index) {
     return VMCptr->T_Matrix[index];
 }
 
-#pragma endregion
+// #pragma endregion
 
-#pragma region 离地检测相关函数全家桶
+// #pragma region 离地检测相关函数全家桶
 /**
   * @brief  离地检测结构体初始化函数
   * @note   用于初始化离地检测结构体的各个参数
@@ -1006,9 +1120,9 @@ float OffGround_GetSupportForce(OffGround_StructTypeDef *pOffGrd)
 }
 
 
-#pragma endregion
+// #pragma endregion
 
-#pragma region 卡尔曼滤波器相关函数全家桶
+// #pragma region 卡尔曼滤波器相关函数全家桶
 
 /**
  * @brief  卡尔曼滤波器初始化
@@ -1016,7 +1130,7 @@ float OffGround_GetSupportForce(OffGround_StructTypeDef *pOffGrd)
  * @param  KFptr：KF_StructTypeDef类型的指针，底盘速度卡尔曼滤波器结构体指针
  * @param  dt：采样时间，单位：秒
  */
-void KF_ChassisVel_Init(KF_StructTypeDef *KFptr, float dt) {
+void KF_ChassisVel_StructInit(KF_StructTypeDef *KFptr, float dt) {
     KFptr->dt = dt;
     //* x_[0] (2*1)初始状态估计
     KFptr->x[0] = 0.0f; KFptr->x[1] = 0.0f;
@@ -1150,4 +1264,4 @@ void KF_ChassisVel_Update(KF_StructTypeDef *KFptr, float v_body_obs, float a_imu
     memcpy(KFptr->P, P_new, sizeof(P_new));
 }
 
-#pragma endregion
+// #pragma endregion

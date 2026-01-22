@@ -35,14 +35,15 @@ static TickType_t S_lastWakeTimeChassisTask =
  * @retval 无
  */
 void ChassisTask(void* arg) {
-    while (1) {
-        ChassisControl();  // 底盘的总控制   // TODO 待完成
+    Chassis_AllParaInit(); //底盘所有参数初始化
 
-        // CAP_Control()         //待完成：超电的控制、通讯等等
+    while (1) {
+        ChassisControl();  // 底盘的总控制
+
+        // CAP_Control()         // TODO 超电的控制、通讯等等
 
         GST_SystemMonitor.ChassisTask_cnt++;  // 底盘帧率统计：cnt计数
-        vTaskDelayUntil(&S_lastWakeTimeChassisTask,
-                        GCH_TaskPeriod);  // 绝对延时
+        vTaskDelayUntil(&S_lastWakeTimeChassisTask, GCH_TaskPeriod);  // 绝对延时
     }
 }
 

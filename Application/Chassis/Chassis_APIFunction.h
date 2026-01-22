@@ -66,7 +66,7 @@ void CH_LegKinematics_Process(void);
 void CH_LQRCal_Process(void);
 void CH_VMCCal_Process(void);
 void CH_SupportForce_Process(void);
-void _Ch_VelKF_Process(float AngleVel_Wheel1, float AngleVel_Wheel2);
+void CH_VelKF_Process(void);
 
 /**********************************底盘其他相关函数********************************************/
 // TODO 底盘数据低通滤波处理函数（考虑放在哪里）

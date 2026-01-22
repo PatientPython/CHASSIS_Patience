@@ -124,56 +124,70 @@ typedef struct {
     // 采样时间
     float dt; 
     // 当前底盘速度测量值
-    float x_cur;
+    float VelFB;
     // 下一时刻底盘速度预测值
-    float x_nxt;
+    float VelNxt;
     // 左腿补偿力矩
-    float TorqueComp_L;
+    float TorqueAdapt_L;
     // 右腿补偿力矩
-    float TorqueComp_R;
+    float TorqueAdapt_R;
 } KF_StructTypeDef;
 
 /*离地检测算法结构体*/
 typedef struct {
     /*需要初始化赋值的成员*/
-    float g;  // 当地重力加速度，单位：m/s²
-    float SampleTime;  // 采样时间，单位：秒
+    float M_w;      //单个轮子的质量，单位千克
+    float M_l;      //单个腿部五连杆的质量，单位千克（注意原解算是忽略了腿部质量的，这里加上了，如果可以忽略的话直接给0就行）
+    float g;        //当地重力加速度，单位：m/s²
+    float SampleTime;   //采样时间，单位：秒
 
-    /*不需要初始化赋值的成员*/
-    float PitchAngle;  // 底盘俯仰角，单位：度
-    float Theta;  // 五连杆坐标系下，摆杆与竖直方向的角度（注意不是地面坐标系），单位：度
-    float Ctr_Theta;  // 另一条腿的摆杆与竖直方向夹角，单位：度
+    /*不需要初始化赋值的成员*/ 
+    float L1, L4;                   //五连杆中大腿杆的长度，单位：米
+    float Phi1, Phi2, Phi3, Phi4;   //五连杆各杆夹角，单位：度
+    float Phi0;                     //五连杆坐标系下，等效摆杆与水平线夹角，单位：度
+    float L0;                       //等效摆杆长度，单位：米
+    float PitchAngle;               //底盘俯仰角，单位：度
+    float Theta;                    //五连杆坐标系下，摆杆与竖直方向的角度（注意不是地面坐标系），单位：度
+    float PitchAngleVel;            //底盘俯仰角速度，单位：度/s
 
-    float L0_dot;      // 等效摆杆长度的速度，单位：m/s
-    float L0_dot_pre;  // 等效摆杆长度的速度上次值，单位：m/s
-    float L0_ddot;     // 等效摆杆长度的加速度，单位：m/s²
+    float L0_dot;                   //等效摆杆长度的速度，单位：m/s
+    float L0_dot_pre;               //等效摆杆长度的速度上次值，单位：m/s
+    float L0_ddot;                  //等效摆杆长度的加速度，单位：m/s²
 
-    float Phi;          // 地面坐标系下，摆杆与竖直方向夹角，单位：度
-    float Ctr_Phi;      // 另一条腿的摆杆与竖直方向夹角，单位：度
-    float ZAcc_Body;   // 底盘Z轴加速度，单位：m/s²
+    float Theta_dot;                //五连杆坐标系下，摆杆与竖直方向的角速度，单位：度/s
+    float Theta_dot_pre;            //五连杆坐标系下，摆杆与竖直方向的角速度上次值，单位：度/s
+    float Theta_ddot;               //五连杆坐标系下，摆杆与竖直方向的角加速度，单位：度/s²
 
-    float F_N;  // 地面给轮子的支持力，单位：N
+    float Phi;          //地面坐标系下，摆杆与竖直方向夹角，单位：度
+    float Phi_dot;      //摆杆角速度，单位：度/s
+    float Phi_dot_pre;  //摆杆角速度上次值，单位：度/s
+    float Phi_ddot;     //摆杆角加速度，单位：度/s²
 
-    /*支持力估算额外需要的变量*/
-    float Ctr_phi; // counter-part phi 另一条腿的摆杆与竖直方向夹角，单位：度
-    float Ctr_L0_dot; // counter-part L0_dot 另一条腿的等效摆杆长度速度，单位：m/s
-    float Ctr_L0_dot_pre; // counter-part L0_dot_pre 另一条腿的等效摆杆长度速度上次值，单位：m/s
-    float Ctr_L0_ddot; // counter-part L0_ddot 另一条腿的等效摆杆长度加速度，单位：m/s²
+    float T1, T4;       //五连杆中phi1、phi4关节电机力矩，单位：N·m
+
+    float F_Leg;        //等效摆杆沿杆的力，单位：N
+    float Tp_Leg;       //等效摆杆的扭矩，单位：N·m
+
+    float ZAcc_Wheel;   //轮子Z轴加速度，单位：m/s²
+    float ZAcc_Body;    //底盘Z轴加速度，单位：m/s²
+
+    float F_N;          //地面给轮子的支持力，单位：N
 } OffGround_StructTypeDef;
 // #pragma endregion
 
 /*************************************函数声明**************************************/
 
 // PID相关函数全家桶
+void PID_StructInit(PID_StructTypeDef* PIDptr, float Kp, float Ki, float Kd, float UMax, float UpMax, float UiMax, float UdMax, float AddMax);
 void PID_SetDes(PID_StructTypeDef* PIDptr, float NewDes);
 void PID_SetFB(PID_StructTypeDef* PIDptr, float NewFB);
-void PID_SetKpKiKd(PID_StructTypeDef* PIDptr, float NewKp, float NewKi,
-                   float NewKd);
+void PID_SetKpKiKd(PID_StructTypeDef* PIDptr, float NewKp, float NewKi, float NewKd);
 void PID_Cal(PID_StructTypeDef* PIDptr);
 float PID_GetOutput(PID_StructTypeDef* PIDptr);
 void PID_Reset(PID_StructTypeDef* PIDptr, float FBValue);
 
 // TD相关函数全家桶
+void TD_StructInit(TD_StructTypeDef* TDptr, float r, float h0, float SampleTime);
 void TD_SetInput(TD_StructTypeDef* TDptr, float Input);
 void TD_Setr(TD_StructTypeDef* TDptr, float New_r);
 void TD_Cal(TD_StructTypeDef* TDptr);
@@ -181,36 +195,27 @@ float TD_GetOutput(TD_StructTypeDef* TDptr);
 void TD_Reset(TD_StructTypeDef* TDptr, float FBValue);
 
 // LPF相关函数全家桶
+void LPF_StructInit(LPF_StructTypeDef* LPFptr, float Alpha, float CutOffFreq, float SampleTime);
 void LPF_SetInput(LPF_StructTypeDef* LPFptr, float NewInput);
 void LPF_Cal(LPF_StructTypeDef* LPFptr);
 float LPF_GetOutput(LPF_StructTypeDef* LPFptr);
 
 // 五连杆解算相关函数全家桶
-void LegLinkage_AngleDataUpdate(LegLinkageCal_StructTypeDef* LegPtr,
-                                float JMPosValue1, float JMPosValue2);
-void LegLinkage_AngleVelDataUpdate(LegLinkageCal_StructTypeDef* LegPtr,
-                                   float JMAngleVel1, float JMVelValue2);
+void LegLinkage_StructInit(LegLinkageCal_StructTypeDef* LegPtr, float l1, float l2, float l3, float l4, float l5, float phi1ZP, float phi4ZP, float SampleTime);
+void LegLinkage_AngleDataUpdate(LegLinkageCal_StructTypeDef* LegPtr, float JMPosValue1, float JMPosValue2);
+void LegLinkage_AngleVelDataUpdate(LegLinkageCal_StructTypeDef* LegPtr, float JMAngleVel1, float JMVelValue2);
 void LegLinkage_ForwardKinematicsCal(LegLinkageCal_StructTypeDef* LegPtr);
 float LegLinkage_GetLegLength(LegLinkageCal_StructTypeDef* LegPtr);
 float LegLinkage_GetL0Length(LegLinkageCal_StructTypeDef* LegPtr);
-float LegLinkage_GetTheta(LegLinkageCal_StructTypeDef* LegPtr,
-                          RobotSide_EnumTypeDef LegSide);
-float LegLinkage_GetxCdot(LegLinkageCal_StructTypeDef* LegPtr,
-                          RobotSide_EnumTypeDef LegSide);
+float LegLinkage_GetTheta(LegLinkageCal_StructTypeDef* LegPtr, RobotSide_EnumTypeDef LegSide);
+float LegLinkage_GetxCdot(LegLinkageCal_StructTypeDef* LegPtr, RobotSide_EnumTypeDef LegSide);
 float LegLinkage_GetL0dot(LegLinkageCal_StructTypeDef* LegPtr);
-float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr,
-                             RobotSide_EnumTypeDef LegSide);
+float LegLinkage_GetThetadot(LegLinkageCal_StructTypeDef* LegPtr, RobotSide_EnumTypeDef LegSide);
 
 // LQR相关函数全家桶
-void LQR_StructInit(LQR_StructTypeDef* LQRptr, float LegLen1, float LegLen2);
-void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1,
-                        float LegLen2);
-void LQR_xVector_DataUpdate(LQR_StructTypeDef* LQRptr, float DisErr,
-                            float VelErr, float YawAngleErr,
-                            float YawAngleVelErr, float Theta1AngleErr,
-                            float Theta1AngleVelErr, float Theta2AngleErr,
-                            float Theta2AngleVelErr, float PitchAngleErr,
-                            float PitchAngleVelErr);
+// LQR不用单独的初始化函数，LQR_xVector_DataUpdate代劳了
+void LQR_xVector_DataUpdate(LQR_StructTypeDef* LQRptr, float DisErr, float VelErr, float YawAngleErr, float YawAngleVelErr, float Theta1AngleErr, float Theta1AngleVelErr, float Theta2AngleErr, float Theta2AngleVelErr, float PitchAngleErr, float PitchAngleVelErr);
+void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1, float LegLen2);
 void LQR_Cal(LQR_StructTypeDef* LQRptr);
 float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index);
 
@@ -231,9 +236,8 @@ float OffGround_GetLegToWheelForce(OffGround_StructTypeDef *pOffGrd);
 float OffGround_GetSupportForce(OffGround_StructTypeDef *pOffGrd);
 
 // 卡尔曼滤波相关函数全家桶
-void KF_ChassisVel_Init(KF_StructTypeDef *KFptr, float dt);
+void KF_ChassisVel_StructInit(KF_StructTypeDef *KFptr, float dt);
 void KF_ChassisVel_Predict(KF_StructTypeDef* KFptr);
 void KF_ChassisVel_Update(KF_StructTypeDef* KFptr, float v_body_obs, float a_imu);
-
 
 #endif

@@ -501,8 +501,8 @@ void ChModeControl_StandUpMode_RCControl(void) {
 
     /* 1. 将 LQR 计算结果分发到轮毂电机和 VMC 扭矩目标值 */
     // TODO 左边取负，按照读取的速度预测的
-    GSTCH_HM1.TorqueDes = - LQR_Get_uVector(&GstCH_LQRCal, 0) + GstCH_VelKF.TorqueComp_L;  // 轮毂电机1扭矩 (L)
-    GSTCH_HM2.TorqueDes =   LQR_Get_uVector(&GstCH_LQRCal, 1) + GstCH_VelKF.TorqueComp_R;  // 轮毂电机2扭矩 (R) （右轮镜像安装加负号）
+    GSTCH_HM1.TorqueDes = - LQR_Get_uVector(&GstCH_LQRCal, 0) + GstCH_VelKF.TorqueAdapt_L;  // 轮毂电机1扭矩 (L)
+    GSTCH_HM2.TorqueDes =   LQR_Get_uVector(&GstCH_LQRCal, 1) + GstCH_VelKF.TorqueAdapt_R;  // 轮毂电机2扭矩 (R) （右轮镜像安装加负号）
     GSTCH_Data.Leg1TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 2);  // 虚拟摆杆力矩1
     GSTCH_Data.Leg2TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 3);  // 虚拟摆杆力矩2
 
@@ -563,8 +563,8 @@ void ChModeControl_SittingMode_RCControl(void) {
     //* u已经计算出来了（包括轮子转动的扭矩）
 
     /* 1. 将 LQR 计算结果分发到轮毂电机和 VMC 扭矩目标值 */
-    GSTCH_HM1.TorqueDes = - LQR_Get_uVector(&GstCH_LQRCal, 0) + GstCH_VelKF.TorqueComp_L;  // 轮毂电机1扭矩 (L)
-    GSTCH_HM2.TorqueDes =   LQR_Get_uVector(&GstCH_LQRCal, 1) + GstCH_VelKF.TorqueComp_R;  // 轮毂电机2扭矩 (R) 
+    GSTCH_HM1.TorqueDes = - LQR_Get_uVector(&GstCH_LQRCal, 0) + GstCH_VelKF.TorqueAdapt_L;  // 轮毂电机1扭矩 (L)
+    GSTCH_HM2.TorqueDes =   LQR_Get_uVector(&GstCH_LQRCal, 1) + GstCH_VelKF.TorqueAdapt_R;  // 轮毂电机2扭矩 (R) 
     GSTCH_Data.Leg1TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 2);  // 虚拟摆杆力矩1
     GSTCH_Data.Leg2TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 3);  // 虚拟摆杆力矩2
 

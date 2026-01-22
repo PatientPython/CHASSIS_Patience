@@ -9,19 +9,15 @@
 
 /*************************************************头文件引用*************************************************/
 #include "GlobalDeclare_Chassis.h"
-
-#include <arm_math.h>
-
-#include "Algorithm.h"
-#include "FreeRTOS.h"
 #include "GlobalDeclare_General.h"
+#include "FreeRTOS.h"
+#include "Algorithm.h"
+#include <arm_math.h>
 
 /****************************************宏定义、常量定义（不需要修改）****************************************/
 /*FreeRTOS任务相关*/
-const TickType_t GCH_TaskPeriod =
-    1;  // ChassisTask的任务周期，单位为FreeRTOS的系统节拍。默认是ms（取决于configTICK_RATE_HZ）
-const float GCH_TaskTime = (float)GCH_TaskPeriod /
-                           (float)configTICK_RATE_HZ;  // 任务运行周期，单位为秒
+const TickType_t GCH_TaskPeriod = 1;  // ChassisTask的任务周期，单位为FreeRTOS的系统节拍。默认是ms（取决于configTICK_RATE_HZ）
+const float GCH_TaskTime = (float)GCH_TaskPeriod / (float)configTICK_RATE_HZ;  // 任务运行周期，单位为秒
 
 /*一些默认定义*/
 #define SampleTime_Default GCH_TaskTime  // 默认采样时间，单位秒
@@ -36,8 +32,7 @@ const float GCH_TaskTime = (float)GCH_TaskPeriod /
 #define JM4ID 0x02  // 关节电机4的ID
 
 // 换车时需修改
-const float JointMotorMAXTorque =
-    Motor_MG8016Ei6MaxTorque;  // 关节电机最大力矩，单位Nm
+const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque;  // 关节电机最大力矩，单位Nm
 // #pragma endregion
 
 // #pragma region /****腿部五连杆解算****************************************/
@@ -51,8 +46,7 @@ const float JointMotorMAXTorque =
 #define LeftCalfLen 270.0f    // 左腿小腿长度，单位mm，五连杆解算里面的l2
 #define RightThighLen 150.0f  // 右腿大腿长度，单位mm，五连杆解算里面的l4
 #define RightCalfLen 270.0f   // 右腿小腿长度，单位mm，五连杆解算里面的l3
-#define SameSideJMDistance \
-    150.0f  // 同侧腿的关节电机间距，单位mm，五连杆解算里面的l5
+#define SameSideJMDistance \ 150.0f  // 同侧腿的关节电机间距，单位mm，五连杆解算里面的l5
 /*关节电机编码器零点（相对于五连杆解算的坐标系）*/
 // 换车时需要修改
 #define JM1LinkageCalZP \
@@ -81,8 +75,8 @@ const float JointMotorMAXTorque =
 // #pragma region /****TD相关系数****************************************/
 #define TD_SampleTime SampleTime_Default  // TD采样时间，单位秒
 
-#define TD_LegLen_r \ 0.0f  // 腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
-#define TD_LegLen_h0 \ 1 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
+#define TD_LegLen_r 0.0f  // 腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
+#define TD_LegLen_h0 1 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
 
 
 
@@ -93,11 +87,9 @@ float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速�
 
 // #pragma region /****PID相关参数***************************************/
 /*腿长PID相关*/
-#define PID_LegLen_Kp \
-    0.0f  // 腿长PID：比例系数Kp，取0表示在外部根据不同模式赋值
+#define PID_LegLen_Kp 0.0f  // 腿长PID：比例系数Kp，取0表示在外部根据不同模式赋值
 #define PID_LegLen_Ki 0.0f  // 腿长PID：积分系数Ki，取0表示不使用积分
-#define PID_LegLen_Kd \
-    0.0f  // 腿长PID：微分系数Kd，取0表示在外部根据不同模式赋值
+#define PID_LegLen_Kd 0.0f  // 腿长PID：微分系数Kd，取0表示在外部根据不同模式赋值
 #define PID_LegLen_UMax 400.0f            // 腿长PID：总输出最大值
 #define PID_LegLen_UpMax PID_LegLen_UMax  // 腿长PID：Kp项输出最大值
 #define PID_LegLen_UiMax 0.0f             // 腿长PID：Ki项输出最大值
@@ -147,8 +139,7 @@ float LegLenOffGround = 250.0f; //离地腿长，单位mm
 
 /*底盘零点补偿相关*/
 // 换车时需要修改
-float ChassisPitchAngleZP =
-    1.8f;  // 底盘Pitch轴零点补偿值，单位度，正值表示实际需要抬头才能平衡
+float ChassisPitchAngleZP = 1.8f;  // 底盘Pitch轴零点补偿值，单位度，正值表示实际需要抬头才能平衡
 float ChassisRollAngleZP = 0.6f;  // 底盘Roll轴零点补偿值，单位度
 
 /*腿部前馈力补偿相关*/
@@ -227,8 +218,6 @@ float SlowSitDown_YawAngleVelBrakeStep =
 float SlowSitDown_LegFFForceDecStep =
     0.05f;  // 缓慢坐下模式的腿部前馈力的步进减少值
 
-// TODO 后续删除轮毂电机补偿力矩系数
-float KF_HM_K_adapt = 0.02f;  // 轮毂电机速度卡尔曼滤波器自适应系数
 // #pragma endregion
 
 /********************************************变量定义(不需要修改)********************************************/
@@ -272,7 +261,7 @@ LPF_StructTypeDef GstCH_Leg1F_N_LPF = {LPF_Alpha_LegFN};  // 左腿腿部支持�
 LPF_StructTypeDef GstCH_Leg2F_N_LPF = {LPF_Alpha_LegFN};  // 右腿腿部支持力低通滤波器结构体
 
 /*卡尔曼滤波器*/
-KF_StructTypeDef GstCH_VelKF = {KF_HM_K_adapt};  // 底盘速度卡尔曼滤波器结构体
+KF_StructTypeDef GstCH_VelKF;  // 底盘速度卡尔曼滤波器结构体
 // #pragma endregion
 
 // #pragma region /****TD算法相关*****************************/
@@ -356,3 +345,142 @@ HMData_StructTypeDef GSTCH_HM2 = {HM_ReductionRatio};  // 右轮毂电机控制�
 CHData_StructTypeDef GSTCH_Data;  // 底盘正式数据结构体，存放和底盘相关的几乎所有数据
 
 // #pragma endregion
+
+
+/********************************************函数定义(不需要修改)********************************************/
+/**  
+  * @brief  关节电机MIT数据结构体初始化函数
+  * @note   用于初始化关节电机MIT数据结构体
+  * @param  pJMData：指向JMData_StructTypeDef结构体的指针
+  * @param  ID：关节电机ID
+  * @param  MITKp：MIT协议的位置系数
+  * @param  MITKd：MIT协议的速度系数
+  * @retval 无
+*/
+void _CH_JMDataStructInit(JMData_StructTypeDef* JMDataptr, uint8_t ID, float MITKp, float MITKd)
+{
+    JMDataptr->ID = ID;
+    JMDataptr->MITKp = MITKp;
+    JMDataptr->MITKd = MITKd;
+}
+
+/**  
+  * @brief  轮毂电机数据结构体初始化函数
+  * @note   用于初始化轮毂电机数据结构体
+  * @param  pHMData：指向HMData_StructTypeDef结构体的指针
+  * @param  ReductionRatio：轮毂电机减速比
+  * @retval 无
+*/
+void _CH_HMDataStructInit(HMData_StructTypeDef* HMDataptr, float ReductionRatio)
+{
+    HMDataptr->ReductionRatio = ReductionRatio;
+}
+
+/**
+  * @brief  底盘所有参数初始化函数
+  * @note   在Chassis控制任务循环开始之前调用（ChassisTask的while(1)之前调用）
+  *         对底盘相关的所有参数进行初始化
+  * @param  无
+  * @retval 无
+*/
+void Chassis_AllParaInit(void)
+{
+    /**********************************通讯相关**************************************/
+    /*IMU2通讯相关*/
+    GFCH_IMU2Restart    = IMU2RestartNO; //底盘云控IMU2重启标志位，默认不重启
+    GFCH_LegCalibration = 0;             //腿部校准标志位，1：校准，0：不校准
+
+    /**********************************LPF低通滤波器**************************************/
+    /*轮毂电机速度低通滤波器*/
+    LPF_StructInit(&GstCH_HM1_AngleVelLPF, LPF_Alpha_HM_AngleVel, 0, 0);
+    LPF_StructInit(&GstCH_HM2_AngleVelLPF, LPF_Alpha_HM_AngleVel, 0, 0);
+
+    /*xC_dot低通滤波器*/
+    LPF_StructInit(&GstCH_xC1dotLPF, LPF_Alpha_xCdot, 0, 0);
+    LPF_StructInit(&GstCH_xC2dotLPF, LPF_Alpha_xCdot, 0, 0);
+
+    /*Theta_dot低通滤波器*/
+    LPF_StructInit(&GstCH_Theta1dotLPF, LPF_Alpha_Thetadot, 0, 0);
+    LPF_StructInit(&GstCH_Theta2dotLPF, LPF_Alpha_Thetadot, 0, 0);
+
+    /*底盘理论质心水平速度低通滤波器*/
+    LPF_StructInit(&GstCH_TheoryVelLPF, LPF_Alpha_VelTheory, 0, 0);
+
+    /*底盘速度补偿低通滤波器*/
+    LPF_StructInit(&GstCH_VelCompLPF, LPF_Alpha_VelComp, 0, 0);
+
+    /*底盘Yaw、Pitch角速度低通滤波器*/
+    LPF_StructInit(&GstCH_YawAngleVelLPF, LPF_Alpha_YawAngleVel, 0, 0);
+    LPF_StructInit(&GstCH_PitchAngleVelLPF, LPF_Alpha_PitchAngleVel, 0, 0);
+
+    /*腿部支持力低通滤波器*/
+    LPF_StructInit(&GstCH_Leg1F_N_LPF, LPF_Alpha_LegFN, 0, 0);
+    LPF_StructInit(&GstCH_Leg2F_N_LPF, LPF_Alpha_LegFN, 0, 0);
+
+    /**********************************TD算法**************************************/
+    /*腿长TD*/
+    TD_StructInit(&GstCH_LegLen1TD, TD_LegLen_r, TD_LegLen_h0, TD_SampleTime);  //左腿腿长TD
+    TD_StructInit(&GstCH_LegLen2TD, TD_LegLen_r, TD_LegLen_h0, TD_SampleTime);  //右腿腿长TD
+
+    /**********************************PID算法**************************************/
+    /*腿长PID，KpKiKd取0表示在外部根据不同模式赋值*/
+    PID_StructInit(&GstCH_LegLen1PID, 0, 0, 0, PID_LegLen_UMax, PID_LegLen_UpMax, PID_LegLen_UiMax, PID_LegLen_UdMax, PID_LegLen_AddMax); //左腿腿长PID
+    PID_StructInit(&GstCH_LegLen2PID, 0, 0, 0, PID_LegLen_UMax, PID_LegLen_UpMax, PID_LegLen_UiMax, PID_LegLen_UdMax, PID_LegLen_AddMax); //右腿腿长PID
+
+    /*Roll轴补偿PID*/
+    PID_StructInit(&GstCH_RollCompPID, PID_RollComp_Kp, PID_RollComp_Ki, PID_RollComp_Kd, PID_RollComp_UMax, PID_RollComp_UpMax, PID_RollComp_UiMax, PID_RollComp_UdMax, PID_RollComp_AddMax);
+
+    /**********************************腿部五连杆解算**************************************/
+    /*腿部五连杆，一般情况下连杆1、4一样长，为大腿。2、3一样长，为小腿*/
+    /*左腿*/
+    LegLinkage_StructInit(&GstCH_LegLinkCal1, LeftThighLen, LeftCalfLen, LeftCalfLen, LeftThighLen, SameSideJMDistance, JM3LinkageCalZP, JM1LinkageCalZP, SampleTime_Default);
+    /*右腿*/
+    LegLinkage_StructInit(&GstCH_LegLinkCal2, RightThighLen, RightCalfLen, RightCalfLen, RightThighLen, SameSideJMDistance, JM2LinkageCalZP, JM4LinkageCalZP, SampleTime_Default);
+
+    /**********************************离地检测**************************************/
+    /*离地检测结构体*/
+    OffGround_StructInit(&GstCH_OffGround1, m_w, 0, GravityAcc_Harbin, SampleTime_Default); //左腿离地检测
+    OffGround_StructInit(&GstCH_OffGround2, m_w, 0, GravityAcc_Harbin, SampleTime_Default); //右腿离地检测
+
+    /**********************************KF卡尔曼滤波器**************************************/
+    KF_ChassisVel_StructInit(&GstCH_VelKF, SampleTime_Default);
+
+    /**********************************其他变量**************************************/
+    /*底盘状态枚举*/
+    //待优化：把这两个放到GSTCH_Data里面
+    GEMCH_Mode    = CHMode_RC_ManualSafe; //底盘模式，默认是手动安全模式
+    GEMCH_ModePre = CHMode_RC_ManualSafe; //上次的底盘模式，默认是手动安全模式
+
+    /*关节电机MIT协议控制结构体*/
+    _CH_JMDataStructInit(&GSTCH_JM1, JM1ID, 0, 0); //左前关节电机控制结构体
+    _CH_JMDataStructInit(&GSTCH_JM2, JM2ID, 0, 0); //右前关节电机控制结构体
+    _CH_JMDataStructInit(&GSTCH_JM3, JM3ID, 0, 0); //左后关节电机控制结构体
+    _CH_JMDataStructInit(&GSTCH_JM4, JM4ID, 0, 0); //右后关节电机控制结构体
+
+    /*轮毂电机控制结构体。INIT顺序为：ReductionRatio：电机减速比*/
+    _CH_HMDataStructInit(&GSTCH_HM1, HM_ReductionRatio); //左轮毂电机控制结构体
+    _CH_HMDataStructInit(&GSTCH_HM2, HM_ReductionRatio); //右轮毂电机控制结构体
+
+    /*底盘数据结构体*/
+    // GSTCH_Data.
+}
+
+/**
+  * @brief  获取底盘左侧离地状态标志位
+  * @param  CHData：底盘数据结构体，CHData_StructTypeDef类型
+  * @retval true：底盘左侧离地，false：底盘左侧未离地
+*/
+bool GSTCH_DataGet_F_OffGround1(CHData_StructTypeDef CHData)
+{
+    return CHData.F_OffGround1;
+}
+
+/**
+  * @brief  获取底盘右侧离地状态标志位
+  * @param  CHData：底盘数据结构体，CHData_StructTypeDef类型
+  * @retval true：底盘右侧离地，false：底盘右侧未离地
+*/
+bool GSTCH_DataGet_F_OffGround2(CHData_StructTypeDef CHData)
+{
+    return CHData.F_OffGround2;
+}
