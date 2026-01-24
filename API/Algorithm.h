@@ -70,9 +70,9 @@ typedef struct {
     /*需要初始化时赋值的变量*/
     float l1, l2, l3, l4,
         l5;  // 五连杆各杆长度，1、4为大腿，2、3为小腿，5为关节电机间距，一般取单位mm
-    const float phi1ZP,
+    float phi1ZP,
         phi4ZP;  // phi1、phi4对应的关节电机编码器零点（相对于五连杆解算结构体的坐标系），单位：度
-    const float SampleTime;  // 采样时间，单位：秒
+    float SampleTime;  // 采样时间，单位：秒
 
     /*不需要初始化时赋值的变量*/
     float xA, xB, xC, xD, xE;      // 五连杆各连接点坐标
@@ -270,7 +270,6 @@ void KF_ChassisVel_Predict(KF_StructTypeDef* KFptr);
 void KF_ChassisVel_Update(KF_StructTypeDef* KFptr, float v_body_obs, float a_imu);
 
 // 轮毂电机模型自适应补偿相关函数全家桶
-void HM_TorqueComp_StructInit(HM_TorqueComp_StructTypeDef* pHMComp, float K_Trac, float K_Stab, float Max_HM_Comp_Ratio, float Weight_HM1, float Weight_HM2, float Err_Sat, float Err_DZ);
-// TODO 轮速误差判断函数
-// TODO 左右轮可靠性判断参数，可能可以直接用死区值
+// TODO 这个位置考虑怎么还得改一下
+void HM_TorqueComp_StructInit(HM_TorqueComp_StructTypeDef* pHMComp, float K_Trac_Norm, float K_Trac_Strg, float K_Stab, float Max_HM_Comp_Ratio, float Weight_HM1, float Weight_HM2, float Err_Sat, float Err_DZ);
 #endif

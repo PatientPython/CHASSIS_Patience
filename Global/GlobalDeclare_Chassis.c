@@ -46,7 +46,7 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque;  // 关节电机最�
 #define LeftCalfLen 270.0f    // 左腿小腿长度，单位mm，五连杆解算里面的l2
 #define RightThighLen 150.0f  // 右腿大腿长度，单位mm，五连杆解算里面的l4
 #define RightCalfLen 270.0f   // 右腿小腿长度，单位mm，五连杆解算里面的l3
-#define SameSideJMDistance \ 150.0f  // 同侧腿的关节电机间距，单位mm，五连杆解算里面的l5
+#define SameSideJMDistance 150.0f  // 同侧腿的关节电机间距，单位mm，五连杆解算里面的l5
 /*关节电机编码器零点（相对于五连杆解算的坐标系）*/
 // 换车时需要修改
 #define JM1LinkageCalZP -22.0f  // 左侧phi4，关节电机1（左前）五连杆解算坐标系的零点，单位度
@@ -92,9 +92,17 @@ float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速�
 #define PID_LegLen_UdMax PID_LegLen_UMax  // 腿长PID：Kd项输出最大值
 #define PID_LegLen_AddMax 0.01f           // 腿长PID：误差单次累加最大值
 
-// #pragma region /****FK相关参数***************************************/
-
+// #pragma region /****轮毂电机力矩补偿相关参数***************************************/
+#define K_Trac_Norm 3.0f                    // 正常模式下的牵引补偿力矩比例系数(过弹丸大概要0.4，除以轮半径0.072大概就是5.5左右)
+#define K_Trac_Strg 5.5f                    // 脱困模式下的牵引补偿力矩比例系数
+#define K_Stab 0.0f                         // 稳定补偿力矩比例系数
+#define Max_HM_Comp_Ratio 0.0f              // 轮毂电机补偿力矩最大比例值
+#define Weight_HM1 0.0f                     // 左轮毂电机补偿力矩权重
+#define Weight_HM2 0.0f                     // 右轮毂电机补偿力矩权重
+#define Err_Sat 0.0f                        // 误差饱和值
+#define Err_DZ 0.0f                         // 误差死区值
 // #pragma endregion
+
 // 存储原有值（腿长反馈值是以米为单位的时候）
 // 腿长是以毫米为单位（目标腿长是150等时）这个值会相差1000倍左右
 // float PID_LegLen_KpStandUp = 800.0f;    // 腿长PID：起立状态下Kp值
@@ -104,15 +112,15 @@ float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速�
 
 float PID_LegLen_KpStandUp = 800.0f;  // 腿长PID：起立状态下Kp值
 float PID_LegLen_KdStandUp = 20000.0f;  // 腿长PID：起立状态下Kd值
-float PID_LegLen_KpNorm = 0.0f;     // 腿长PID：正常时的Kp值
-float PID_LegLen_KdNorm = 0.0f;     // 腿长PID：正常时的Kd值
+float PID_LegLen_KpNorm = 800.0f;     // 腿长PID：正常时的Kp值
+float PID_LegLen_KdNorm = 20000.0f;     // 腿长PID：正常时的Kd值
 
 /*Roll轴补偿相关*/
 // TODO 可以试试给小陀螺单独一套PID参数
-
+// 20,1000是我自己测出来的
 #define PID_RollComp_Kp 20.0f  // Roll轴补偿PID：比例系数Kp
-#define PID_RollComp_Ki 0.0f    // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
-#define PID_RollComp_Kd 1000.0f              // Roll轴补偿PID：微分系数Kd
+#define PID_RollComp_Ki 0.0f  // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
+#define PID_RollComp_Kd 1000.0f  // Roll轴补偿PID：微分系数Kd
 #define PID_RollComp_UMax 400.0f              // Roll轴补偿PID：总输出最大值
 #define PID_RollComp_UpMax PID_RollComp_UMax  // Roll轴补偿PID：Kp项输出最大值
 #define PID_RollComp_UiMax 0.0f               // Roll轴补偿PID：Ki项输出最大值
@@ -137,7 +145,7 @@ float PID_LegLen_KdNorm = 0.0f;     // 腿长PID：正常时的Kd值
 
 //* 以m为单位的腿长 
 float LegLenMin   = 0.108f;   //腿长最小值，单位m
-float LegLenMinTH = 0.006f;     //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
+float LegLenMinTH = 0.012f;     //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
 float LegLenLow  = 0.140f;    //低腿长，单位m
 float LegLenMid  = 0.200f;    //中腿长，单位m
 float LegLenHigh = 0.300f;    //高腿长，单位m
@@ -447,7 +455,7 @@ void Chassis_AllParaInit(void)
     KF_ChassisVel_StructInit(&GstCH_VelKF, SampleTime_Default);
 
     /**********************************轮毂电机自适应补偿**************************************/
-    HM_ModelAdapt_StructInit(&GSTCH_HMTorqueComp, K_traction, K_stability, Max_adapt_ampl, Weight_HM1, Weight_HM2, E_sat, E_deadzone);
+    HM_TorqueComp_StructInit(&GSTCH_HMTorqueComp, K_Trac_Norm, K_Trac_Strg, K_Stab, Max_HM_Comp_Ratio, Weight_HM1, Weight_HM2, Err_Sat, Err_DZ);
 
     /**********************************其他变量**************************************/
     /*底盘状态枚举*/

@@ -17,6 +17,8 @@
 #include "TIM_Config.h"
 #include "Chassis_Stratgy.h"
 
+bool F_TopMode = false;
+
 /**
   * @brief  底盘模式选择参数结构体更新函数
   * @note   把底盘模式选择的相关参数，更新到底盘模式选择参数结构体中，以方便后面的模式选择处理
@@ -228,9 +230,9 @@ bool _ChIsEnter_FreeMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_
     if(ModePre_tmp == CHMode_RC_StandUp)
     {return true;}
 
-    //待修改：写到Follow模式的时候再补充
+    // TODO 写到Follow模式的时候再补充
     /*如果上次状态是Follow，允许进入*/
-    if(ST_ModeChoosePara.ModePre == CHMode_RC_Follow)
+    if(ST_ModeChoosePara.MC_ModePre == CHMode_RC_Follow)
     {return true;}
 
     return false;
@@ -320,47 +322,37 @@ bool _ChIsEnter_OffGroundMode_RCControl(Chassis_ModeChooseParameter_StructTypeDe
  *            true： 进入OffGroundMode
  */
 bool _ChIsEnter_StruggleMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara){
-    float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;         // 上次模式
-    bool F_OffGround_tmp = ST_ModeChoosePara.MC_F_OffGround;  //离地状态标志，true表示离地，false表示触地
+    // float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;         // 上次模式
+    // bool F_OffGround_tmp = ST_ModeChoosePara.MC_F_OffGround;  //离地状态标志，true表示离地，false表示触地
 
-    /*离地状态下，不进入Follow模式*/
-    if(F_OffGround_tmp == true)
-    {return false;}
+    // /*离地状态下，不进入Follow模式*/
+    // if(F_OffGround_tmp == true)
+    // {return false;}
 
-    /*排除其他不允许进入脱困模式的状态 */
-    if (ModePre_tmp == CHMode_RC_ManualSafe || 
-        ModePre_tmp == CHMode_RC_AutoSafe   || 
-        ModePre_tmp == CHMode_RC_Sitting    || 
-        ModePre_tmp == CHMode_RC_SlowSitDown) 
-    {
-        return false;
-    }
+    // /*排除其他不允许进入脱困模式的状态 */
+    // if (ModePre_tmp == CHMode_RC_ManualSafe || 
+    //     ModePre_tmp == CHMode_RC_AutoSafe   || 
+    //     ModePre_tmp == CHMode_RC_Sitting    || 
+    //     ModePre_tmp == CHMode_RC_SlowSitDown) 
+    // {
+    //     return false;
+    // }
 
-    /*如果已经处于脱困模式，根据内部逻辑决定是否退出*/
-    if (ModePre_tmp == CHMode_RC_Struggle) {
-        // 如果标志位还在，继续保持
-        if (ST_ModeChoosePara.MC_F_Struggle == true)
-        {return true;}
-        // 如果标志位消失，退出（由后续优先级决定去向，通常回 Free 模式）
-        return false;
-    }
+    // /*如果已经处于脱困模式，根据内部逻辑决定是否退出*/
+    // if (ModePre_tmp == CHMode_RC_Struggle) {
+    //     // 如果标志位还在，继续保持
+    //     if (ST_ModeChoosePara.MC_F_Struggle == true)
+    //     {return true;}
+    //     // 如果标志位消失，退出（由后续优先级决定去向，通常回 Free 模式）
+    //     return false;
+    // }
 
-    /*触发进入条件：不在排除列表内，且触发标志位置位*/
-    if (ST_ModeChoosePara.MC_F_Struggle == true) {
-        return true;
-    }
+    // /*触发进入条件：不在排除列表内，且触发标志位置位*/
+    // if (ST_ModeChoosePara.MC_F_Struggle == true) {
+    //     return true;
+    // }
 
-    return false;
-
-
-    if (那个打滑判断标志位只要有一个置一就为真。这个标志位更新应该是在没进入控制前执行的)
-    {
-
-    }
-    else if ()
-    {
-        没有打滑，不读取当前yaw状态，稳定补偿力矩置为零
-    }
+    // return false;
 }
 
 // #pragma endregion
@@ -399,20 +391,17 @@ ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseP
     else if(_ChIsEnter_FreeMode_RCControl(ST_ModeChoosePara) == true)
     {ModeTemp = CHMode_RC_Free;}           //进入RC底盘自由模式
 
-    else if(_ChIsEnter_SlowSitDownMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_SlowSitDown;}    //进入RC底盘缓慢坐下模式
+    // else if(_ChIsEnter_SlowSitDownMode_RCControl(ST_ModeChoosePara) == true)
+    // {ModeTemp = CHMode_RC_SlowSitDown;}    //进入RC底盘缓慢坐下模式
 
-    else if(_ChIsEnter_FollowMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_Follow;}         //进入RC底盘跟随模式
+    // else if(_ChIsEnter_FollowMode_RCControl(ST_ModeChoosePara) == true)
+    // {ModeTemp = CHMode_RC_Follow;}         //进入RC底盘跟随模式
 
-    else if (_ChIsEnter_OffGroundMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_OffGround;}      //进入RC底盘离地模式
+    // else if (_ChIsEnter_OffGroundMode_RCControl(ST_ModeChoosePara) == true)
+    // {ModeTemp = CHMode_RC_OffGround;}      //进入RC底盘离地模式
 
-    else if (_ChIsEnter_OffGroundMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_OffGround;}      //进入RC底盘离地模式
-
-    else if (_ChIsEnter_StruggleMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_Struggle;}      //进入RC底盘脱困模式
+    // else if (_ChIsEnter_StruggleMode_RCControl(ST_ModeChoosePara) == true)
+    // {ModeTemp = CHMode_RC_Struggle;}      //进入RC底盘脱困模式
 
     return ModeTemp;
 }
@@ -507,7 +496,7 @@ void CH_LegLenAdjust_Process(void) {
     }
 
     // 3. 检测回中触发（回中时判定刚才是否有推/拨动作）
-    if (IsRightJoyStickMid()) {
+    if (IsLeftJoyStickLeft() == false && IsLeftJoyStickRight() == false) {
         // 上抬回中触发：Min -> Mid -> High
         if (GSTCH_Data.F_JoyUpLatched) {
             if (GSTCH_Data.LegLenManualDes < LegLenMid + 0.001f) {
@@ -615,6 +604,7 @@ void ChModeControl_StandUpMode_RCControl(void) {
     CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
 
+
 /**
  * @brief  遥控器模式下，自由模式控制函数
  * @note   自由模式下的控制策略
@@ -636,8 +626,8 @@ void ChModeControl_FreeMode_RCControl(void) {
         Chassis_DisFBClear();                         //底盘位移反馈值清零
 
         /*配置默认可配置的控制量*/
-        GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
-        GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen1Des      = GSTCH_Data.LegLenManualDes; //左腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen2Des      = GSTCH_Data.LegLenManualDes; //右腿目标腿长
         GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
         // TODO 如果是从Follow切换过来，速度是不是应该保持不变呢？
         GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
@@ -653,16 +643,16 @@ void ChModeControl_FreeMode_RCControl(void) {
 
     /*************************任务开始一段时间后*************************/
     /*检测是否进入小陀螺模式*/
-    static bool F_TopMode = false;
+    // static bool F_TopMode = false;
     F_TopMode = ChModeControl_FreeMode_RCControl_IsEnterTopMode(GSTCH_Data);
 
-    /*如果不是小陀螺模式，正常进行速度、转向的调控*/
-    if(F_TopMode == false)
-    {ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);} //移动处理函数，包括平移、转弯的速度获取
+    // /*如果不是小陀螺模式，正常进行速度、转向的调控*/
+    // if(F_TopMode == false)
+    // {ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);} //移动处理函数，包括平移、转弯的速度获取
 
-    /*如果是小陀螺模式，进行小陀螺的相关处理*/
-    else if(F_TopMode == true)
-    {ChModeControl_FreeMode_RCControl_TopHandler(&GSTCH_Data, &GST_RMCtrl);} //小陀螺处理函数
+    // /*如果是小陀螺模式，进行小陀螺的相关处理*/
+    // else if(F_TopMode == true)
+    // {ChModeControl_FreeMode_RCControl_TopHandler(&GSTCH_Data, &GST_RMCtrl);} //小陀螺处理函数
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
     CH_MotionUpdateAndProcess(GST_RMCtrl);
@@ -789,10 +779,10 @@ void ChModeControl_OffGroundMode_RCControl(void) {
     else
     {GST_RMCtrl.STCH_Default.LegLen2Des  = LegLenMid;}
 
-    RMCtrl.STCH_Force.Leg1FDes = LegFFForce_OffGround;     //左腿力目标值
-    RMCtrl.STCH_Force.Leg1TDes = GSTCH_Data.Leg1TorqueDes;     //左腿力矩目标值
-    RMCtrl.STCH_Force.Leg2FDes = LegFFForce_OffGround;     //右腿力目标值
-    RMCtrl.STCH_Force.Leg2TDes = GSTCH_Data.Leg2TorqueDes;     //右腿力矩目标值
+    GST_RMCtrl.STCH_Force.Leg1FDes = LegFFForce_OffGround;         //左腿力目标值
+    GST_RMCtrl.STCH_Force.Leg1TDes = GSTCH_Data.Leg1TorqueDes;     //左腿力矩目标值
+    GST_RMCtrl.STCH_Force.Leg2FDes = LegFFForce_OffGround;         //右腿力目标值
+    GST_RMCtrl.STCH_Force.Leg2TDes = GSTCH_Data.Leg2TorqueDes;     //右腿力矩目标值
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
     CH_MotionUpdateAndProcess(GST_RMCtrl);
@@ -851,20 +841,6 @@ void ChModeControl_StruggleMode_RCControl(void) {
     /* 使用手动控制的三档高度 */
     GST_RMCtrl.STCH_Default.LegLen1Des = GSTCH_Data.LegLenManualDes;
     GST_RMCtrl.STCH_Default.LegLen2Des = GSTCH_Data.LegLenManualDes;
-
-    if(判断打滑持续一段时间再进入：如果打滑开始时间和当前时间差值小于某个值)
-    {
-        那么确定为进入打滑状态，读取当前的yaw角度信息作为参考值
-        是否需要清零，这个需要考虑一下
-
-    }
-    else if{
-        打滑开始时间等于当前的时间，返回
-    }
-    根据当前的角度参考值和遥控器给出的角度目标值，计算出回转角误差值
-
-    根据标志位的左右轮打滑状态，计算出稳定补偿力矩
-
 }
 
 // #pragma endregion
@@ -917,5 +893,10 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow) {
         case CHMode_RC_OffGround:
             ChModeControl_OffGroundMode_RCControl();
             break;
+
+        // /*RC脱困模式*/
+        // case CHMode_RC_Struggle:
+        //     ChModeControl_StruggleMode_RCControl();
+        //     break;
     }
 }

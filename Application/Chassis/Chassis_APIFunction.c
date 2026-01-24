@@ -27,13 +27,14 @@
 
 #include "TIM_Config.h"
 
-// TODO 后续删除轮毂电机补偿力矩系数
-float K_traction = 0.02f;  // 轮毂电机速度卡尔曼滤波器自适应系数
+float PID_RollComp_Kp_tmp = 20.0f;  // Roll轴补偿PID：比例系数Kp
+float PID_RollComp_Ki_tmp = 0.0f;    // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
+float PID_RollComp_Kd_tmp = 1000.0f;              // Roll轴补偿PID：微分系数Kd
 
 // 底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值
 // TODO 可能需要改一下位置
 //! 由于需要用到部分前面用到的函数修改和处理写在后面了（然后我改了一下函数名称）
-#pragma region 各种FB反馈数据的修改、处理、更新相关函数
+// #pragma region 各种FB反馈数据的修改、处理、更新相关函数
 /**
  * @brief  用来解析轮毂电机反馈的数据，然后分发到正式结构体、变量
  * @param  Side：RobotSide_EnumTypeDef类型的枚举值，表示左轮毂还是右轮毂
@@ -147,9 +148,9 @@ void CH_FBData_Parse(void) {
     GSTCH_Data.AccXFB = - GstCH_IMU2.ST_Rx.AccX;  // 底盘云控反着安装，所以取负号 //换车时需修改
     GSTCH_Data.AccZFB =   GstCH_IMU2.ST_Rx.AccZ;  // 底盘垂直加速度反馈值，向上为正，单位m/s²
 }
-#pragma endregion
+// #pragma endregion
 
-#pragma region 各种Des目标数据的修改、处理、更新相关函数
+// #pragma region 各种Des目标数据的修改、处理、更新相关函数
 // TODO 更新目标值实现
 /**
  * @brief  更新腿长目标值（TD算法）
@@ -253,6 +254,7 @@ void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {
 
     /****Roll轴补偿力PID计算****/
     //! ROLL的PID参数已经在结构体初始化里面赋值完了 
+    PID_SetKpKiKd(&GstCH_RollCompPID, PID_RollComp_Kp_tmp, PID_RollComp_Ki_tmp, PID_RollComp_Kd_tmp); //更新Roll轴补偿PID参数
     PID_SetDes(&GstCH_RollCompPID, 0.0f * A2R); //底盘Roll轴补偿PID目标值，默认设为0rad
     PID_SetFB(&GstCH_RollCompPID, (GSTCH_Data.RollAngleFB - ChassisRollAngleZP) * A2R); //底盘Roll轴补偿PID反馈值，单位转为弧度
     PID_Cal(&GstCH_RollCompPID);
@@ -260,14 +262,14 @@ void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {
 
     /****获取腿长PID的输出力****/
     /*左腿*/
-    PID_SetDes(&GstCH_LegLen1PID, GSTCH_Data.LegLen1Des*MM2M);  //腿长PID目标值设为目标腿长
-    PID_SetFB (&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB*MM2M);   //腿长PID反馈值设置为实际腿长
+    PID_SetDes(&GstCH_LegLen1PID, GSTCH_Data.LegLen1Des);  //腿长PID目标值设为目标腿长
+    PID_SetFB (&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB);   //腿长PID反馈值设置为实际腿长
     PID_Cal  (&GstCH_LegLen1PID);                               //腿长PID计算
     float Leg1PIDForce = PID_GetOutput(&GstCH_LegLen1PID);      //获取左腿腿长PID作用力
 
     /*右腿*/
-    PID_SetDes(&GstCH_LegLen2PID, GSTCH_Data.LegLen2Des*MM2M);  //腿长PID目标值设为目标腿长
-    PID_SetFB (&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB*MM2M);   //腿长PID反馈值设置为实际腿长
+    PID_SetDes(&GstCH_LegLen2PID, GSTCH_Data.LegLen2Des);  //腿长PID目标值设为目标腿长
+    PID_SetFB (&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB);   //腿长PID反馈值设置为实际腿长
     PID_Cal  (&GstCH_LegLen2PID);                               //腿长PID计算
     float Leg2PIDForce = PID_GetOutput(&GstCH_LegLen2PID);      //获取右腿腿长PID作用力
 
@@ -388,9 +390,9 @@ void JM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
     GSTCH_JM4.TorqueDes = Limit(GstCH_Leg2VMC.T_Matrix[1], -JointMotorMAXTorque, JointMotorMAXTorque); //关节电机4力矩目标值
 }
 
-#pragma endregion
+// #pragma endregion
 
-#pragma region 各种底盘数据的解算相关函数：只解算，不更改正式结构体的值
+// #pragma region 各种底盘数据的解算相关函数：只解算，不更改正式结构体的值
 
 
 /**
@@ -520,6 +522,9 @@ void CH_HMTorqueComp_Process(void) {
     // 计算正常牵引力矩补偿
     GSTCH_HMTorqueComp.T_Trac_HM1 = GSTCH_HMTorqueComp.K_Trac_Norm * GSTCH_HMTorqueComp.Err_HM1;
     GSTCH_HMTorqueComp.T_Trac_HM2 = GSTCH_HMTorqueComp.K_Trac_Norm * GSTCH_HMTorqueComp.Err_HM2;
+    // 进入打滑模式后会改这个值
+    GSTCH_HMTorqueComp.T_Comp_HM1 = GSTCH_HMTorqueComp.T_Trac_HM1;
+    GSTCH_HMTorqueComp.T_Comp_HM2 = GSTCH_HMTorqueComp.T_Trac_HM2;
 }
 
 /**
@@ -576,23 +581,9 @@ void CH_VMCCal_Process(void) {
     VMC_Cal(&GstCH_Leg2VMC, &GstCH_LegLinkCal2);  // 右腿VMC计算
 }
 
-#pragma endregion
+// #pragma endregion
 
-#pragma region 各种数据的重置、清零函数
-
-/**
-  * @brief  轮毂电机力矩转电流的函数
-  * @note   把轮毂电机力矩目标值转换成电调电流目标值
-  *         注意这个函数没有考虑方向性，需要自行在调用时考虑正负号
-  * @param  Torque：轮毂电机力矩目标值，单位Nm
-  * @retval 轮毂电机电流目标值
-*/
-int16_t _HM_DesData_TorqueToCurrent(float Torque)
-{
-    float HM_Ampere = Torque / HM_Kt;                       //计算实际需要的电流值，单位A
-    float HM_CurrentDes = (HM_Ampere * HM_AmpereToCurrent); //转换成电调需要的电流值
-    return (int16_t)Limit(HM_CurrentDes, HM_MinCurrent, HM_MaxCurrent);//限制在电机允许电流范围内
-}
+// #pragma region 各种数据的重置、清零函数
 
 /**各项目标数据的清零、重置**/
 /**
@@ -814,9 +805,9 @@ void Chassis_RobotCtrlDataReset(void)
     Chassis_RobotCtrlForceConfigDataReset();   //默认不可配置数据重置
 }
 
-#pragma endregion
+// #pragma endregion
 
-#pragma region 底盘其他相关函数
+// #pragma region 底盘其他相关函数
 /**
   * @brief  检测是否需要进入手动标定状态的函数（开机后站起前进行）
   * @note   如果处于手动安全模式，并且做出内八手势，则进入手动标定状态
@@ -864,9 +855,9 @@ void CH_MotionUpdateAndProcess(RobotControl_StructTypeDef RMCtrl)
     JM_DesDataUpdate(RMCtrl);       //更新关节电机目标值
     HM_DesDataUpdate(RMCtrl);       //更新轮毂电机目标值
 }
-#pragma endregion
+// #pragma endregion
 
-#pragma region 底盘控制策略里面使用的相关函数
+// #pragma region 底盘控制策略里面使用的相关函数
 /**************************************底盘控制策略里面使用的相关函数***************************************************************************/
 /*底盘的移动相关函数*/
 /**
@@ -1103,4 +1094,4 @@ void ChModeControl_FreeMode_RCControl_TopHandler(CHData_StructTypeDef* CHData, R
     /*赋值给实际控制的结构体成员*/
     RMCtrl->STCH_Default.YawAngleVelDes = TopAngleVelDes_Next;
 }
-#pragma endregion
+// #pragma endregion

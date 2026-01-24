@@ -203,10 +203,10 @@ typedef struct {
 /*底盘数据结构体*/
 typedef struct {
     /*腿长相关*/
-    float LegLen1Des;  // 左腿目标长度（经过TD处理），单位mm
-    float LegLen2Des;  // 右腿目标长度（经过TD处理），单位mm
-    float LegLen1FB;   // 左腿实际长度，单位mm
-    float LegLen2FB;   // 右腿实际长度，单位mm
+    float LegLen1Des;  // 左腿目标长度（经过TD处理），单位m
+    float LegLen2Des;  // 右腿目标长度（经过TD处理），单位m
+    float LegLen1FB;   // 左腿实际长度，单位m
+    float LegLen2FB;   // 右腿实际长度，单位m
 
     /*LQR相关*/
     float DisDes;  // 底盘位移目标值，向前为正，单位m
@@ -327,6 +327,8 @@ extern LPF_StructTypeDef GstCH_Leg1F_N_LPF;
 extern LPF_StructTypeDef GstCH_Leg2F_N_LPF;
 
 extern KF_StructTypeDef GstCH_VelKF;
+
+extern HM_TorqueComp_StructTypeDef GSTCH_HMTorqueComp;
 // #pragma endregion
 
 // #pragma region

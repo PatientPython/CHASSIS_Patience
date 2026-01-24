@@ -1307,23 +1307,20 @@ void KF_ChassisVel_Update(KF_StructTypeDef *KFptr, float v_body_obs, float a_imu
  * @param[in] Weight_HM2             轮毂电机2的稳定补偿力矩权重
  * @param[in] Err_Sat                轮速误差饱和值
  * @param[in] Err_DZ                 轮速误差死区值
- * @author 关祺峰 (357665916@qq.com)
  */
 void HM_TorqueComp_StructInit (HM_TorqueComp_StructTypeDef *pHMComp,
-                               float K_Trac, float K_Stab,
+                               float K_Trac_Norm, float K_Trac_Strg, float K_Stab,
                                float Max_HM_Comp_Ratio,
                                float Weight_HM1, float Weight_HM2,
                                float Err_Sat, float Err_DZ){
-    HMModelAdaptPtr->K_Trac = K_Trac;
-    HMModelAdaptPtr->K_Stab = K_Stab;
-    HMModelAdaptPtr->Max_HM_Comp_Ratio = Max_HM_Comp_Ratio;
-    HMModelAdaptPtr->Weight_HM1 = Weight_HM1;
-    HMModelAdaptPtr->Weight_HM2 = Weight_HM2;
-    HMModelAdaptPtr->Err_Sat = Err_Sat;
-    HMModelAdaptPtr->Err_DZ = Err_DZ;
+    pHMComp->K_Trac_Norm = K_Trac_Norm;
+    pHMComp->K_Trac_Strg = K_Trac_Strg;
+    pHMComp->K_Stab = K_Stab;
+    pHMComp->Max_HM_Comp_Ratio = Max_HM_Comp_Ratio;
+    pHMComp->Weight_HM1 = Weight_HM1;
+    pHMComp->Weight_HM2 = Weight_HM2;
+    pHMComp->Err_Sat = Err_Sat;
+    pHMComp->Err_DZ = Err_DZ;
 }
-
-
-
 
 // #pragma endregion
