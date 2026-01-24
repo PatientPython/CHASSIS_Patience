@@ -20,26 +20,27 @@
 
 /****************************结构体、数组定义（可能需要修改）****************************/
 /*默认的LQR计算K矩阵*/
-// float LQR_K_Matrix_zero_point_two[4][10] = {
-//     {-4.9782, -7.4064, -2.7824, -1.6201, -22.4452, -2.2603, -8.4339, -1.0402,
-//      29.7838, 1.4493},
-//     {-4.9782, -7.4064, 2.7824, 1.6201, -8.4339, -1.0402, -22.4452, -2.2603,
-//      29.7838, 1.4493},
-//     {4.7969, 7.0784, -6.8980, -4.0543, 48.4559, 4.1136, -20.6028, -1.1189,
-//      274.6596, 7.8673},
-//     {4.7969, 7.0784, 6.8980, 4.0543, -20.6028, -1.1189, 48.4559, 4.1136,
-//      274.6596, 7.8673}};
 
-float LQR_K_Matrix_zero_point_three[4][10] = {
-    {-5.1792, -7.3166, -2.4692, -1.4136, -25.6874, -3.0680, -8.9990, -1.5103,
-     11.0711, 0.7218},
-    {-5.1792, -7.3166, 2.4692, 1.4136, -8.9990, -1.5103, -25.6874, -3.0680,
-     11.0711, 0.7218},
-    {1.6109, 2.2437, -8.0019, -4.7705, 41.7505, 3.6576, -30.6497, -2.3683,
-     287.9275, 8.3695},
-    {1.6109, 2.2437, 8.0019, 4.7705, -30.6497, -2.3683, 41.7505, 3.6576,
-     287.9275, 8.3695}};
-     
+float LQR_K_Matrix_LegLenLow[4][10] = {
+    {-4.8206, -7.2547, -2.8829, -1.6522, -20.7673, -1.9766, -7.7001, -0.8481, 38.1678, 1.7297},
+    {-4.8206, -7.2547,  2.8829,  1.6522, -7.7001,  -0.8481, -20.7673, -1.9766, 38.1678, 1.7297},
+    {6.2008,  9.2714,  -6.4723, -3.7243, 51.4433,  4.3351,  -16.5151, -0.8260, 264.2224, 7.4866},
+    {6.2008,  9.2714,  6.4723,  3.7243,  -16.5151, -0.8260, 51.4433,  4.3351, 264.2224, 7.4866}
+};
+
+float LQR_K_Matrix_LegLenMid[4][10] = {
+    {-4.9782, -7.4064, -2.7824, -1.6201, -22.4452, -2.2603, -8.4339, -1.0402, 29.7838, 1.4493},
+    {-4.9782, -7.4064,  2.7824,  1.6201, -8.4339,  -1.0402, -22.4452, -2.2603, 29.7838, 1.4493},
+    {4.7969,  7.0784,  -6.8980, -4.0543, 48.4559,  4.1136,  -20.6028, -1.1189, 274.6596, 7.8673},
+    {4.7969,  7.0784,  6.8980,  4.0543,  -20.6028, -1.1189, 48.4559,  4.1136, 274.6596, 7.8673}
+};
+
+float LQR_K_Matrix_LegLenHigh[4][10] = {
+    {-5.1792, -7.3166, -2.4692, -1.4136, -25.6874, -3.0680, -8.9990, -1.5103, 11.0711, 0.7218},
+    {-5.1792, -7.3166,  2.4692,  1.4136, -8.9990,  -1.5103, -25.6874, -3.0680, 11.0711, 0.7218},
+    {1.6109,  2.2437,  -8.0019, -4.7705, 41.7505,  3.6576,  -30.6497, -2.3683, 287.9275, 8.3695},
+    {1.6109,  2.2437,  8.0019,  4.7705,  -30.6497, -2.3683, 41.7505,  3.6576, 287.9275, 8.3695}
+};
 // #pragma region PID相关函数全家桶
 
 /**
@@ -393,68 +394,44 @@ void LegLinkage_ForwardKinematicsCal(LegLinkageCal_StructTypeDef* LegPtr) {
     LegPtr->yA = 0;
     LegPtr->xE = LegPtr->l5;
     LegPtr->yE = 0;
-    LegPtr->xB = LegPtr->xA +
-                 LegPtr->l1 * MyCos(LegPtr->phi1);  // xB = xA + l1*cos(phi1)
-    LegPtr->yB = LegPtr->yA +
-                 LegPtr->l1 * MySin(LegPtr->phi1);  // yB = yA + l1*sin(phi1)
-    LegPtr->xD = LegPtr->xE +
-                 LegPtr->l4 * MyCos(LegPtr->phi4);  // xD = xE + l4*cos(phi4)
-    LegPtr->yD = LegPtr->yE +
-                 LegPtr->l4 * MySin(LegPtr->phi4);  // yD = yE + l4*sin(phi4)
+    LegPtr->xB = LegPtr->xA + LegPtr->l1 * MyCos(LegPtr->phi1); //xB = xA + l1*cos(phi1)
+    LegPtr->yB = LegPtr->yA + LegPtr->l1 * MySin(LegPtr->phi1); //yB = yA + l1*sin(phi1)
+    LegPtr->xD = LegPtr->xE + LegPtr->l4 * MyCos(LegPtr->phi4); //xD = xE + l4*cos(phi4)
+    LegPtr->yD = LegPtr->yE + LegPtr->l4 * MySin(LegPtr->phi4); //yD = yE + l4*sin(phi4)    
 
     /******************************phi2的计算*****************************/
-    float BD =
-        MySqrt(MySqr(LegPtr->xB - LegPtr->xD) +
-               MySqr(LegPtr->yB -
-                     LegPtr->yD));  // BD = sqrt((xB - xD)^2 + (yB - yD)^2)
+    float BD = MySqrt(MySqr(LegPtr->xB - LegPtr->xD) + MySqr(LegPtr->yB - LegPtr->yD));//BD = sqrt((xB - xD)^2 + (yB - yD)^2)
 
-    float A1 =
-        2 * LegPtr->l2 * (LegPtr->xD - LegPtr->xB);  // A1 = 2*l2*(xD - xB)
-    float B1 =
-        2 * LegPtr->l2 * (LegPtr->yD - LegPtr->yB);  // B1 = 2*l2*(yD - yB)
-    float C1 = MySqr(BD);                            // C1 = BD^2
+    float A1 = 2 * LegPtr->l2 * (LegPtr->xD - LegPtr->xB);       //A1 = 2*l2*(xD - xB)
+    float B1 = 2 * LegPtr->l2 * (LegPtr->yD - LegPtr->yB);       //B1 = 2*l2*(yD - yB)
+    float C1 = MySqr(BD);                                        //C1 = BD^2
 
     float Temp1 = MySqrt(MySqr(A1) + MySqr(B1) - MySqr(C1));
-    LegPtr->phi2 =
-        2 * R2A *
-        MyAtan((B1 + Temp1) / (A1 + C1));  // phi2 = 2*atan((B1 + sqrt(A1*A1 +
-                                           // B1*B1 - C1*C1)) / (A1 + C1))
+    LegPtr->phi2 = 2*R2A* MyAtan((B1 + Temp1) / (A1 + C1));      //phi2 = 2*atan((B1 + sqrt(A1*A1 + B1*B1 - C1*C1)) / (A1 + C1))
 
     /******************************phi3的计算*****************************/
-    float A2 =
-        2 * LegPtr->l3 * (LegPtr->xB - LegPtr->xD);  // A2 = 2*l3*(xB - xD)
-    float B2 =
-        2 * LegPtr->l3 * (LegPtr->yB - LegPtr->yD);  // B2 = 2*l3*(yB - yD)
-    float C2 = MySqr(BD);                            // C2 = BD^2
+    float A2 = 2 * LegPtr->l3 * (LegPtr->xB - LegPtr->xD);       //A2 = 2*l3*(xB - xD)
+    float B2 = 2 * LegPtr->l3 * (LegPtr->yB - LegPtr->yD);       //B2 = 2*l3*(yB - yD)
+    float C2 = MySqr(BD);                                        //C2 = BD^2
 
     float Temp2 = MySqrt(MySqr(A2) + MySqr(B2) - MySqr(C2));
-    LegPtr->phi3 =
-        2 * R2A *
-        MyAtan((B2 - Temp2) / (A2 + C2));  // phi3 = 2*atan((B2 - sqrt(A2*A2 +
-                                           // B2*B2 - C2*C2)) / (A2 + C2))
+    LegPtr->phi3 = 2*R2A* MyAtan((B2 - Temp2) / (A2 + C2));      //phi3 = 2*atan((B2 - sqrt(A2*A2 + B2*B2 - C2*C2)) / (A2 + C2))
 
     /******************************C点直角坐标计算*****************************/
-    LegPtr->xC = LegPtr->xB +
-                 LegPtr->l2 * MyCos(LegPtr->phi2);  // xC = xB + l2*cos(phi2)
-    LegPtr->yC = LegPtr->yB +
-                 LegPtr->l2 * MySin(LegPtr->phi2);  // yC = yB + l2*sin(phi2)
+    LegPtr->xC = LegPtr->xB + LegPtr->l2 * MyCos(LegPtr->phi2); //xC = xB + l2*cos(phi2)
+    LegPtr->yC = LegPtr->yB + LegPtr->l2 * MySin(LegPtr->phi2); //yC = yB + l2*sin(phi2)
 
     /******************************等效摆杆长度、角度计算*****************************/
     float Half_l5 = LegPtr->l5 / 2.0f;
-    LegPtr->L0 = MySqrt(MySqr(LegPtr->xC - Half_l5) +
-                        MySqr(LegPtr->yC));  // L0 = sqrt((xC - l5/2)^2 + yC^2)
-    LegPtr->phi0 =
-        R2A * MyAtan((LegPtr->yC) /
-                     (LegPtr->xC - Half_l5));  // phi0 = atan(yC / (xC - l5/2))
+    LegPtr->L0 = MySqrt(MySqr(LegPtr->xC - Half_l5) + MySqr(LegPtr->yC));   //L0 = sqrt((xC - l5/2)^2 + yC^2)
+    LegPtr->phi0 = R2A * MyAtan((LegPtr->yC) / (LegPtr->xC - Half_l5));     //phi0 = atan(yC / (xC - l5/2))
 
-    if (LegPtr->phi0 < 0) {
-        LegPtr->phi0 = 180 + LegPtr->phi0;
-    }  // 保证phi0在[0, 180]范围内
+	if(LegPtr->phi0 < 0) 
+    {LegPtr->phi0 = 180 + LegPtr->phi0;} //保证phi0在[0, 180]范围内
 
     /******************************计算几个变量的微分，保存它们上次值*****************************/
     /*xC，注意这里的单位还是mm*/
-    LegPtr->xC_dot = (LegPtr->xC - LegPtr->xC_Pre) /
-                     LegPtr->SampleTime;  // xC_dot = (xC - xC_Pre) / SampleTime
+    LegPtr->xC_dot = (LegPtr->xC - LegPtr->xC_Pre) / LegPtr->SampleTime; //xC_dot = (xC - xC_Pre) / SampleTime
     LegPtr->xC_Pre = LegPtr->xC;
 }
 
@@ -534,41 +511,27 @@ float LegLinkage_GetxCdot(LegLinkageCal_StructTypeDef* LegPtr,
 }
 
 /**
- * @brief  获取等效连杆L0的微分值
- * @note   注意单位问题：返回值单位为m/s，变长为正方向
- * @param
- * LegPtr：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
- * @retval L0_dot（等效连杆长度的微分，变长为正，单位m/s）
- */
-//* 获取虚拟摆杆长度L0的微分
-float LegLinkage_GetL0dot(LegLinkageCal_StructTypeDef* LegPtr) {
+  * @brief  获取等效连杆L0的微分值
+  * @note   注意单位问题：返回值单位为m/s，变长为正方向
+  * @param  LegPtr：LegLinkageCal_StructTypeDef类型的指针，五连杆计算参数结构体指针
+  * @retval L0_dot（等效连杆长度的微分，变长为正，单位m/s）
+*/
+float LegLinkage_GetL0dot(LegLinkageCal_StructTypeDef* LegPtr)
+{
     float L0_dot_Result = 0.0f;
 
     /*获取转换矩阵的两个元素（其实就是VMC的转换矩阵中的元素）*/
-    float J_Matrix11 =
-        LegPtr->l1 * MM2M * MySin((LegPtr->phi0 - LegPtr->phi3)) *
-        MySin((LegPtr->phi1 - LegPtr->phi2)) /
-        MySin((LegPtr->phi3 -
-               LegPtr->phi2));  // J11 = L1*sin(phi0-phi3)*sin(phi1-phi2) /
-                                // sin(phi3-phi2)
-    float J_Matrix21 =
-        LegPtr->l4 * MM2M * MySin((LegPtr->phi0 - LegPtr->phi2)) *
-        MySin((LegPtr->phi3 - LegPtr->phi4)) /
-        MySin((LegPtr->phi3 -
-               LegPtr->phi2));  // J21 = L4*sin(phi0-phi2)*sin(phi3-phi4) /
-                                // sin(phi3-phi2)
+    float T_Matrix11 = LegPtr->l1*MM2M * MySin((LegPtr->phi0-LegPtr->phi3)) * MySin((LegPtr->phi1-LegPtr->phi2)) / MySin((LegPtr->phi3-LegPtr->phi2));//T11 = L1*sin(phi0-phi3)*sin(phi1-phi2) / sin(phi3-phi2)
+    float T_Matrix21 = LegPtr->l4*MM2M * MySin((LegPtr->phi0-LegPtr->phi2)) * MySin((LegPtr->phi3-LegPtr->phi4)) / MySin((LegPtr->phi3-LegPtr->phi2));//T21 = L4*sin(phi0-phi2)*sin(phi3-phi4) / sin(phi3-phi2)
 
-    // 防止出现NaN，也就是分母为0的情况
-    if (isnan(J_Matrix11) == true) {
-        J_Matrix11 = 0.0f;
-    }
-    if (isnan(J_Matrix21) == true) {
-        J_Matrix21 = 0.0f;
-    }
+    //防止出现NaN，也就是分母为0的情况
+    if(isnan(T_Matrix11) == true)
+    {T_Matrix11 = 0.0f;}
+    if(isnan(T_Matrix21) == true)
+    {T_Matrix21 = 0.0f;}
 
     /*获取L0_dot*/
-    L0_dot_Result =
-        J_Matrix11 * LegPtr->phi1_dot + J_Matrix21 * LegPtr->phi4_dot;
+	L0_dot_Result = T_Matrix11 * LegPtr->phi1_dot + T_Matrix21 * LegPtr->phi4_dot;
     return L0_dot_Result * MM2M;
 }
 
@@ -726,40 +689,86 @@ float LPF_GetOutput(LPF_StructTypeDef* LPFptr) {
  * @retval 无
  */
 
-//* 根据腿长去改变更新K矩阵，目前没加拟合算法，能实现站起来之后再加
 // TODO 加入K矩阵腿长拟合算法
 
-void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1,
-                        float LegLen2) {
-    /***************腿长为0，采用默认K矩阵***************/
-    if ((LegLen1 == 0.0f) || (LegLen2 == 0.0f)) {
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 10; j++) {
-                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_zero_point_three[i][j];
-            }
-        }
-    }
+void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1, float LegLen2)
+{
+    /***************默认采用0.20腿长K矩阵***************/
 
-    /***************腿长不为0，拟合K矩阵***************/
-    // 待补充：根据腿长拟合K矩阵，其实也可以根据不同腿长直接给3个K矩阵，省去拟合的麻烦
-    // 暂时先用默认值凑合着
-    // 下面是老代码
-    /*
-    void Get_K_Length_WholeBody(float L_Right,float L_Left)
+    if((LegLen1 == LegLenHigh) || (LegLen2 == LegLenHigh))
     {
-        for(int i=0;i<4;i++)
+        for(int i = 0; i < 4; i++)
         {
-            for(int j=0;j<10;j++)
+            for(int j = 0; j < 10; j++)
             {
-                k_matrix_wholebody[i][j] =
-    k_matrix_coeff_wholebody[i][j][0]+k_matrix_coeff_wholebody[i][j][5]*L_Right*L_Left+
-                                            +k_matrix_coeff_wholebody[i][j][1]*L_Left+k_matrix_coeff_wholebody[i][j][2]*L_Left*L_Left+
-                                            +k_matrix_coeff_wholebody[i][j][3]*L_Right+k_matrix_coeff_wholebody[i][j][4]*L_Right*L_Right;
-
+                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_LegLenHigh[i][j];
             }
         }
     }
-    **/
+
+    else if ((LegLen1 == LegLenLow) || (LegLen2 == LegLenLow))
+    {
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 10; j++)
+            {
+                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_LegLenLow[i][j];
+            }
+        }       
+    }
+
+    else
+    {
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 10; j++)
+            {
+                LQRptr->K_Matrix[i][j] = LQR_K_Matrix_LegLenMid[i][j];
+            }
+        }
+    }
+
+    // TODO 离地状态下的腿长处理学习
+    /*****************离地状态特殊处理*****************/
+    /*如果离地，仅保留K矩阵中控制腿部摆角的增益量*/
+    // 状态向量X：
+    // [4] : theta_ll0 (左腿与竖直方向夹角)
+    // [5] : theta_dot_ll (左腿角速度)
+    // [6] : theta_lr0 (右腿与竖直方向夹角)
+    // [7] : theta_dot_lr (右腿角速度)
+    // 控制向量u：
+    // [2] : T_bl (左腿关节/髋部电机力矩)
+    // [3] : T_br (右腿关节/髋部电机力矩)
+    if(GSTCH_DataGet_F_OffGround1(GSTCH_Data))    //左离地
+    {
+        // 左轮轮毂电机和关节电机增益清零
+        for(int j=0; j<10; j++)
+        {
+            LQRptr->K_Matrix[0][j] = 0;
+            LQRptr->K_Matrix[2][j] = 0;
+        }
+
+        // 只对关节电机摆角维持相关项赋值
+        LQRptr->K_Matrix[2][4] = LQR_K_Matrix_LegLenMid[2][4];
+        LQRptr->K_Matrix[2][5] = LQR_K_Matrix_LegLenMid[2][5];
+        LQRptr->K_Matrix[2][6] = LQR_K_Matrix_LegLenMid[2][6];
+        LQRptr->K_Matrix[2][7] = LQR_K_Matrix_LegLenMid[2][7];
+    }
+    if(GSTCH_DataGet_F_OffGround2(GSTCH_Data))    //右离地
+    {
+        // 右轮轮毂电机和关节电机增益清零
+        for(int j=0; j<10; j++)
+        {
+            LQRptr->K_Matrix[1][j] = 0;
+            LQRptr->K_Matrix[3][j] = 0;
+        }
+
+        // 只对关节电机摆角维持相关项赋值
+        LQRptr->K_Matrix[3][4] = LQR_K_Matrix_LegLenMid[3][4];
+        LQRptr->K_Matrix[3][5] = LQR_K_Matrix_LegLenMid[3][5];
+        LQRptr->K_Matrix[3][6] = LQR_K_Matrix_LegLenMid[3][6];
+        LQRptr->K_Matrix[3][7] = LQR_K_Matrix_LegLenMid[3][7];
+    }
 }
 
 /**
@@ -846,7 +855,26 @@ float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index) {
 
 // #pragma region VMC相关函数全家桶
 
-// 主要功能是更新虚拟力和力矩，将虚拟力和力矩转化成关节电机力矩，并实现对关节电机力矩的读取
+// 主要功能更新动态前馈力、更新虚拟力和力矩，将虚拟力和力矩转化成关节电机力矩，并实现对关节电机力矩的读取
+
+/**
+ * @brief  底盘侧向惯性前馈力计算处理函数
+ * @note   基于物理公式实时更新 LegFFForce_Norm
+ * @param  CHData：RobotControl_StructTypeDef类型的指针，底盘控制数据结构体指针
+ * @retval 无
+ */
+//* 底盘侧向惯性前馈力计算处理函数
+void VMC_FFForceUpdate(RobotControl_StructTypeDef* CHData) {
+    // 当前腿长，单位m
+    float l_current = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f * MM2M;
+    float YawRate = GSTCH_Data.YawAngleVelFB * A2R;  // 偏航角速度，单位rad/s
+    float v_forward = GSTCH_Data.VelFB;              // 前进速度，单位m/s
+    //* F_bl,inertial = InertialCoeff * l_current * YawRate * v_forward
+    LegFFForce_Inertial_1 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
+    LegFFForce_Inertial_2 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
+    CHData->STCH_Default.Leg1FFForce = LegFFForce_Gravity_1 - LegFFForce_Inertial_1;
+    CHData->STCH_Default.Leg2FFForce = LegFFForce_Gravity_2 + LegFFForce_Inertial_2;
+}
 
 /**
  * @brief  VMC的F矩阵更新函数
@@ -1263,5 +1291,39 @@ void KF_ChassisVel_Update(KF_StructTypeDef *KFptr, float v_body_obs, float a_imu
     
     memcpy(KFptr->P, P_new, sizeof(P_new));
 }
+
+// #pragma endregion
+
+// #pragma region 轮毂电机自适应力矩补偿相关函数全家桶
+
+/**
+ * @brief 轮毂电机自适应力矩补偿结构体初始化函数
+ * @note  用于初始化轮毂电机自适应力矩补偿
+ * @param[in] pHMComp                指向轮毂电机自适应力矩补偿结构体的指针
+ * @param[in] K_Trac                 维持轮速跟上估计值的补偿力矩比例系数
+ * @param[in] K_Stab                 用于打滑或受阻时维持yaw稳定补偿力矩的比例系数
+ * @param[in] Max_HM_Comp_Ratio      轮毂电机最大补偿力矩比例
+ * @param[in] Weight_HM1             轮毂电机1的稳定补偿力矩权重
+ * @param[in] Weight_HM2             轮毂电机2的稳定补偿力矩权重
+ * @param[in] Err_Sat                轮速误差饱和值
+ * @param[in] Err_DZ                 轮速误差死区值
+ * @author 关祺峰 (357665916@qq.com)
+ */
+void HM_TorqueComp_StructInit (HM_TorqueComp_StructTypeDef *pHMComp,
+                               float K_Trac, float K_Stab,
+                               float Max_HM_Comp_Ratio,
+                               float Weight_HM1, float Weight_HM2,
+                               float Err_Sat, float Err_DZ){
+    HMModelAdaptPtr->K_Trac = K_Trac;
+    HMModelAdaptPtr->K_Stab = K_Stab;
+    HMModelAdaptPtr->Max_HM_Comp_Ratio = Max_HM_Comp_Ratio;
+    HMModelAdaptPtr->Weight_HM1 = Weight_HM1;
+    HMModelAdaptPtr->Weight_HM2 = Weight_HM2;
+    HMModelAdaptPtr->Err_Sat = Err_Sat;
+    HMModelAdaptPtr->Err_DZ = Err_DZ;
+}
+
+
+
 
 // #pragma endregion

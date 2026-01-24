@@ -7,7 +7,7 @@
   ******************************************************************************
 */
 
-//待优化：后续考虑做一份Word文件出来，可以放一些图片什么的，更清楚
+//TODO 后续考虑做一份Word文件出来，可以放一些图片什么的，更清楚
 //待整理
 关于2025并腿平步老代码的方向性说明
     1、电池侧为后方。
@@ -47,12 +47,19 @@
         (19) Hor    Horizontal      水平的
         (20) Avg    Average         平均
         (21) Comp   Compensation    补偿
-        (22) Norm   Normal          正常的
+        (22) Norm   Normal          正常的，归一化的
         (23) FF     FeedForward     前馈
         (24) Para   Parameter       参数  
         (25) tmp    Temp            临时的
         (26) dec    decrease        减少
-        (27) Ctr    counter-part   另一方的、对方的（用于地面支持力估计）
+        (27) Ctr    counter-part    另一方的、对方的（用于地面支持力估计）
+        (28) KF     kalman Filter   卡尔曼滤波器
+        (29) DZ     Dead Zone       死区
+        (30) Sat    Saturation      饱和
+        (31) Adapt  Adaptation      适应、补偿
+        (32) Trac   Traction        牵引（用于是轮速实际值跟上估计值）
+        (33) Stab   Stability       稳定（用于打滑或受阻时维持yaw稳定）
+
         () EncoderPPR   Pulses Per Revolution     每转一圈的脉冲数（编码器相关数据）
         () ESC          Electronic Speed Control  电调
 
@@ -79,7 +86,7 @@
 
 
     2-2、变量命名规则-数字序号
-        (0) 对于2025的并腿车，电池侧为后边，灯条侧为右边，右边为轮毂1，左边为轮毂2。
+        (0) 对于2025的并腿车，电池侧为后边，灯条侧为右边，左边为轮毂1，右边为轮毂2。
 
         (1) 云台云控IMU1
             底盘云控IMU2

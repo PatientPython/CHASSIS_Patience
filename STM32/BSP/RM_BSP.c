@@ -21,8 +21,8 @@
   * @param  无
   * @retval 无
 */
-//待优化：这里的注释也写得很糟糕，后面得改一改
-//待修改：新代码需要根据电机通讯的ID号重新写
+//TODO 这里的注释也写得很糟糕，后面得改一改
+//FIXME 新代码需要根据电机通讯的ID号重新写
 //换车需修改
 void _BSPInit_CANSendZeroCurrent(void)
 {
@@ -60,7 +60,7 @@ void BSP_All_Init(void)
     My_USART2_Init(); //云台云控IMU1
     My_USART3_Init(); //Debug
     My_UART4_Init();  //底盘云控IMU2 
-    // My_UART5_Init(); //裁判系统  //待修改：没有对UART5接收做处理的时候，初始化会让程序卡死，等待后面处理完再打开
+    // My_UART5_Init(); //裁判系统  //FIXME 没有对UART5接收做处理的时候，初始化会让程序卡死，等待后面处理完再打开
     My_USART6_Init(); //视觉
 
     /**************************************** TIM ****************************************/

@@ -134,7 +134,7 @@ typedef struct {
     } ST_RC;
 
     /*辅助结构体2：鼠标数据结构体*/
-    // 待优化：这里的变量命名不是很清楚（比如这个Z是干嘛的，Left表示左键有点奇怪）
+    // TODO 这里的变量命名不是很清楚（比如这个Z是干嘛的，Left表示左键有点奇怪）
     struct _KeyMouseControlData_StructTypeDef {
         int16_t X;
         int16_t Y;
@@ -229,7 +229,7 @@ extern ReceiverData_StructTypeDef GST_Receiver;
      100)  // 遥控器拨轮下阈值，拨轮超过该值认为拨轮在下
 #define RCChannel_DeadZone \
     ((uint16_t)340)  // 遥控器通道死区范围，摇杆在中间位置时，偏差小于该值则认为是0输入
-// 待优化：下面的宏定义暂时没什么用，可以考虑删掉。如果有用到的话改成一个更合适的名字
+// TODO 下面的宏定义暂时没什么用，可以考虑删掉。如果有用到的话改成一个更合适的名字
 //  #define RC_CH_VALUE_GIMBAL_DEAD     ((u16)20)
 //  #define RC_CH_VALUE_RANGE           ((u16)660)
 

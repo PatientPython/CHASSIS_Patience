@@ -74,7 +74,7 @@ void DebugTask(void* arg)
   * @param  无
   * @retval 无
 */
-//待优化:后续可以给这个函数加上一些参数，比如传入WatchFps就打印fps。传入自定义就打印自定义函数
+//TODO 后续可以给这个函数加上一些参数，比如传入WatchFps就打印fps。传入自定义就打印自定义函数
 void VofaPrint(void)
 {
     USART3_DMA_printf

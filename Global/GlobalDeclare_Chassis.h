@@ -28,23 +28,24 @@ typedef enum {
     // 5、在Chassis_Stratgy.c的ChassisControl函数中增加对应模式的控制策略实现
     // 6、如果需要，在Chassis_ModeChooseParameter_StructTypeDef结构体中增加对应的参数变量
 
-    CHMode_RC_ManualSafe,   // 底盘模式：手动安全（遥控器拨杆左下右上）
-    CHMode_RC_AutoSafe,     // 底盘模式：自动安全
-    CHMode_RC_Sitting,      // 底盘模式：坐下
-    CHMode_RC_StandUp,      // 底盘模式：起立
-    CHMode_RC_Free,         // 底盘模式：自由（非跟随模式）
-    CHMode_RC_SlowSitDown,  // 底盘模式：缓慢坐下
-    CHMode_RC_Follow,       // 底盘模式：跟随（随云台转动）
-    CHMode_RC_OffGround,    // 底盘模式：离地
+    CHMode_RC_ManualSafe,  //遥控器底盘模式：手动安全（遥控器拨杆左下右上）
+    CHMode_RC_AutoSafe,    //遥控器底盘模式：自动安全
+    CHMode_RC_Sitting,     //遥控器底盘模式：坐下
+    CHMode_RC_StandUp,     //遥控器底盘模式：起立
+    CHMode_RC_Free,        //遥控器底盘模式：自由（非跟随模式）
+    CHMode_RC_SlowSitDown, //遥控器底盘模式：缓慢坐下
+    CHMode_RC_Follow,      //遥控器底盘模式：跟随（随云台转动）
+    CHMode_RC_OffGround,   //遥控器底盘模式：离地
     CHMode_RC_TouchGround, //遥控器底盘模式：触地（特指离地后触地）
+    CHMode_RC_Struggle,    //遥控器底盘模式：脱困（指轮打滑和受阻两种情况）
     // 待补充
 } ChassisMode_EnumTypeDef;
 
 /*底盘运动方向相关枚举*/
 typedef enum {
-    MoveDirection_Brake,
-    MoveDirection_Forward,
-    MoveDirection_Backward
+    MoveDirection_Brake,   // 停止
+    MoveDirection_Forward, // 前进
+    MoveDirection_Backward // 后退
 } Chassis_MoveDirection_EnumTypeDef;
 // #pragma endregion
 
@@ -59,14 +60,15 @@ typedef struct {
     uint32_t RC_Free;         // RC遥控器控制下，自由模式开始时间，单位毫秒
     uint32_t RC_SlowSitDown;  // RC遥控器控制下，缓慢坐下模式开始时间，单位毫秒
     uint32_t RC_Follow;       // RC遥控器控制下，跟随模式开始时间，单位毫秒
-    uint32_t RC_OffGround;      //RC遥控器控制下，离地模式开始时间，单位毫秒
-    uint32_t RC_TouchGround;    //RC遥控器控制下，触地模式开始时间，单位毫秒
+    uint32_t RC_OffGround;    // RC遥控器控制下，离地模式开始时间，单位毫秒
+    uint32_t RC_TouchGround;  // RC遥控器控制下，触地模式开始时间，单位毫秒
+    uint32_t RC_Struggle;     // RC遥控器控制下，脱困模式开始时间，单位毫秒
 } _CH_ModeStartTime_StructTypeDef;
 
 /*IMU2底盘云控数据处理结构体类型定义，包括发送和接收(注意4字节对齐)(32位单片机默认)*/
-// 待优化：这份数据里面好像有一些乱七八糟的、没有用到的东西，后面重构完代码了可以修改，注意连着IMU2一起改
-// 待优化：这份数据结构体里面的顺序很乱，后面也可以改，比如把yaw的放一起，pitch的放一起
-// 待优化：ST_Rx、ST_Tx的结构体顺序有点乱，是因为老代码IMU2的数据通讯顺序就是这样的，后面可以考虑改成更合理的顺序
+// TODO 这份数据里面好像有一些乱七八糟的、没有用到的东西，后面重构完代码了可以修改，注意连着IMU2一起改
+// TODO 这份数据结构体里面的顺序很乱，后面也可以改，比如把yaw的放一起，pitch的放一起
+// TODO ST_Rx、ST_Tx的结构体顺序有点乱，是因为老代码IMU2的数据通讯顺序就是这样的，后面可以考虑改成更合理的顺序
 //        但是注意要把底盘云控IMU2的代码一起改
 typedef struct {
     /*主控接收IMU2发来的数据结构体*/
@@ -74,9 +76,9 @@ typedef struct {
         /*帧头*/
         uint8_t head[2];
 
-        /*//待优化：不知道干嘛的*/
-        uint8_t JM_2StatusFB;  // 待优化：并未使用的变量，不知道干嘛用的
-        float leg_fps;         // 待优化：并未使用的变量，不知道干嘛用的
+        /*//TODO 不知道干嘛的*/
+        uint8_t JM_2StatusFB;  // TODO 并未使用的变量，不知道干嘛用的
+        float leg_fps;         // TODO 并未使用的变量，不知道干嘛用的
 
         /*IMU的数据，各种速度、位置、加速度*/
         float YawAngle;
@@ -107,13 +109,13 @@ typedef struct {
         float JM3_AngleVelFB;  // 角速度，单位：度/s
         float JM3_AngleFB;     // 位置，单位：度
 
-        /*//待优化：不知道干嘛的*/
-        int GF_fps;  // 待优化：并未使用的变量，不知道干嘛用的
-        int RB_fps;  // 待优化：并未使用的变量，不知道干嘛用的
-        int LF_fps;  // 待优化：并未使用的变量，不知道干嘛用的
-        int LB_fps;  // 待优化：并未使用的变量，不知道干嘛用的
+        /*//TODO 不知道干嘛的*/
+        int GF_fps;  // TODO 并未使用的变量，不知道干嘛用的
+        int RB_fps;  // TODO 并未使用的变量，不知道干嘛用的
+        int LF_fps;  // TODO 并未使用的变量，不知道干嘛用的
+        int LB_fps;  // TODO 并未使用的变量，不知道干嘛用的
 
-        /*//待优化：原来接测距用的，但是暂时也没有使用*/
+        /*//TODO 原来接测距用的，但是暂时也没有使用*/
         float MeasuredDistance;
 
         /*帧尾*/
@@ -127,9 +129,9 @@ typedef struct {
 
         /*一些标志位*/
         uint8_t
-            ReloadStatus;  // 待优化：原本是之前赛季的补弹标志位，由于规则改动，无需补弹功能，直接发false就行，后续可以删掉，记得IMU2里面也要一起删
+            ReloadStatus;  // TODO 原本是之前赛季的补弹标志位，由于规则改动，无需补弹功能，直接发false就行，后续可以删掉，记得IMU2里面也要一起删
         uint8_t RestartFlag;         // IMU2底盘云控重启标志位
-        uint8_t JM2StatusDes;        // 待优化：并未使用的变量，不知道干嘛用的
+        uint8_t JM2StatusDes;        // TODO 并未使用的变量，不知道干嘛用的
         uint8_t LegCalibrationFlag;  // 腿部校准标志位
 
         /*右前关节电机*/
@@ -162,7 +164,7 @@ typedef struct {
 } IMU2Data_StructTypeDef;
 
 /*关节电机MIT控制协议数据结构体*/
-// 待优化：这份结构体的成员有些是没有用的，可以考虑删掉，同时注意把底盘云控IMU2的数据结构体也一起改
+// TODO 这份结构体的成员有些是没有用的，可以考虑删掉，同时注意把底盘云控IMU2的数据结构体也一起改
 typedef struct {
     /*需要初始化赋值的成员*/
     uint8_t ID;   // 电机的ID
@@ -214,7 +216,6 @@ typedef struct {
 
     float YawDeltaDes;     // 底盘偏转角目标增量，上往下看逆时针为正，单位度
     float YawAngleVelDes;  // 底盘偏转速度目标值，上往下看逆时针为正，单位度/s
-    // float YawAngleFB;      // [new] 底盘偏转角反馈值，上往下看逆时针为正，单位度
     float YawAngleVelFB;   // 底盘偏转速度反馈值，上往下看逆时针为正，单位度/s
 
     float Theta1Des;  // 左腿与绝对垂直方向夹角目标值，向后摆为正，单位度
@@ -250,15 +251,31 @@ typedef struct {
     /*底盘控制策略相关*/
     _CH_ModeStartTime_StructTypeDef ST_ModeStartTime;  // 底盘各模式开始时间结构体
 
-    bool F_DirectionInvert;  // 底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
+    bool F_DirectionInvert;  // XXX 赛场上快速转向 底盘前进方向反转标志位，true表示前进方向反转，false表示前进方向不反转
     Chassis_MoveDirection_EnumTypeDef EM_MoveDirection;  // 底盘运动方向枚举变量，表示当前底盘是刹车、前进还是后退
 
-    /*其他一些变量*/
+    /*离地检测相关*/
     float Leg1F_N;  // 左腿腿部支持力反馈值，单位N
     float Leg2F_N;  // 右腿腿部支持力反馈值，单位N
 
+    /*特殊工况相关*/
+    float HM1_VelErr;  // 左轮毂电机速度误差，单位：rad/s
+    float HM2_VelErr;  // 右轮毂电机速度误差，单位：rad/s
+
+    /*标志位相关*/
     bool F_OffGround1;  // 左腿离地状态标志位，true表示离地，false表示未离地
     bool F_OffGround2;  // 右腿离地状态标志位，true表示离地，false表示未离地
+
+    bool F_SlipHM1;     // 左轮打滑状态标志位，true表示打滑，false表示未打滑
+    bool F_SlipHM2;     // 右轮打滑状态标志位，true表示打滑，false表示未打滑
+
+    bool F_BlockHM1;    // 左轮受阻状态标志位，true表示受阻，false表示未受阻
+    bool F_BlockHM2;    // 右轮受阻状态标志位，true表示受阻，false表示未受阻
+
+    /*腿长变化相关*/
+    float LegLenManualDes; // 手动控制的目标腿长（三档：Min, Mid, High）
+    bool F_JoyUpLatched; // 摇杆上抬锁存标志
+    bool F_JoyDownLatched; // 摇杆下拨锁存标志
 } CHData_StructTypeDef;
 // #pragma endregion
 
@@ -271,7 +288,7 @@ typedef struct {
 extern const TickType_t GCH_TaskPeriod;
 extern const float GCH_TaskTime;
 
-/*ChassisStratgy里的各个模式相关时间*/
+/*ChassisStrategy里的各个模式相关时间*/
 extern uint16_t CHMode_AllMode_PreProcessTime;
 extern uint16_t CHMode_RC_StandUp_TotalTime;
 
@@ -406,8 +423,9 @@ extern float LegFFForce_Inertial_2;
 extern const float CH_Phys_OffGrd_CorCoeff;
 extern const float CH_Phys_OffGrd_CplCoeff;
 
-//* 用于缓慢坐下模式的腿部前馈力计算 
+//* 用于缓慢坐下和离地模式的腿部前馈力计算
 extern float LegFFForce_SlowSitDown;
+extern float LegFFForce_OffGround;
 // #pragma endregion
 
 // #pragma region
@@ -455,8 +473,7 @@ extern CHData_StructTypeDef GSTCH_Data;
 #define HM_MaxCurrent Motor_3508MaxCurrent                 // 轮毂电机最大电流值
 #define HM_MinCurrent Motor_3508MinCurrent                 // 轮毂电机最小电流值
 #define HM_Kt Motor_3508Kt  // 轮毂电机转矩常数，单位：Nm/A
-#define HM_AmpereToCurrent \
-    Motor_3508AmpereToCurrent  // 轮毂电机电流转换系数，单位：映射电流值/A
+#define HM_AmpereToCurrent Motor_3508AmpereToCurrent  // 轮毂电机电流转换系数，单位：映射电流值/A
 
 /**************CAN通讯相关******************/
 /*轮毂电机ID*/

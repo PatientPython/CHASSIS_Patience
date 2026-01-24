@@ -21,7 +21,7 @@
 #include "GlobalDeclare_General.h"
 #include "TIM_Config.h"  // RunTimeGet
 
-// 待优化：到时候删除这个引用的头文件
+// TODO 到时候删除这个引用的头文件
 #include "General_AuxiliaryFunc.h"
 
 static TickType_t S_lastWakeTimeChassisTask =
@@ -54,19 +54,15 @@ void ChassisTask(void* arg) {
  */
 void ChassisControl(void) {
     //! 做了一下处理，不再按照结构体数据封装，而是按照数据处理逻辑封装。
-    //! CH_FBData_Parse 只进行对传感器原始数据的解析
-    //! CH_LegKinematics_Process 只进行腿部运动、运动学解算与分发
-    //! CH_SupportForce_Process 只进行地面支持力计算、离地检测
-    //! CH_VelocityObs_Process 可能观测器要单独写个函数放在这里，先预处理在进行运算
+    //! 再进行控制之前对GSTCH_Data里面的数据有更新和处理的写在这里面
     CH_FBData_Parse();   // 解析传感器的原始反馈数据
     CH_LegKinematics_Process();  // 腿部五连杆的正运动学运算
-    CH_SupportForce_Process();   // 离地检测地面支持力计算
-    CH_VelKF_Process();    // 卡尔曼滤波器速度读取和预测自适应控制（要求先有离地标志位，写在离地检测之后；要求先有yaw角速度，写在原始数据反馈之后）
-    CH_InertialFF_Process();     // 侧向惯性前馈力计算（要求速度信息，写在卡尔曼滤波器之后）
-
+    CH_OffGround_Process();   // 离地检测地面支持力计算
+    CH_VelKF_Process();    // 卡尔曼滤波器速度读取和预测自适应控制
+    CH_HMTorqueComp_Process();  // 轮毂电机补偿力矩控制：左右轮轮毂电机打滑和受阻检测，正常抓地力补偿
+    CH_LegLenAdjust_Process(); // 底盘手动腿长三档控制处理函数
     // TODO: 后续可添加 模型自适应控制函数
-    //* 更新底盘模式选择相关变量、读取当前模式
-    // 也就是说这里面包括检查是否需要进入安全模式的逻辑
+    //* 更新底盘模式选择相关变量、读取当前模式、控制腿长
     CH_ChassisModeUpdate();
     // 检测到安全模式之后会在这里执行清零操作
     ChassisModeControl_RCControl(GEMCH_Mode);

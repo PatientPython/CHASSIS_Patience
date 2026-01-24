@@ -109,8 +109,6 @@ typedef struct {
 
 /*卡尔曼滤波结构体*/
 typedef struct {
-    // 轮毂电机力矩补偿系数
-    float K_adapt;
     // 状态向量 x [0]:vel, [1]:acc
     float x[2];      
     // 协方差矩阵 P (2x2)
@@ -127,10 +125,6 @@ typedef struct {
     float VelFB;
     // 下一时刻底盘速度预测值
     float VelNxt;
-    // 左腿补偿力矩
-    float TorqueAdapt_L;
-    // 右腿补偿力矩
-    float TorqueAdapt_R;
 } KF_StructTypeDef;
 
 /*离地检测算法结构体*/
@@ -173,6 +167,40 @@ typedef struct {
 
     float F_N;          //地面给轮子的支持力，单位：N
 } OffGround_StructTypeDef;
+
+/* 轮毂电机模型自适应补偿结构体 */
+typedef struct {
+    /*需要初始化赋值的成员*/
+    // 比例系数
+    float K_Trac_Norm;     // 处于正常模式的牵引补偿系数
+    float K_Trac_Strg;     // 处于脱困模式的牵引补偿系数
+    float K_Stab;          // 稳定补偿系数
+
+    // 补偿相关变量
+    float Max_HM_Comp_Ratio;     // 轮毂电机补偿力矩最大比例值
+    float Weight_HM1;            // 左轮稳定补偿力矩权重
+    float Weight_HM2;            // 右轮稳定补偿力矩权重
+
+    // 轮速误差相关变量
+    float Err_Sat;         // error_saturation 误差饱和限幅值
+    float Err_DZ;          // error_deadzone 误差死区限幅值
+
+    /*不需要初始化赋值的成员*/
+    // 补偿力矩
+    float T_Trac_HM1;      // 左轮牵引补偿力矩, 单位: Nm
+    float T_Trac_HM2;      // 右轮牵引补偿力矩, 单位: Nm
+    float T_Stab_HM1;      // 左轮稳定补偿力矩, 单位: Nm
+    float T_Stab_HM2;      // 右轮稳定补偿力矩, 单位: Nm
+    float T_Comp_HM1;      // 左轮总补偿力矩, 单位: Nm
+    float T_Comp_HM2;      // 右轮总补偿力矩, 单位: Nm
+
+    float Err_HM1;           // 左轮轮速误差 E_l = \dot\theta_{w,l}R_w - (\hat{\dot{s}} - R_l\hat{\dot{\phi}}) * R_w
+    float Err_HM2;           // 右轮轮速误差 E_r = \dot\theta_{w,r}R_w - (\hat{\dot{s}} + R_l\hat{\dot{\phi}}) * R_w
+    float Lambda_HM1;        // 左轮速误差归一化值（状态强度系数）
+    float Lambda_HM2;        // 右轮速误差归一化值（状态强度系数）
+    // 打滑和受阻的标志位写在了底盘数据总结构体里面
+
+} HM_TorqueComp_StructTypeDef;
 // #pragma endregion
 
 /*************************************函数声明**************************************/
@@ -220,6 +248,7 @@ void LQR_Cal(LQR_StructTypeDef* LQRptr);
 float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index);
 
 // VMC相关函数全家桶    
+void VMC_FFForceUpdate(RobotControl_StructTypeDef* CHData);
 void VMC_FMatrixUpdate(VMC_StructTypeDef* VMCptr, float Force, float Torque, RobotSide_EnumTypeDef LegSide);
 void VMC_Cal(VMC_StructTypeDef* VMCptr, LegLinkageCal_StructTypeDef* LegPtr);
 float VMC_Get_TMatrix(VMC_StructTypeDef* VMCptr, int index);
@@ -240,4 +269,8 @@ void KF_ChassisVel_StructInit(KF_StructTypeDef *KFptr, float dt);
 void KF_ChassisVel_Predict(KF_StructTypeDef* KFptr);
 void KF_ChassisVel_Update(KF_StructTypeDef* KFptr, float v_body_obs, float a_imu);
 
+// 轮毂电机模型自适应补偿相关函数全家桶
+void HM_TorqueComp_StructInit(HM_TorqueComp_StructTypeDef* pHMComp, float K_Trac, float K_Stab, float Max_HM_Comp_Ratio, float Weight_HM1, float Weight_HM2, float Err_Sat, float Err_DZ);
+// TODO 轮速误差判断函数
+// TODO 左右轮可靠性判断参数，可能可以直接用死区值
 #endif

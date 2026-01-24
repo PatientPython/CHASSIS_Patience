@@ -13,7 +13,7 @@
 
 /*************************************结构体声明**************************************/
 /*IMU1云台云控数据处理结构体，包括发送和接收(注意4字节对齐)(32位单片机默认)*/
-// 待优化：云控现在不需要Reload了，可以后面看看删掉（注意云控那边也要修改）
+// TODO 云控现在不需要Reload了，可以后面看看删掉（注意云控那边也要修改）
 typedef struct {
     struct {
         uint8_t head[2];  // 帧头
@@ -23,7 +23,7 @@ typedef struct {
         float YawAngle;
         float YawSpeed;
         float RollAngle;
-        float RollAngleBuff;  // 待优化：这个变量没有用到
+        float RollAngleBuff;  // TODO 这个变量没有用到
         float Distance_Z;
         uint8_t tail[2];
     } ST_Rx;

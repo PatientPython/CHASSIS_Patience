@@ -246,8 +246,8 @@ bool __UA2Rx_IsVerifySuccess(void) {
  * @param  无
  * @retval 无
  */
-// 待优化：这里的YawSpeed那个计算，原理应该就是Pitch有角度的时候，YawSpeed其实是要除上cos（PitchAngle）才是真实的YawSpeed，注意检查一下云控里面有没有已经做过处理了
-// 待优化：现在的变量是直接传给PID结构体，但我的设想是PID结构体都属于辅助结构体
+// TODO 这里的YawSpeed那个计算，原理应该就是Pitch有角度的时候，YawSpeed其实是要除上cos（PitchAngle）才是真实的YawSpeed，注意检查一下云控里面有没有已经做过处理了
+// TODO 现在的变量是直接传给PID结构体，但我的设想是PID结构体都属于辅助结构体
 //        后面要再设置一个正式结构体来存储这些变量，然后在控制任务里面把正式结构体的数据传给PID结构体计算
 void UA2Rx_IMU1DataProcess(void) {
     if (__UA2Rx_IsVerifySuccess())  // 数据校验，包括帧头和CRC
@@ -257,11 +257,11 @@ void UA2Rx_IMU1DataProcess(void) {
         memcpy(&GstGB_IMU1.ST_Rx, UA2RxDMAbuf, sizeof(GstGB_IMU1.ST_Rx));
 
         /**************** 把每个数据分配到对应的变量中去 ****************/
-        // 待优化：把这里的数据分配放到云台任务里的DataUpdate函数里去做
+        // TODO 把这里的数据分配放到云台任务里的DataUpdate函数里去做
         float TempCoe = arm_cos_f32(GstGB_IMU1.ST_Rx.PitchAngle *
                                     A2R);  // 处理YawSpeed时需要除的一个值
 
-        // 待修改：下面这些变量的赋值，后面要改成赋值给正式结构体，而不是直接赋值给PID结构体
+        // FIXME 下面这些变量的赋值，后面要改成赋值给正式结构体，而不是直接赋值给PID结构体
         GstGB_PitchPosPID.FB = (float)GstGB_IMU1.ST_Rx.PitchAngle;
         GstGB_YawPosPID.FB = (float)GstGB_IMU1.ST_Rx.YawAngle;
         GstGB_PitchSpeedPID.FB = (float)GstGB_IMU1.ST_Rx.PitchAngleVel;
@@ -371,18 +371,13 @@ void UA4Tx_SendDataToIMU2(void) {
     /****************发送数据结构体赋值、添加CRC校验字****************/
     GstCH_IMU2.ST_Tx.head[0] = 0x55;  // 帧头1
     GstCH_IMU2.ST_Tx.head[1] = 0x00;  // 帧头2
-    GstCH_IMU2.ST_Tx.RestartFlag = (uint8_t)
-        GFCH_IMU2Restart;  // 底盘云控重启标志位（待优化：但是经过测试IMU2好像不会重启，可能是IMU2那边没有设置好，后面可以看看改一下）
-    GstCH_IMU2.ST_Tx.ReloadStatus =
-        (uint8_t)(false);  // 待优化：原本是之前赛季的补弹标志位，由于规则改动，无需补弹功能，直接发false就行，后续可以删掉，记得IMU2里面也要一起删
+    GstCH_IMU2.ST_Tx.RestartFlag = (uint8_t)GFCH_IMU2Restart;  // 底盘云控重启标志位（TODO 但是经过测试IMU2好像不会重启，可能是IMU2那边没有设置好，后面可以看看改一下）
+    GstCH_IMU2.ST_Tx.ReloadStatus = (uint8_t)(false);  // TODO 原本是之前赛季的补弹标志位，由于规则改动，无需补弹功能，直接发false就行，后续可以删掉，记得IMU2里面也要一起删
 
     _CRC16_Append((GstCH_IMU2.ST_Tx.head), UA4TxDMAbuf_LEN);
 
-    GstCH_IMU2.ST_Tx.JM2StatusDes =
-        GSTCH_JM2
-            .StatusDes;  // 关节电机状态指令，以JM2为准，其他电机状态指令相同
-    GstCH_IMU2.ST_Tx.LegCalibrationFlag =
-        GFCH_LegCalibration;  // 是否要进行腿部校准
+    GstCH_IMU2.ST_Tx.JM2StatusDes = GSTCH_JM2.StatusDes;  // 关节电机状态指令，以JM2为准，其他电机状态指令相同
+    GstCH_IMU2.ST_Tx.LegCalibrationFlag = GFCH_LegCalibration;  // 是否要进行腿部校准
 
     /*因为关节电机控制结构体里面的MITKp、MITKd都给的是0*/
     /*所以下面的AngleDes、AngleVelDes不会起作用，只有力矩控制会起作用*/

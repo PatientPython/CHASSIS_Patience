@@ -24,7 +24,7 @@ const float GCH_TaskTime = (float)GCH_TaskPeriod / (float)configTICK_RATE_HZ;  /
 
 // #pragma region /****关节电机相关*****************************************/
 /*关节电机ID*/
-// 待修改：这里的ID号在搞新车的时候重新设置，按照左前、右前、左后、右后的顺序设置
+// FIXME 这里的ID号在搞新车的时候重新设置，按照左前、右前、左后、右后的顺序设置
 // 换车时需要修改
 #define JM1ID 0x03  // 关节电机1的ID
 #define JM2ID 0x01  // 关节电机2的ID
@@ -49,14 +49,10 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque;  // 关节电机最�
 #define SameSideJMDistance \ 150.0f  // 同侧腿的关节电机间距，单位mm，五连杆解算里面的l5
 /*关节电机编码器零点（相对于五连杆解算的坐标系）*/
 // 换车时需要修改
-#define JM1LinkageCalZP \
-    -22.0f  // 左侧phi4，关节电机1（左前）五连杆解算坐标系的零点，单位度
-#define JM3LinkageCalZP \
-    180.0f + 22.0f  // 左侧phi1，关节电机3（左后）五连杆解算坐标系的零点，单位度
-#define JM2LinkageCalZP \
-    180.0f + 22.0f  // 右侧phi1，关节电机2（右前）五连杆解算坐标系的零点，单位度
-#define JM4LinkageCalZP \
-    -22.0f  // 右侧phi4，关节电机4（右后）五连杆解算坐标系的零点，单位度
+#define JM1LinkageCalZP -22.0f  // 左侧phi4，关节电机1（左前）五连杆解算坐标系的零点，单位度
+#define JM3LinkageCalZP 180.0f + 22.0f  // 左侧phi1，关节电机3（左后）五连杆解算坐标系的零点，单位度
+#define JM2LinkageCalZP 180.0f + 22.0f  // 右侧phi1，关节电机2（右前）五连杆解算坐标系的零点，单位度
+#define JM4LinkageCalZP -22.0f  // 右侧phi4，关节电机4（右后）五连杆解算坐标系的零点，单位度
 // #pragma endregion
 
 // #pragma region /****低通滤波器滤波系数*********************************/
@@ -112,10 +108,11 @@ float PID_LegLen_KpNorm = 0.0f;     // 腿长PID：正常时的Kp值
 float PID_LegLen_KdNorm = 0.0f;     // 腿长PID：正常时的Kd值
 
 /*Roll轴补偿相关*/
-// 待优化：可以试试给小陀螺单独一套PID参数
-#define PID_RollComp_Kp 500.0f  // Roll轴补偿PID：比例系数Kp
+// TODO 可以试试给小陀螺单独一套PID参数
+
+#define PID_RollComp_Kp 20.0f  // Roll轴补偿PID：比例系数Kp
 #define PID_RollComp_Ki 0.0f    // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
-#define PID_RollComp_Kd 16000.0f              // Roll轴补偿PID：微分系数Kd
+#define PID_RollComp_Kd 1000.0f              // Roll轴补偿PID：微分系数Kd
 #define PID_RollComp_UMax 400.0f              // Roll轴补偿PID：总输出最大值
 #define PID_RollComp_UpMax PID_RollComp_UMax  // Roll轴补偿PID：Kp项输出最大值
 #define PID_RollComp_UiMax 0.0f               // Roll轴补偿PID：Ki项输出最大值
@@ -130,12 +127,21 @@ float PID_LegLen_KdNorm = 0.0f;     // 腿长PID：正常时的Kd值
 
 // #pragma region /****腿长、零点补偿、腿部前馈力相关**********************/
 /*腿长相关*/
-float LegLenMin   = 108.0f;   //腿长最小值，单位mm
-float LegLenMinTH = 6.0f;     //腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
-float LegLenLow  = 140.0f;    //低腿长，单位mm
-float LegLenMid  = 200.0f;    //中腿长，单位mm
-float LegLenHigh = 290.0f;    //高腿长，单位mm
-float LegLenOffGround = 250.0f; //离地腿长，单位mm
+//* 以mm为单位的腿长
+// float LegLenMin   = 108.0f;   //腿长最小值，单位mm
+// float LegLenMinTH = 6.0f;     //腿长最小值阈值，单位mm，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
+// float LegLenLow  = 140.0f;    //低腿长，单位mm
+// float LegLenMid  = 200.0f;    //中腿长，单位mm
+// float LegLenHigh = 290.0f;    //高腿长，单位mm
+// float LegLenOffGround = 250.0f; //离地腿长，单位mm
+
+//* 以m为单位的腿长 
+float LegLenMin   = 0.108f;   //腿长最小值，单位m
+float LegLenMinTH = 0.006f;     //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
+float LegLenLow  = 0.140f;    //低腿长，单位m
+float LegLenMid  = 0.200f;    //中腿长，单位m
+float LegLenHigh = 0.300f;    //高腿长，单位m
+float LegLenOffGround = 0.250f; //离地腿长，单位m
 
 /*底盘零点补偿相关*/
 // 换车时需要修改
@@ -154,7 +160,7 @@ const float R_w = 0.072f;               // 轮子半径，单位m
 const float m_total = m_b + 2.0f * m_l + 2.0f * m_w;  // 底盘总质量，单位kg
 
 //* 计算前馈力时使用的常量
-//* 轮子在地面上不需要重力补偿 
+//* 轮子在地面上不需要重力补偿
 const float CH_Phys_EffMass = (0.5f * m_b + eta_l * m_l);  // 单腿承担的机体等效质量 (0.5*mb + eta_l*ml)，单位kg
 const float CH_Phys_InertialCoeff = (CH_Phys_EffMass / (2.0f * R_l));  // 惯性力系数 (M_eff / (2*R_l))
 
@@ -167,10 +173,11 @@ float LegFFForce_Inertial_1 = 0.0f;  // 正常模式下左腿侧向惯性力补�
 float LegFFForce_Inertial_2 = 0.0f;  // 正常模式下右腿侧向惯性力补偿，单位N
 
 //* 进行离地检测时使用的常量 
-const float CH_Phys_OffGrd_CorCoeff = 0.5f * (m_w + 2 * m_l * eta_l_bar - m_l); // 对该侧腿支持力的修正系数
-const float CH_Phys_OffGrd_CplCoeff = 0.5f * (m_w + m_l); // 对对侧腿支持力的耦合系数
+const float CH_Phys_OffGrd_CorCoeff = 0.5f * (m_w + 2 * m_l * eta_l_bar - m_l); // 对该侧腿支持力的修正系数 cor correction 修正
+const float CH_Phys_OffGrd_CplCoeff = 0.5f * (m_w + m_l); // 对对侧腿支持力的耦合系数 Cpl coupling 耦合
 
 float LegFFForce_SlowSitDown = 5.0f;  // 缓慢坐下模式的腿部前馈力，单位N
+float LegFFForce_OffGround = 35.0f;   // 离地模式的腿部前馈力，单位N
 // #pragma endregion
 
 // #pragma region /****底盘模式控制策略相关*******************************/
@@ -181,8 +188,7 @@ uint16_t CHMode_RC_StandUp_TotalTime = 600;  // 起立模式的总持续时间�
 
 /****************************************宏定义、常量定义（控制策略Strategy相关）（可能需要修改）***************************************/
 // #pragma region /****底盘平移、旋转控制相关*****************************/
-float ChMove_StillVelTH =
-    0.24f;  // 静止速度阈值，小于这个值认为是静止状态，单位m/s
+float ChMove_StillVelTH = 0.24f;  // 静止速度阈值，小于这个值认为是静止状态，单位m/s
 float ChMove_VelDesMax = 1.8f;   // 速度最大值，单位m/s
 float ChMove_Acc_Moving = 2.0f;  // 运动加速度（理论值，实际上会更小一些）
 float ChMove_Acc_Brake = 10.0f;  // 刹车加速度（理论值，实际上会更小一些）
@@ -192,31 +198,23 @@ float ChMove_VelMovingChangeRateMax = 0.65f;  // 速度变化最大值
 float ChMove_VelBrakingChangeRateMax = 1.5f;  // 刹车时速度变化最大值
 float ChMove_BrakeVelLimitTH = 0.9f;          // 刹车时目标速度限制阈值
 
-float ChMove_TurnYawVel_Normal =
-    120.0f;  // 正常模式下的转向偏航角速度，单位deg/s
+float ChMove_TurnYawVel_Normal = 120.0f;  // 正常模式下的转向偏航角速度，单位deg/s
 float ChMove_YawAngleVelAddStep = 3.0f;  // 转向偏航角速度步进值，单位deg
 // #pragma endregion
 
 // #pragma region /****底盘小陀螺相关*****************************/
-float RCTopMode_EnterVelMinTH =
-    0.8f;  // 进入小陀螺模式的速度最小阈值（小于这个值允许进入小陀螺），单位m/s
+float RCTopMode_EnterVelMinTH = 0.8f;  // 进入小陀螺模式的速度最小阈值（小于这个值允许进入小陀螺），单位m/s
 float RCTopMode_EnterDelayTime = 800.0f;  // 进入小陀螺模式的延时时间，单位ms
-float RCTopMode_ExitAngleVelTH =
-    180.0f;  // 允许退出小陀螺模式的角速度阈值（需要大于ChMove_TurnYawVel_Normal），单位deg
+float RCTopMode_ExitAngleVelTH = 180.0f;  // 允许退出小陀螺模式的角速度阈值（需要大于ChMove_TurnYawVel_Normal），单位deg
 
-float RCTopMode_TopAngleVelDesMax =
-    14.0f * R2A;  // 小陀螺模式下的最大转向偏航角速度目标值，单位deg/s
-float RCTopMode_TopAngleVelAddStep =
-    0.4f;  // 小陀螺模式下，角速度步进值，单位deg
-float RCTopMode_TopAngleVelBrakeStep =
-    1.0f;  // 小陀螺模式下，角速度刹车步进值，单位deg
+float RCTopMode_TopAngleVelDesMax = 14.0f * R2A;  // 小陀螺模式下的最大转向偏航角速度目标值，单位deg/s
+float RCTopMode_TopAngleVelAddStep = 0.4f;  // 小陀螺模式下，角速度步进值，单位deg
+float RCTopMode_TopAngleVelBrakeStep = 1.0f;  // 小陀螺模式下，角速度刹车步进值，单位deg
 // #pragma endregion
 
 // #pragma region /****SlowSitDown相关*****************************/
-float SlowSitDown_YawAngleVelBrakeStep =
-    2.0f;  // 缓慢坐下模式的偏航角速度刹车步进值，单位deg
-float SlowSitDown_LegFFForceDecStep =
-    0.05f;  // 缓慢坐下模式的腿部前馈力的步进减少值
+float SlowSitDown_YawAngleVelBrakeStep = 2.0f;  // 缓慢坐下模式的偏航角速度刹车步进值，单位deg
+float SlowSitDown_LegFFForceDecStep = 0.05f;  // 缓慢坐下模式的腿部前馈力的步进减少值
 
 // #pragma endregion
 
@@ -262,6 +260,9 @@ LPF_StructTypeDef GstCH_Leg2F_N_LPF = {LPF_Alpha_LegFN};  // 右腿腿部支持�
 
 /*卡尔曼滤波器*/
 KF_StructTypeDef GstCH_VelKF;  // 底盘速度卡尔曼滤波器结构体
+
+/*轮毂电机力矩补偿器*/
+HM_TorqueComp_StructTypeDef GSTCH_HMTorqueComp;  // 轮毂电机力矩补偿结构体
 // #pragma endregion
 
 // #pragma region /****TD算法相关*****************************/
@@ -445,9 +446,12 @@ void Chassis_AllParaInit(void)
     /**********************************KF卡尔曼滤波器**************************************/
     KF_ChassisVel_StructInit(&GstCH_VelKF, SampleTime_Default);
 
+    /**********************************轮毂电机自适应补偿**************************************/
+    HM_ModelAdapt_StructInit(&GSTCH_HMTorqueComp, K_traction, K_stability, Max_adapt_ampl, Weight_HM1, Weight_HM2, E_sat, E_deadzone);
+
     /**********************************其他变量**************************************/
     /*底盘状态枚举*/
-    //待优化：把这两个放到GSTCH_Data里面
+    //TODO 把这两个放到GSTCH_Data里面
     GEMCH_Mode    = CHMode_RC_ManualSafe; //底盘模式，默认是手动安全模式
     GEMCH_ModePre = CHMode_RC_ManualSafe; //上次的底盘模式，默认是手动安全模式
 

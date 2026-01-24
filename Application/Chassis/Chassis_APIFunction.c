@@ -3,10 +3,14 @@
  * @file    Chassis_APIFunction.c
  * @author  26赛季，平衡步兵电控，林宸曳
  * @date    2025.10.25
- * @brief
- * 底盘功能函数，实现底盘的各种功能，把底盘的功能函数放在这里，方便外部调用，
+ * @brief   底盘功能函数，实现底盘的各种功能，把底盘的功能函数放在这里，方便外部调用，
  *          底盘的不同模式控制策略在Chassis_Stratgy.c文件中实现。
  *          如果后面觉得这里的函数太多了，可以考虑拆分文件
+ *          包含四部分内容的函数：
+ *          1. 各种FB反馈数据的修改、处理、更新相关函数
+ *          2. 各种Des目标数据的修改、处理、更新相关函数
+ *          3. 各种底盘数据的解算相关函数：只解算，不更改正式结构体的值
+ *          4. 各种数据的重置、清零函数
  ******************************************************************************
  */
 #include "Chassis_APIFunction.h"
@@ -15,18 +19,21 @@
 
 #include "Algorithm.h"
 #include "Algorithm_Simple.h"
-#include "Chassis_Stratgy.h"  // ChassisModeChoose_RCControl
-#include "General_AuxiliaryFunc.h"
 #include "GlobalDeclare_Chassis.h"
 #include "GlobalDeclare_General.h"
+#include "General_AuxiliaryFunc.h"
+#include "Chassis_APIFunction.h"
+
+
 #include "TIM_Config.h"
 
 // TODO 后续删除轮毂电机补偿力矩系数
-float KF_HM_K_adapt = 0.02f;  // 轮毂电机速度卡尔曼滤波器自适应系数
+float K_traction = 0.02f;  // 轮毂电机速度卡尔曼滤波器自适应系数
 
 // 底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值
-
-// #pragma region 各种FB反馈数据的修改、处理、更新相关函数
+// TODO 可能需要改一下位置
+//! 由于需要用到部分前面用到的函数修改和处理写在后面了（然后我改了一下函数名称）
+#pragma region 各种FB反馈数据的修改、处理、更新相关函数
 /**
  * @brief  用来解析轮毂电机反馈的数据，然后分发到正式结构体、变量
  * @param  Side：RobotSide_EnumTypeDef类型的枚举值，表示左轮毂还是右轮毂
@@ -140,8 +147,9 @@ void CH_FBData_Parse(void) {
     GSTCH_Data.AccXFB = - GstCH_IMU2.ST_Rx.AccX;  // 底盘云控反着安装，所以取负号 //换车时需修改
     GSTCH_Data.AccZFB =   GstCH_IMU2.ST_Rx.AccZ;  // 底盘垂直加速度反馈值，向上为正，单位m/s²
 }
-// #pragma endregion
-// #pragma region(未实现)各种Des目标数据的修改、处理、更新相关函数
+#pragma endregion
+
+#pragma region 各种Des目标数据的修改、处理、更新相关函数
 // TODO 更新目标值实现
 /**
  * @brief  更新腿长目标值（TD算法）
@@ -150,19 +158,53 @@ void CH_FBData_Parse(void) {
  * @retval 无
  */
 //* 更新腿长目标值
-// void CH_LegLenDes_Update(RobotControl_StructTypeDef RMCtrl) {
+void CH_LegLenDes_Update(RobotControl_StructTypeDef RMCtrl) {
+    TD_SetInput(&GstCH_LegLen1TD, (RMCtrl.STCH_Default.LegLen1Des)); //左腿腿长TD输入值设为左腿腿长目标值
+    TD_Cal(&GstCH_LegLen1TD);                                       //左腿腿长TD计算
+    GSTCH_Data.LegLen1Des = TD_GetOutput(&GstCH_LegLen1TD);    //左腿腿长目标值更新为TD输出值
 
-// }
-// /**
-//  * @brief  更新LQR相关数据的目标值
-//  * @note   从机器人控制结构体中，获取数据，更新LQR的计算目标值
-//  *         如果用户开启自定义LQR控制，则使用用户设置的所有目标值
-//  *         否则除了前四项外，目标值全部采用默认值0
-//  * @param  RMCtrl：RobotControl_StructTypeDef类型的机器人控制结构体变量
-//  * @retval 无
-//  */
-// //* 更新LQR相关数据的目标值
-// void CH_LQR_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {}
+    TD_SetInput(&GstCH_LegLen2TD, (RMCtrl.STCH_Default.LegLen2Des)); //右腿腿长TD输入值设为右腿腿长目标值
+    TD_Cal(&GstCH_LegLen2TD);                                       //右腿腿长TD计算
+    GSTCH_Data.LegLen2Des = TD_GetOutput(&GstCH_LegLen2TD);    //右腿腿长目标值更新为TD输出值
+}
+
+/**
+ * @brief  更新LQR相关数据的目标值
+ * @note   从机器人控制结构体中，获取数据，更新LQR的计算目标值
+ *         如果用户开启自定义LQR控制，则使用用户设置的所有目标值
+ *         否则除了前四项外，目标值全部采用默认值0
+ * @param  RMCtrl：RobotControl_StructTypeDef类型的机器人控制结构体变量
+ * @retval 无
+ */
+//* 更新LQR相关数据的目标值
+void CH_LQR_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {
+    GSTCH_Data.DisDes         = RMCtrl.STCH_Default.DisDes;         //位移目标值
+    GSTCH_Data.VelDes         = RMCtrl.STCH_Default.VelDes;         //速度目标值
+    GSTCH_Data.YawDeltaDes    = RMCtrl.STCH_Default.YawDeltaDes;    //偏转角度目标值
+    GSTCH_Data.YawAngleVelDes = RMCtrl.STCH_Default.YawAngleVelDes; //偏转角速度目标值
+
+    /*如果用户开启自定义LQR控制，则使用用户设置的目标值*/
+    if(RMCtrl.STCH_Force.F_LQR_UserSetEnable == true)
+    {
+        GSTCH_Data.Theta1Des         =    RMCtrl.STCH_Force.Theta1Des        ; //左腿摆角目标值
+        GSTCH_Data.Theta1AngleVelDes =    RMCtrl.STCH_Force.Theta1AngleVelDes; //左腿摆角速度目标值
+        GSTCH_Data.Theta2Des         =    RMCtrl.STCH_Force.Theta2Des        ; //右腿摆角目标值
+        GSTCH_Data.Theta2AngleVelDes =    RMCtrl.STCH_Force.Theta2AngleVelDes; //右腿摆角速度目标值
+        GSTCH_Data.PitchAngleDes     =    RMCtrl.STCH_Force.PitchAngleDes    ; //俯仰角目标值
+        GSTCH_Data.PitchAngleVelDes  =    RMCtrl.STCH_Force.PitchAngleVelDes ; //俯仰角速度目标值
+    }
+    /*否则除前四项外，目标值全部采用默认值*/
+    else
+    {
+        GSTCH_Data.Theta1Des         = 0.0f;
+        GSTCH_Data.Theta1AngleVelDes = 0.0f;
+        GSTCH_Data.Theta2Des         = 0.0f;
+        GSTCH_Data.Theta2AngleVelDes = 0.0f;
+        GSTCH_Data.PitchAngleDes     = 0.0f;
+        GSTCH_Data.PitchAngleVelDes  = 0.0f;
+    }
+}
+
 /**
  * @brief  更新VMC相关数据的目标值
  * @note   从机器人控制结构体中，获取数据，更新VMC的计算目标值
@@ -172,266 +214,185 @@ void CH_FBData_Parse(void) {
  * @retval 无
  */
 //* 更新VMC相关数据的目标值
-void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {}
-// #pragma endregion
-// #pragma region 各种数据的重置、清零函数
+void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {
+    /****如果用户开启自定义VMC控制，则使用用户设置的目标值****/
+    if(RMCtrl.STCH_Force.F_VMC_UserSetEnable == true)
+    {
+        GSTCH_Data.Leg1ForceDes  = RMCtrl.STCH_Force.Leg1FDes;     //左腿力目标值
+        GSTCH_Data.Leg1TorqueDes = RMCtrl.STCH_Force.Leg1TDes;     //左腿力矩目标值
+        GSTCH_Data.Leg2ForceDes  = RMCtrl.STCH_Force.Leg2FDes;     //右腿力目标值
+        GSTCH_Data.Leg2TorqueDes = RMCtrl.STCH_Force.Leg2TDes;     //右腿力矩目标值
+        return;
+    }
 
-/**各项目标数据的清零、重置**/
-/**
- * @brief  轮毂电机目标值数据重置函数
- * @note   把轮毂电机相关的目标值全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void HM_DesDataReset(void) {
-    GSTCH_HM1.TorqueDes = 0.0f;  // 左轮毂电机力矩目标值
-    GSTCH_HM2.TorqueDes = 0.0f;  // 右轮毂电机力矩目标值
-    GSTCH_HM1.CurrentDes = 0;    // 左轮毂电机电流目标值
-    GSTCH_HM2.CurrentDes = 0;    // 右轮毂电机电流目标值
+    /***************否则采取默认的VMC计算控制值***************/
+    /****腿部前馈力获取****/
+    /*
+     * [F_bl,l]   [ 1  1  1 -1] [F_psi         ]
+     * [      ] = [           ] [F_l           ]
+     * [F_bl,r]   [-1  1  1  1] [F_bl,gravity  ]
+     *                          [F_bl,inertial ]
+     *
+     * M_eff = 0.5 * m_b + η_l * m_l
+     * InertialCoeff = M_eff / (2 * R_l)
+     *
+     * F_bl,gravity = M_eff * g
+     * F_bl,inertial = InertialCoeff * l_current * YawRate * v_forward
+     *
+     * F_psi：滚转角 PID 控制器的输出。
+     * F_l：腿长 PID 控制器的输出。
+     *
+     * 注意符号：
+     * 1. F_psi 对左右腿作用相反（产生力矩）
+     * 2. F_bl,inertial 同样对左右腿作用相反（抵抗由前进及旋转运动产生的侧倾）
+     * 3. F_l 和 F_bl,gravity 对双腿作用相同。
+     */
+    VMC_FFForceUpdate(&RMCtrl);                          //更新底盘前馈力
+    float Leg1FFForce = RMCtrl.STCH_Default.Leg1FFForce; //获取左腿前馈力
+    float Leg2FFForce = RMCtrl.STCH_Default.Leg2FFForce; //获取右腿前馈力
+
+    /****Roll轴补偿力PID计算****/
+    //! ROLL的PID参数已经在结构体初始化里面赋值完了 
+    PID_SetDes(&GstCH_RollCompPID, 0.0f * A2R); //底盘Roll轴补偿PID目标值，默认设为0rad
+    PID_SetFB(&GstCH_RollCompPID, (GSTCH_Data.RollAngleFB - ChassisRollAngleZP) * A2R); //底盘Roll轴补偿PID反馈值，单位转为弧度
+    PID_Cal(&GstCH_RollCompPID);
+    float RollCompForce = PID_GetOutput(&GstCH_RollCompPID); //获取底盘Roll轴补偿力
+
+    /****获取腿长PID的输出力****/
+    /*左腿*/
+    PID_SetDes(&GstCH_LegLen1PID, GSTCH_Data.LegLen1Des*MM2M);  //腿长PID目标值设为目标腿长
+    PID_SetFB (&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB*MM2M);   //腿长PID反馈值设置为实际腿长
+    PID_Cal  (&GstCH_LegLen1PID);                               //腿长PID计算
+    float Leg1PIDForce = PID_GetOutput(&GstCH_LegLen1PID);      //获取左腿腿长PID作用力
+
+    /*右腿*/
+    PID_SetDes(&GstCH_LegLen2PID, GSTCH_Data.LegLen2Des*MM2M);  //腿长PID目标值设为目标腿长
+    PID_SetFB (&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB*MM2M);   //腿长PID反馈值设置为实际腿长
+    PID_Cal  (&GstCH_LegLen2PID);                               //腿长PID计算
+    float Leg2PIDForce = PID_GetOutput(&GstCH_LegLen2PID);      //获取右腿腿长PID作用力
+
+    /****最终等效摆杆力、力矩目标值赋值****/
+    GSTCH_Data.Leg1ForceDes  = Leg1PIDForce + RollCompForce + Leg1FFForce;  //左腿沿杆F = 腿长PID输出值 + Roll轴补偿力 + 腿部前馈力
+    GSTCH_Data.Leg1TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 3-1);         //左腿力矩T = LQR输出矩阵的第3个元素
+    GSTCH_Data.Leg2ForceDes  = Leg2PIDForce - RollCompForce + Leg2FFForce;  //右腿沿杆F = 腿长PID输出值 - Roll轴补偿力 + 腿部前馈力
+    GSTCH_Data.Leg2TorqueDes = LQR_Get_uVector(&GstCH_LQRCal, 4-1);         //右腿力矩T = LQR输出矩阵的第4个元素
 }
 
 /**
- * @brief  关节电机目标值数据重置函数
- * @note   把关节电机相关的目标值全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void JM_DesDataReset(void) {
-    GSTCH_JM1.AngleDes = GSTCH_JM1.AngleFB;  // 关节电机1位置目标值
-    GSTCH_JM1.AngleVelDes = 0.0f;            // 关节电机1角速度目标值
-    GSTCH_JM1.TorqueDes = 0.0f;              // 关节电机1力矩目标值
-
-    GSTCH_JM2.AngleDes = GSTCH_JM1.AngleFB;  // 关节电机2位置目标值
-    GSTCH_JM2.AngleVelDes = 0.0f;            // 关节电机2角速度目标值
-    GSTCH_JM2.TorqueDes = 0.0f;              // 关节电机2力矩目标值
-
-    GSTCH_JM3.AngleDes = GSTCH_JM1.AngleFB;  // 关节电机3位置目标值
-    GSTCH_JM3.AngleVelDes = 0.0f;            // 关节电机3角速度目标值
-    GSTCH_JM3.TorqueDes = 0.0f;              // 关节电机3力矩目标值
-
-    GSTCH_JM4.AngleDes = GSTCH_JM1.AngleFB;  // 关节电机4位置目标值
-    GSTCH_JM4.AngleVelDes = 0.0f;            // 关节电机4角速度目标值
-    GSTCH_JM4.TorqueDes = 0.0f;              // 关节电机4力矩目标值
+  * @brief  轮毂电机力矩转电流的函数
+  * @note   把轮毂电机力矩目标值转换成电调电流目标值
+  *         注意这个函数没有考虑方向性，需要自行在调用时考虑正负号
+  * @param  Torque：轮毂电机力矩目标值，单位Nm
+  * @retval 轮毂电机电流目标值
+*/
+int16_t _HM_DesData_TorqueToCurrent(float Torque)
+{
+    float HM_Ampere = Torque / HM_Kt;                       //计算实际需要的电流值，单位A
+    float HM_CurrentDes = (HM_Ampere * HM_AmpereToCurrent); //转换成电调需要的电流值
+    return (int16_t)Limit(HM_CurrentDes, HM_MinCurrent, HM_MaxCurrent);//限制在电机允许电流范围内
 }
 
 /**
- * @brief  底盘TD计算相关目标值数据重置函数
- * @note   把底盘TD计算相关的目标值全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void _CH_TDCal_DataReset(void) {
-    /*腿长TD相关数据重置*/
-    TD_Reset(&GstCH_LegLen1TD, GSTCH_Data.LegLen1FB * MM2M);  // 左腿长度TD重置
-    TD_Reset(&GstCH_LegLen2TD, GSTCH_Data.LegLen2FB * MM2M);  // 右腿长度TD重置
+  * @brief  轮毂电机打滑检测函数
+  * @note   把电调电流目标值转换成轮毂电机力矩目标值
+  * @param  无
+  * @retval 轮毂电机力矩目标值
+*/
+void _HM_StruggleStateDetect(void)
+{
+    // 计算轮毂电机速度误差
+    float HM1_VelFB = GSTCH_HM1.AngleVelFB * R_w; // 左轮轮毂电机线速度，单位m/s
+    float HM2_VelFB = GSTCH_HM2.AngleVelFB * R_w; // 右轮轮毂电机线速度，单位m/s
+    float HM1_VelRef = GSTCH_Data.VelFB + GSTCH_Data.xC1_dot - R_l * GSTCH_Data.YawAngleVelFB; // 左轮轮毂电机参考线速度，单位m/s
+    float HM2_VelRef = GSTCH_Data.VelFB + GSTCH_Data.xC2_dot + R_l * GSTCH_Data.YawAngleVelFB; // 右轮轮毂电机参考线速度，单位m/s
+    float HM1_VelErr = HM1_VelRef - HM1_VelFB; // 左轮轮毂电机速度误差，单位m/s
+    float HM2_VelErr = HM2_VelRef - HM2_VelFB; // 右轮轮毂电机速度误差，单位m/s
+
+    // 左轮轮毂电机打滑/受阻检测
+    if(HM1_VelErr < -GSTCH_HMTorqueComp.Err_DZ) {
+        GSTCH_Data.F_SlipHM1 = true;
+    }
+    else if(HM1_VelErr > GSTCH_HMTorqueComp.Err_DZ) {
+        GSTCH_Data.F_BlockHM1 = true;
+    }
+    else {
+        GSTCH_Data.F_SlipHM1 = false;
+        GSTCH_Data.F_BlockHM1 = false;
+    }
+
+    // 右轮轮毂电机打滑/受阻检测
+    if(HM2_VelErr < -GSTCH_HMTorqueComp.Err_DZ) {
+        GSTCH_Data.F_SlipHM2 = true;
+    }
+    else if(HM2_VelErr > GSTCH_HMTorqueComp.Err_DZ) {
+        GSTCH_Data.F_BlockHM2 = true;
+    }
+    else {
+        GSTCH_Data.F_SlipHM2 = false;
+        GSTCH_Data.F_BlockHM2 = false;
+    }
+
+    GSTCH_HMTorqueComp.Err_HM1 = HM1_VelErr;
+    GSTCH_HMTorqueComp.Err_HM2 = HM2_VelErr;
 }
 
 /**
- * @brief  底盘PID计算相关目标值数据重置函数
- * @note   把底盘PID计算相关的目标值全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void _CH_PIDCal_DataReset(void) {
-    /*腿长PID相关数据清零*/
-    PID_Reset(&GstCH_LegLen1PID,
-              GSTCH_Data.LegLen1FB * MM2M);  // 左腿PID数据重置
-    PID_Reset(&GstCH_LegLen2PID,
-              GSTCH_Data.LegLen2FB * MM2M);  // 右腿PID数据重置
-
-    /*Roll补偿PID相关数据清零*/
-    PID_Reset(&GstCH_RollCompPID,
-              GSTCH_Data.RollAngleFB);  // 底盘Roll补偿PID数据重置
+  * @brief  更新轮毂电机相关数据的目标值
+  * @note   获取轮毂电机的力矩目标值，转化为电流目标值
+  * @param  RMCtrl：机器人控制结构体变量
+  * @retval 无
+*/
+void HM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
+{
+    /*如果用户开启自定义轮毂电机扭矩控制，则使用用户设置的目标值*/
+    if(RMCtrl.STCH_Force.F_HMTorque_UserSetEnable == true)
+    {
+        GSTCH_HM1.TorqueDes  = RMCtrl.STCH_Force.HM1TDes + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值
+        GSTCH_HM2.TorqueDes  = RMCtrl.STCH_Force.HM2TDes + GSTCH_HMTorqueComp.T_Comp_HM2; //右轮毂电机力矩目标值
+    }
+    /*否则采取默认的LQR计算控制*/
+    else
+    {
+        GSTCH_HM1.TorqueDes  = LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值
+        GSTCH_HM2.TorqueDes  = LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2; //右轮毂电机力矩目标值
+    }
+    // 理论上讲轮毂电机应该是左轮为正、右轮为负，但是行星减速箱会反转方向，所以这里取反
+    GSTCH_HM1.CurrentDes = -_HM_DesData_TorqueToCurrent(GSTCH_HM1.TorqueDes); //左轮毂电机电流目标值
+    GSTCH_HM2.CurrentDes = +_HM_DesData_TorqueToCurrent(GSTCH_HM2.TorqueDes); //右轮毂电机电流目标值
 }
 
 /**
- * @brief  底盘标志位数据重置函数
- * @note   把底盘相关的标志位全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void _CH_Flag_Reset(void) {
-    GFCH_IMU2Restart = IMU2RestartNO;  // IMU2重启标志位清零
-    GFCH_LegCalibration = 0;           // 腿部校准标志位清零
+  * @brief  更新关节电机相关数据的目标值
+  * @note   更新关节电机的力矩目标值
+  * @param  RMCtrl：机器人控制结构体变量
+  * @retval 无
+*/
+void JM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
+{
+    /*如果用户开启自定义关节电机扭矩控制，则使用用户设置的目标值*/
+    if(RMCtrl.STCH_Force.F_JMTorque_UserSetEnable == true)
+    {
+        GSTCH_JM1.TorqueDes = RMCtrl.STCH_Force.JM1TDes; //关节电机1力矩目标值
+        GSTCH_JM2.TorqueDes = RMCtrl.STCH_Force.JM2TDes; //关节电机2力矩目标值
+        GSTCH_JM3.TorqueDes = RMCtrl.STCH_Force.JM3TDes; //关节电机3力矩目标值
+        GSTCH_JM4.TorqueDes = RMCtrl.STCH_Force.JM4TDes; //关节电机4力矩目标值
+        return;
+    }
+
+    /*否则采取默认的VMC计算控制*/
+    // TODO 这块好像传入的力矩不是负值，应该都是正值，上车看看对不对
+    GSTCH_JM1.TorqueDes = Limit(GstCH_Leg1VMC.T_Matrix[1], -JointMotorMAXTorque, JointMotorMAXTorque); //关节电机1力矩目标值
+    GSTCH_JM3.TorqueDes = Limit(GstCH_Leg1VMC.T_Matrix[0], -JointMotorMAXTorque, JointMotorMAXTorque); //关节电机3力矩目标值
+
+    GSTCH_JM2.TorqueDes = Limit(GstCH_Leg2VMC.T_Matrix[0], -JointMotorMAXTorque, JointMotorMAXTorque); //关节电机2力矩目标值
+    GSTCH_JM4.TorqueDes = Limit(GstCH_Leg2VMC.T_Matrix[1], -JointMotorMAXTorque, JointMotorMAXTorque); //关节电机4力矩目标值
 }
 
-/**
- * @brief  底盘数据结构体数据重置函数
- * @note   把底盘数据结构体数据全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void _CH_GSTCH_Data_Reset(void) {
-    /*腿长目标值清零*/
-    GSTCH_Data.LegLen1Des = GSTCH_Data.LegLen1FB;  // 左腿目标长度清零
-    GSTCH_Data.LegLen2Des = GSTCH_Data.LegLen2FB;  // 右腿目标长度清零
+#pragma endregion
 
-    /*LQR计算目标值清零*/
-    GSTCH_Data.DisDes = 0.0f;             // x[0]：底盘位移目标值
-    GSTCH_Data.VelDes = 0.0f;             // x[1]：底盘速度目标值
-    GSTCH_Data.YawDeltaDes = 0.0f;        // x[2]：底盘偏航角Yaw增量目标值
-    GSTCH_Data.YawAngleVelDes = 0.0f;     // x[3]：底盘偏航角Yaw速度目标值
-    GSTCH_Data.Theta1Des = 0.0f;          // x[4]：左腿Theta角目标值
-    GSTCH_Data.Theta1AngleVelDes = 0.0f;  // x[5]：左腿Theta角速度目标值
-    GSTCH_Data.Theta2Des = 0.0f;          // x[6]：右腿Theta角目标值
-    GSTCH_Data.Theta2AngleVelDes = 0.0f;  // x[7]：右腿Theta角速度目标值
-    GSTCH_Data.PitchAngleDes = 0.0f;      // x[8]：底盘俯仰角Pitch目标值
-    GSTCH_Data.PitchAngleVelDes = 0.0f;   // x[9]：底盘俯仰角Pitch速度目标值
+#pragma region 各种底盘数据的解算相关函数：只解算，不更改正式结构体的值
 
-    /*VMC计算目标值清零*/
-    GSTCH_Data.Leg1ForceDes = 0.0f;   // VMC：左腿力目标值清零
-    GSTCH_Data.Leg2ForceDes = 0.0f;   // VMC：右腿力目标值清零
-    GSTCH_Data.Leg1TorqueDes = 0.0f;  // VMC：左腿力矩目标值清零
-    GSTCH_Data.Leg2TorqueDes = 0.0f;  // VMC：右腿力矩目标值清零
 
-    /*底盘运动状态重置为制动状态*/
-    GSTCH_Data.EM_MoveDirection = MoveDirection_Brake;
-}
-
-/**
- * @brief  底盘所有目标值数据重置函数
- * @note   把底盘所有目标值全部重置，机器人未运动时调用
- * @param  无
- * @retval 无
- */
-void Chassis_AllDesDataReset(void) {
-    /*轮毂电机相关数据重置*/
-    HM_DesDataReset();  // 轮毂电机目标值重置
-
-    /*关节电机相关数据重置*/
-    JM_DesDataReset();  // 关节电机目标值重置
-
-    /*底盘的通用算法相关数据重置*/
-    _CH_TDCal_DataReset();   // 底盘TD计算相关目标值重置
-    _CH_PIDCal_DataReset();  // 底盘PID计算相关目标值重置
-
-    /*底盘相关数据重置*/
-    _CH_GSTCH_Data_Reset();  // 底盘数据结构体数据重置
-    _CH_Flag_Reset();        // 底盘标志位重置
-}
-
-/**底盘位移反馈值数据的清零、重置**/
-/**
- * @brief  底盘位移反馈值清零函数
- * @note   把底盘位移反馈值清零，通常在初始化时或者进入安全模式时调用
- * @param  无
- * @retval 无
- */
-//* 底盘位移反馈值清零函数
-void Chassis_DisFBClear(void) {
-    GSTCH_Data.DisFB = 0.0f;  // 底盘位移反馈值清零
-}
-
-//! 与安全模式相关
-/**
- * @brief  控制结构体中，默认可配置的底盘相关数据的重置
- * @param  无
- * @retval 无
- */
-//* 默认可配置的底盘相关数据的重置
-void Chassis_RobotCtrlDefaultConfigDataReset(void) {
-    /*腿长数据*/
-    GST_RMCtrl.STCH_Default.LegLen1Des = GSTCH_Data.LegLen1FB;
-    GST_RMCtrl.STCH_Default.LegLen2Des = GSTCH_Data.LegLen2FB;
-
-    /*LQR相关数据*/
-    GST_RMCtrl.STCH_Default.DisDes = GSTCH_Data.DisFB;
-    GST_RMCtrl.STCH_Default.VelDes = 0.0f;
-    GST_RMCtrl.STCH_Default.YawDeltaDes = 0.0f;
-    GST_RMCtrl.STCH_Default.YawAngleVelDes = 0.0f;
-
-    /*前馈力相关数据*/
-    GST_RMCtrl.STCH_Default.Leg1FFForce = 0.0f;
-    GST_RMCtrl.STCH_Default.Leg2FFForce = 0.0f;
-}
-
-/**
- * @brief  控制结构体中，默认不可配置的底盘相关数据重置
- * @param  无
- * @retval 无
- */
-//* 默认不可配置的底盘相关数据重置
-void Chassis_RobotCtrlForceConfigDataReset(void) {
-    /*默认不可配置的LQR相关数据*/
-    GST_RMCtrl.STCH_Force.F_LQR_UserSetEnable = false;
-    GST_RMCtrl.STCH_Force.Theta1Des = GSTCH_Data.Theta1FB;
-    GST_RMCtrl.STCH_Force.Theta1AngleVelDes = 0.0f;
-    GST_RMCtrl.STCH_Force.Theta2Des = GSTCH_Data.Theta2FB;
-    GST_RMCtrl.STCH_Force.Theta2AngleVelDes = 0.0f;
-    GST_RMCtrl.STCH_Force.PitchAngleDes = GSTCH_Data.PitchAngleFB;
-    GST_RMCtrl.STCH_Force.PitchAngleVelDes = 0.0f;
-
-    /*默认不可配置的VMC相关数据*/
-    GST_RMCtrl.STCH_Force.F_VMC_UserSetEnable = false;
-    GST_RMCtrl.STCH_Force.Leg1FDes = 0.0f;
-    GST_RMCtrl.STCH_Force.Leg1TDes = 0.0f;
-    GST_RMCtrl.STCH_Force.Leg2FDes = 0.0f;
-    GST_RMCtrl.STCH_Force.Leg2TDes = 0.0f;
-
-    /*默认不可配置的轮毂电机扭矩数据*/
-    GST_RMCtrl.STCH_Force.F_HMTorque_UserSetEnable = false;
-    GST_RMCtrl.STCH_Force.HM1TDes = 0.0f;
-    GST_RMCtrl.STCH_Force.HM2TDes = 0.0f;
-
-    /*默认不可配置的关节电机扭矩数据*/
-    GST_RMCtrl.STCH_Force.F_JMTorque_UserSetEnable = false;
-    GST_RMCtrl.STCH_Force.JM1TDes = 0.0f;
-    GST_RMCtrl.STCH_Force.JM2TDes = 0.0f;
-    GST_RMCtrl.STCH_Force.JM3TDes = 0.0f;
-    GST_RMCtrl.STCH_Force.JM4TDes = 0.0f;
-}
-
-/**
- * @brief  控制结构体中，底盘所有相关数据的重置函数
- * @param  无
- * @retval 无
- */
-//* 调用前两个函数，重置底盘所有相关数据
-void Chassis_RobotCtrlDataReset(void) {
-    Chassis_RobotCtrlDefaultConfigDataReset();  // 默认可配置数据重置
-    Chassis_RobotCtrlForceConfigDataReset();    // 默认不可配置数据重置
-    //! 与安全模式相关
-}
-//! 与安全模式相关
-
-// #pragma endregion
-// #pragma region 底盘其他相关函数
-/**
- * @brief  手动校准状态检测函数
- * @note   检测当前是否处于手动校准状态
- * @param  无
- * @retval 返回1表示处于手动校准状态，返回0表示不处于手动校准状态
- */
-//* 手动校准状态检测函数
-// uint8_t IsEnterManualCalibration(void) {
-// if (GFCH_LegCalibration == 1) {
-//     return 1;
-// } else {
-//     return 0;
-// }
-//}
-
-//* 底盘运动模式更新函数
-// 在keil里面看GEMCH_Mode和GEMCH_ModePre就能观察状态了
-/**
- * @brief  底盘模式选择更新函数
- * @note   用于更新底盘模式选择相关参数
- * @param  无
- * @retval 无
- */
-void CH_ChassisModeUpdate(void) {
-    Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara_tmp;
-    ChassisStratgy_ModeChooseParaStructUpdate(&ST_ModeChoosePara_tmp);  // 更新底盘模式选择参数结构体
-    //* 实现的是局部变量：ModeTemp、MC_ModePre 向全局变量
-    // GEMCH_ModePre、GEMCH_Mode 赋值
-    GEMCH_ModePre = GEMCH_Mode;
-    //! 这个函数会在这里检测当前是否有遥控器指令指示需要切换到什么状态
-    GEMCH_Mode = ChassisStratgy_ModeChoose_RCControl(ST_ModeChoosePara_tmp);  // 调用底盘模式选择函数
-    ChassisStratgy_ModeStartTimeUpdate(&GSTCH_Data, GEMCH_Mode, GEMCH_ModePre);
-}
-// #pragma endregion
-
-// #pragma region 底盘的解算相关函数：只解算，不更改正式结构体的值
 /**
  * @brief  底盘腿部五连杆解算处理函数
  * @note   第一步：更新五连杆解算的数据，主要是phi1、phi4
@@ -474,69 +435,13 @@ void CH_LegKinematics_Process(void) {
 }
 
 /**
- * @brief  底盘LQR计算处理函数
- * @note   更新LQR的x状态向量，然后调用LQR_Cal函数进行LQR计算
- * @param  无
- * @retval 无
- */
-//* 底盘LQR计算处理函数
-void CH_LQRCal_Process(void) {
-    /*更新LQR计算的状态向量*/
-    LQR_xVector_DataUpdate(
-        &GstCH_LQRCal,
-        GSTCH_Data.DisDes - GSTCH_Data.DisFB,  // 位移误差
-        GSTCH_Data.VelDes - GSTCH_Data.VelFB,  // 速度误差（位移一阶导）
-        GSTCH_Data.YawDeltaDes * A2R,  // 偏转角增量（相当于YawAngleDes - YawAngleFB）
-        (GSTCH_Data.YawAngleVelDes - GSTCH_Data.YawAngleVelFB) * A2R,  // 偏转角速度误差
-        //* 将相对于车身的虚拟摆杆角度转化成了相对于地面的虚拟摆杆角度
-        (GSTCH_Data.Theta1Des - (GSTCH_Data.Theta1FB - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP)) * A2R,  // 左腿摆角误差
-        (GSTCH_Data.Theta1AngleVelDes - (GSTCH_Data.Theta1AngleVelFB - GSTCH_Data.PitchAngleVelFB)) * A2R,  // 左腿摆角速度误差
-        (GSTCH_Data.Theta2Des - (GSTCH_Data.Theta2FB - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP)) * A2R,  // 右腿摆角误差
-        (GSTCH_Data.Theta2AngleVelDes - (GSTCH_Data.Theta2AngleVelFB - GSTCH_Data.PitchAngleVelFB)) * A2R,  // 右腿摆角速度误差
-        //* 将相对于车身的虚拟摆杆角度转化成了相对于地面的虚拟摆杆角度
-        //* 因为底盘质心不在几何中心，ChassisPitchAngleZP用于修正正常平衡时产生的角度偏置
-        (GSTCH_Data.PitchAngleDes - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP) * A2R,  // 俯仰角误差
-        (GSTCH_Data.PitchAngleVelDes - GSTCH_Data.PitchAngleVelFB) * A2R  // 俯仰角速度误差
-    );
-
-    /*更新LQR的K矩阵*/
-    // LQR_K_MatrixUpdate(&GstCH_LQRCal, GSTCH_Data.LegLen1FB,
-    // GSTCH_Data.LegLen2FB); //根据腿长更新K矩阵
-    //* 刚开始腿长是0，然后K矩阵直接就是代入的几个默认值中的一个 LQR_DefaultK_Matrix
-    LQR_K_MatrixUpdate(&GstCH_LQRCal, 0.0f, 0.0f);
-    // TODO 待修改：暂时不根据腿长更新K矩阵，直接用默认值，后面需要使用拟合时，先写了这个函数里面的拟合，然后解除上面的函数注释，删除该行
-    /*调用LQR计算函数*/
-    //* 得到了虚拟摆杆力矩和轮毂电机力矩，存储在u_Vector[4]里面
-    //* 使用 LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index)
-    // 可以读取对应的index值
-    LQR_Cal(&GstCH_LQRCal);
-}
-
-/**
- * @brief  VMC计算处理函数
- * @note   更新VMC的F矩阵数据，然后调用VMC_Cal函数进行VMC计算
- * @param  无
- * @retval 无
- */
-//* 底盘VMC计算处理函数
-void CH_VMCCal_Process(void) {
-    /*VMC的F矩阵（虚拟摆杆力和力矩那个矩阵）更新*/
-    VMC_FMatrixUpdate(&GstCH_Leg1VMC, GSTCH_Data.Leg1ForceDes, GSTCH_Data.Leg1TorqueDes, LeftSide);  // 左腿VMC的F矩阵更新
-    VMC_FMatrixUpdate(&GstCH_Leg2VMC, GSTCH_Data.Leg2ForceDes, GSTCH_Data.Leg2TorqueDes, RightSide);  // 右腿VMC的F矩阵更新
-
-    /*VMC计算：把等效摆杆的力、力矩转化为关节电机的力矩*/
-    VMC_Cal(&GstCH_Leg1VMC, &GstCH_LegLinkCal1);  // 左腿VMC计算
-    VMC_Cal(&GstCH_Leg2VMC, &GstCH_LegLinkCal2);  // 右腿VMC计算
-}
-
-/**
  * @brief  底盘离地检测计算处理函数
  * @note   更新离地检测相关数据，然后调用离地检测计算函数
  * @param  无
  * @retval 无
  */
 //* 底盘离地检测计算处理函数
-void CH_SupportForce_Process(void) {
+void CH_OffGround_Process(void) {
     /*左腿离地检测相关变量的计算*/
     OffGround_BodyZAccUpdate(&GstCH_OffGround1, GSTCH_Data.AccZFB);
     OffGround_PitchAngleUpdate(&GstCH_OffGround1, GSTCH_Data.PitchAngleFB);
@@ -565,34 +470,14 @@ void CH_SupportForce_Process(void) {
 }
 
 /**
- * @brief  底盘侧向惯性前馈力计算处理函数
- * @note   基于物理公式实时更新 LegFFForce_Norm
- * @param  无
- * @retval 无
- */
-//* 底盘侧向惯性前馈力计算处理函数
-void CH_InertialFF_Process(void) {
-    // 当前腿长，单位m
-    float l_current = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f * MM2M;
-    float YawRate = GSTCH_Data.YawAngleVelFB * A2R;  // 偏航角速度，单位rad/s
-    float v_forward = GSTCH_Data.VelFB;              // 前进速度，单位m/s
-    //* F_bl,inertial = InertialCoeff * l_current * YawRate * v_forward
-    LegFFForce_Inertial_1 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
-    LegFFForce_Inertial_2 = (CH_Phys_InertialCoeff * l_current * YawRate * v_forward);
-}
-
-/**
  * @brief  底盘卡尔曼滤波速度融合处理函数
  * @note   对底盘速度进行卡尔曼滤波融合处理，观测当前速度并计算轮毂电机速度误差补偿力矩
  * @param  无
  * @retval 无
  */
 void CH_VelKF_Process(void) {
-    float YawAngleVel = GSTCH_Data.YawAngleVelFB;
-    float AngleVel_Wheel1 = GSTCH_HM1.AngleVelFB;  // 左轮轮毂电机角速度，单位rad/s
-    float AngleVel_Wheel2 = GSTCH_HM2.AngleVelFB;  // 右轮轮毂电机角速度，单位rad/s
-        // 1. 获取测量数据
-    float v_wheel_theory = (AngleVel_Wheel1 + AngleVel_Wheel2) / 2.0f * R_w; // 轮子测量的线速度（角速度是低通后的不用再低通了）
+    // 1. 获取测量数据
+    float v_wheel_theory = (GSTCH_HM1.AngleVelFB + GSTCH_HM2.AngleVelFB) / 2.0f * R_w; // 轮子测量的线速度（角速度是低通后的不用再低通了）
     float a_imu = GSTCH_Data.AccXFB; // IMU测量的机体加速度
     float v_rel_leg = (GSTCH_Data.xC1_dot + GSTCH_Data.xC2_dot) / 2.0f; // 运动学补偿 (假设车身静止时轮子的速度)
 
@@ -619,33 +504,603 @@ void CH_VelKF_Process(void) {
 
     GSTCH_Data.VelFB = GstCH_VelKF.VelFB;   // 底盘速度滤波、观测处理
     GSTCH_Data.DisFB += GSTCH_Data.VelFB * GCH_TaskTime;  // 位移 = 上次位移 + 速度*时间
+}
 
-    // 5. 计算轮毂电机速度误差补偿力矩
-    GstCH_VelKF.K_adapt = KF_HM_K_adapt;  // 轮毂电机速度误差补偿比例系数
-    float AngleVel_Wheel1_Nxt = (GstCH_VelKF.VelNxt - R_l * YawAngleVel) / R_w;  // 预测的左轮轮毂电机角速度，单位rad/s
-    float AngleVel_Wheel2_Nxt = (GstCH_VelKF.VelNxt + R_l * YawAngleVel) / R_w;  // 预测的右轮轮毂电机角速度，单位rad/s
-    GSTCH_HM1.TorqueAdapt = GstCH_VelKF.K_adapt * (AngleVel_Wheel1_Nxt - AngleVel_Wheel1);  // 左轮轮毂电机速度误差补偿力矩
-    GSTCH_HM2.TorqueAdapt = GstCH_VelKF.K_adapt * (AngleVel_Wheel2_Nxt - AngleVel_Wheel2);  // 右轮轮毂电机速度误差补偿力矩
+
+
+// TODO 细化这个注释
+/**
+ * @brief  左右轮轮毂电机打滑和受阻检测
+ * @note   实现轮毂电机打滑和受阻检测功能，计算轮毂电机速度误差，并根据误差判断是否打滑或受阻
+ * @param  无
+ * @retval 无
+ */
+void CH_HMTorqueComp_Process(void) {
+    _HM_StruggleStateDetect();
+    // 计算正常牵引力矩补偿
+    GSTCH_HMTorqueComp.T_Trac_HM1 = GSTCH_HMTorqueComp.K_Trac_Norm * GSTCH_HMTorqueComp.Err_HM1;
+    GSTCH_HMTorqueComp.T_Trac_HM2 = GSTCH_HMTorqueComp.K_Trac_Norm * GSTCH_HMTorqueComp.Err_HM2;
 }
 
 /**
- * @brief  轮毂电机扭矩转电流计算处理函数
- * @note   基于Kt常数和电调映射比例，将 TorqueDes 转换为 CurrentDes
- * @param  pHM：HMData_StructTypeDef类型的电机数据结构体指针
+ * @brief  底盘LQR计算处理函数
+ * @note   更新LQR的x状态向量，然后调用LQR_Cal函数进行LQR计算
+ * @param  无
  * @retval 无
  */
-//* 轮毂电机扭矩转电流计算处理函数
-void CH_HMTorqueToCurrent_Process(HMData_StructTypeDef* pHM) {
-    // 1. 扭矩转电流 (I = T / Kt)
-    float target_Current = pHM->TorqueDes / HM_Kt;
+//* 底盘LQR计算处理函数
+void CH_LQRCal_Process(void) {
+    /*更新LQR计算的状态向量*/
+    LQR_xVector_DataUpdate(&GstCH_LQRCal,
+                            GSTCH_Data.DisDes            - GSTCH_Data.DisFB,                                                               //位移误差
+                            GSTCH_Data.VelDes            - GSTCH_Data.VelFB,                                                               //速度误差（位移一阶导）
+           
+                            GSTCH_Data.YawDeltaDes * A2R,                                                                                  //偏转角增量（相当于YawAngleDes - YawAngleFB）
+                           (GSTCH_Data.YawAngleVelDes    - GSTCH_Data.YawAngleVelFB)*A2R,                                                  //偏转角速度误差
+           
+                           (GSTCH_Data.Theta1Des         - (GSTCH_Data.Theta1FB - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP)) * A2R,   //左腿摆角误差
+                           (GSTCH_Data.Theta1AngleVelDes - (GSTCH_Data.Theta1AngleVelFB - GSTCH_Data.PitchAngleVelFB)) * A2R,              //左腿摆角速度误差
+           
+                           (GSTCH_Data.Theta2Des         - (GSTCH_Data.Theta2FB - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP)) * A2R,   //右腿摆角误差
+                           (GSTCH_Data.Theta2AngleVelDes - (GSTCH_Data.Theta2AngleVelFB - GSTCH_Data.PitchAngleVelFB)) * A2R,              //右腿摆角速度误差
+           
+                           (GSTCH_Data.PitchAngleDes     - GSTCH_Data.PitchAngleFB + ChassisPitchAngleZP) * A2R,                           //俯仰角误差
+                           (GSTCH_Data.PitchAngleVelDes  - GSTCH_Data.PitchAngleVelFB) * A2R                                               //俯仰角速度误差
+                          );
 
-    // 2. 映射为 C620 的原始控制数值
-    float send_Value = target_Current * HM_AmpereToCurrent;
-
-    // 3. 数值限幅 (C620 的范围是 -16384 到 16384)
-    Limit(send_Value, HM_MinCurrent, HM_MaxCurrent);
-
-    pHM->CurrentDes = (int16_t)send_Value;
+    /*更新LQR的K矩阵*/
+    //* 刚开始腿长是0，然后K矩阵直接就是代入的几个默认值中的一个 LQR_DefaultK_Matrix
+    LQR_K_MatrixUpdate(&GstCH_LQRCal, GSTCH_Data.LegLenManualDes, GSTCH_Data.LegLenManualDes);
+    // TODO 暂时不根据腿长更新K矩阵，直接用默认值，后面需要使用拟合时，先写了这个函数里面的拟合，然后解除上面的函数注释，删除该行
+    /*调用LQR计算函数*/
+    //* 得到了虚拟摆杆力矩和轮毂电机力矩，存储在u_Vector[4]里面
+    //* 使用 LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index)
+    // 可以读取对应的index值
+    LQR_Cal(&GstCH_LQRCal);
 }
 
-// #pragma endregion
+/**
+ * @brief  VMC计算处理函数
+ * @note   更新VMC的F矩阵数据，然后调用VMC_Cal函数进行VMC计算
+ * @param  无
+ * @retval 无
+ */
+//* 底盘VMC计算处理函数
+void CH_VMCCal_Process(void) {
+    /*VMC的F矩阵（虚拟摆杆力和力矩那个矩阵）更新*/
+    VMC_FMatrixUpdate(&GstCH_Leg1VMC, GSTCH_Data.Leg1ForceDes, GSTCH_Data.Leg1TorqueDes, LeftSide);  // 左腿VMC的F矩阵更新
+    VMC_FMatrixUpdate(&GstCH_Leg2VMC, GSTCH_Data.Leg2ForceDes, GSTCH_Data.Leg2TorqueDes, RightSide);  // 右腿VMC的F矩阵更新
+
+    /*VMC计算：把等效摆杆的力、力矩转化为关节电机的力矩*/
+    VMC_Cal(&GstCH_Leg1VMC, &GstCH_LegLinkCal1);  // 左腿VMC计算
+    VMC_Cal(&GstCH_Leg2VMC, &GstCH_LegLinkCal2);  // 右腿VMC计算
+}
+
+#pragma endregion
+
+#pragma region 各种数据的重置、清零函数
+
+/**
+  * @brief  轮毂电机力矩转电流的函数
+  * @note   把轮毂电机力矩目标值转换成电调电流目标值
+  *         注意这个函数没有考虑方向性，需要自行在调用时考虑正负号
+  * @param  Torque：轮毂电机力矩目标值，单位Nm
+  * @retval 轮毂电机电流目标值
+*/
+int16_t _HM_DesData_TorqueToCurrent(float Torque)
+{
+    float HM_Ampere = Torque / HM_Kt;                       //计算实际需要的电流值，单位A
+    float HM_CurrentDes = (HM_Ampere * HM_AmpereToCurrent); //转换成电调需要的电流值
+    return (int16_t)Limit(HM_CurrentDes, HM_MinCurrent, HM_MaxCurrent);//限制在电机允许电流范围内
+}
+
+/**各项目标数据的清零、重置**/
+/**
+  * @brief  轮毂电机目标值数据重置函数
+  * @note   把轮毂电机相关的目标值全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void HM_DesDataReset(void)
+{
+    GSTCH_HM1.TorqueDes  = 0.0f; //左轮毂电机力矩目标值
+    GSTCH_HM2.TorqueDes  = 0.0f; //右轮毂电机力矩目标值
+    GSTCH_HM1.CurrentDes = 0;    //左轮毂电机电流目标值
+    GSTCH_HM2.CurrentDes = 0;    //右轮毂电机电流目标值
+}
+
+/**
+  * @brief  关节电机目标值数据重置函数
+  * @note   把关节电机相关的目标值全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void JM_DesDataReset(void)
+{
+    GSTCH_JM1.AngleDes    = GSTCH_JM1.AngleFB;  //关节电机1位置目标值
+    GSTCH_JM1.AngleVelDes = 0.0f;               //关节电机1角速度目标值
+    GSTCH_JM1.TorqueDes   = 0.0f;               //关节电机1力矩目标值
+
+    GSTCH_JM2.AngleDes    = GSTCH_JM2.AngleFB;  //关节电机2位置目标值
+    GSTCH_JM2.AngleVelDes = 0.0f;               //关节电机2角速度目标值
+    GSTCH_JM2.TorqueDes   = 0.0f;               //关节电机2力矩目标值
+
+    GSTCH_JM3.AngleDes    = GSTCH_JM3.AngleFB;  //关节电机3位置目标值
+    GSTCH_JM3.AngleVelDes = 0.0f;               //关节电机3角速度目标值
+    GSTCH_JM3.TorqueDes   = 0.0f;               //关节电机3力矩目标值
+
+    GSTCH_JM4.AngleDes    = GSTCH_JM4.AngleFB;  //关节电机4位置目标值
+    GSTCH_JM4.AngleVelDes = 0.0f;               //关节电机4角速度目标值
+    GSTCH_JM4.TorqueDes   = 0.0f;               //关节电机4力矩目标值
+}
+
+/**
+  * @brief  底盘TD计算相关目标值数据重置函数
+  * @note   把底盘TD计算相关的目标值全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void _CH_TDCal_DataReset(void)
+{
+    /*腿长TD相关数据重置*/
+    TD_Reset(&GstCH_LegLen1TD, GSTCH_Data.LegLen1FB*MM2M); //左腿长度TD重置
+    TD_Reset(&GstCH_LegLen2TD, GSTCH_Data.LegLen2FB*MM2M); //右腿长度TD重置
+}
+
+/**
+  * @brief  底盘PID计算相关目标值数据重置函数
+  * @note   把底盘PID计算相关的目标值全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void _CH_PIDCal_DataReset(void)
+{
+    /*腿长PID相关数据清零*/
+    PID_Reset(&GstCH_LegLen1PID, GSTCH_Data.LegLen1FB*MM2M);//左腿PID数据重置
+    PID_Reset(&GstCH_LegLen2PID, GSTCH_Data.LegLen2FB*MM2M);//右腿PID数据重置
+
+    /*Roll补偿PID相关数据清零*/
+    PID_Reset(&GstCH_RollCompPID, GSTCH_Data.RollAngleFB); //底盘Roll补偿PID数据重置
+}
+
+/**
+  * @brief  底盘标志位数据重置函数
+  * @note   把底盘相关的标志位全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void _CH_Flag_Reset(void)
+{
+    GFCH_IMU2Restart = IMU2RestartNO;//IMU2重启标志位清零
+    GFCH_LegCalibration = 0;         //腿部校准标志位清零
+}
+
+/**
+  * @brief  底盘数据结构体数据重置函数
+  * @note   把底盘数据结构体数据全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void _CH_GSTCH_Data_Reset(void)
+{
+    /*腿长目标值清零*/
+    GSTCH_Data.LegLen1Des = GSTCH_Data.LegLen1FB;   //左腿目标长度清零
+    GSTCH_Data.LegLen2Des = GSTCH_Data.LegLen2FB;   //右腿目标长度清零
+
+    /*LQR计算目标值清零*/
+    GSTCH_Data.DisDes            = 0.0f;    //x[0]：底盘位移目标值
+    GSTCH_Data.VelDes            = 0.0f;    //x[1]：底盘速度目标值
+    GSTCH_Data.YawDeltaDes       = 0.0f;    //x[2]：底盘偏航角Yaw增量目标值
+    GSTCH_Data.YawAngleVelDes    = 0.0f;    //x[3]：底盘偏航角Yaw速度目标值
+    GSTCH_Data.Theta1Des         = 0.0f;    //x[4]：左腿Theta角目标值
+    GSTCH_Data.Theta1AngleVelDes = 0.0f;    //x[5]：左腿Theta角速度目标值
+    GSTCH_Data.Theta2Des         = 0.0f;    //x[6]：右腿Theta角目标值
+    GSTCH_Data.Theta2AngleVelDes = 0.0f;    //x[7]：右腿Theta角速度目标值
+    GSTCH_Data.PitchAngleDes     = 0.0f;    //x[8]：底盘俯仰角Pitch目标值
+    GSTCH_Data.PitchAngleVelDes  = 0.0f;    //x[9]：底盘俯仰角Pitch速度目标值
+
+    /*VMC计算目标值清零*/
+    GSTCH_Data.Leg1ForceDes  = 0.0f; //VMC：左腿力目标值清零
+    GSTCH_Data.Leg2ForceDes  = 0.0f; //VMC：右腿力目标值清零
+    GSTCH_Data.Leg1TorqueDes = 0.0f; //VMC：左腿力矩目标值清零
+    GSTCH_Data.Leg2TorqueDes = 0.0f; //VMC：右腿力矩目标值清零
+
+    /*底盘运动状态重置为制动状态*/
+    GSTCH_Data.EM_MoveDirection = MoveDirection_Brake;
+}
+
+/**
+  * @brief  底盘所有目标值数据重置函数
+  * @note   把底盘所有目标值全部重置，机器人未运动时调用
+  * @param  无
+  * @retval 无
+*/
+void Chassis_AllDesDataReset(void)
+{
+    /*轮毂电机相关数据重置*/
+    HM_DesDataReset();      //轮毂电机目标值重置
+
+    /*关节电机相关数据重置*/
+    JM_DesDataReset();      //关节电机目标值重置
+
+    /*底盘的通用算法相关数据重置*/
+    _CH_TDCal_DataReset();   //底盘TD计算相关目标值重置
+    _CH_PIDCal_DataReset();  //底盘PID计算相关目标值重置
+
+    /*底盘相关数据重置*/
+    _CH_GSTCH_Data_Reset();     //底盘数据结构体数据重置
+    _CH_Flag_Reset();           //底盘标志位重置
+}
+
+/**底盘位移反馈值数据的清零、重置**/
+/**
+  * @brief  底盘位移反馈值清零函数
+  * @note   把底盘位移反馈值清零，通常在初始化时或者进入安全模式时调用
+  * @param  无
+  * @retval 无
+*/
+void Chassis_DisFBClear(void)
+{
+    GSTCH_Data.DisFB = 0.0f;    //底盘位移反馈值清零
+}
+
+/**机器人整体控制中，底盘控制数据的清零、重置**/
+/**
+  * @brief  控制结构体中，默认可配置的底盘相关数据的重置
+  * @param  无
+  * @retval 无
+*/
+void Chassis_RobotCtrlDefaultConfigDataReset(void)
+{
+    /*腿长数据*/
+    GST_RMCtrl.STCH_Default.LegLen1Des      = GSTCH_Data.LegLen1FB;
+    GST_RMCtrl.STCH_Default.LegLen2Des      = GSTCH_Data.LegLen2FB;
+
+    /*LQR相关数据*/
+    GST_RMCtrl.STCH_Default.DisDes          = GSTCH_Data.DisFB;
+    GST_RMCtrl.STCH_Default.VelDes          = 0.0f;
+    GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;
+    GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;
+
+    /*前馈力相关数据*/
+    GST_RMCtrl.STCH_Default.Leg1FFForce      = 0.0f;
+    GST_RMCtrl.STCH_Default.Leg2FFForce      = 0.0f;
+}
+
+/**
+  * @brief  控制结构体中，默认不可配置的底盘相关数据重置
+  * @param  无
+  * @retval 无
+*/
+void Chassis_RobotCtrlForceConfigDataReset(void)
+{
+    /*默认不可配置的LQR相关数据*/
+    GST_RMCtrl.STCH_Force.F_LQR_UserSetEnable   = false;
+    GST_RMCtrl.STCH_Force.Theta1Des             = GSTCH_Data.Theta1FB;
+    GST_RMCtrl.STCH_Force.Theta1AngleVelDes     = 0.0f;
+    GST_RMCtrl.STCH_Force.Theta2Des             = GSTCH_Data.Theta2FB;
+    GST_RMCtrl.STCH_Force.Theta2AngleVelDes     = 0.0f;
+    GST_RMCtrl.STCH_Force.PitchAngleDes         = GSTCH_Data.PitchAngleFB;
+    GST_RMCtrl.STCH_Force.PitchAngleVelDes      = 0.0f;
+
+    /*默认不可配置的VMC相关数据*/
+    GST_RMCtrl.STCH_Force.F_VMC_UserSetEnable = false;
+    GST_RMCtrl.STCH_Force.Leg1FDes = 0.0f;
+    GST_RMCtrl.STCH_Force.Leg1TDes = 0.0f;
+    GST_RMCtrl.STCH_Force.Leg2FDes = 0.0f;
+    GST_RMCtrl.STCH_Force.Leg2TDes = 0.0f;
+    
+    /*默认不可配置的轮毂电机扭矩数据*/
+    GST_RMCtrl.STCH_Force.F_HMTorque_UserSetEnable = false;
+    GST_RMCtrl.STCH_Force.HM1TDes = 0.0f;
+    GST_RMCtrl.STCH_Force.HM2TDes = 0.0f;
+    
+    /*默认不可配置的关节电机扭矩数据*/
+    GST_RMCtrl.STCH_Force.F_JMTorque_UserSetEnable = false;
+    GST_RMCtrl.STCH_Force.JM1TDes = 0.0f;
+    GST_RMCtrl.STCH_Force.JM2TDes = 0.0f;
+    GST_RMCtrl.STCH_Force.JM3TDes = 0.0f;
+    GST_RMCtrl.STCH_Force.JM4TDes = 0.0f;    
+}
+
+/**
+  * @brief  控制结构体中，底盘所有相关数据的重置函数
+  * @param  无
+  * @retval 无
+*/
+void Chassis_RobotCtrlDataReset(void)
+{
+    Chassis_RobotCtrlDefaultConfigDataReset(); //默认可配置数据重置
+    Chassis_RobotCtrlForceConfigDataReset();   //默认不可配置数据重置
+}
+
+#pragma endregion
+
+#pragma region 底盘其他相关函数
+/**
+  * @brief  检测是否需要进入手动标定状态的函数（开机后站起前进行）
+  * @note   如果处于手动安全模式，并且做出内八手势，则进入手动标定状态
+  *         标定关节电机的零点位置
+  * @param  无
+  * @retval 0：不进入手动标定状态
+  *         1：进入手动标定状态
+*/
+uint8_t IsEnterManualCalibration(void)
+{
+    /*如果不处于RC手动安全模式，则不进入标定模式*/
+    if(GEMCH_Mode != CHMode_RC_ManualSafe)
+    {return 0;}
+
+    /*如果做出内八手势，则进入标定状态，否则不进入*/
+    if(IsInsideEightGesture() == true)
+    {return 1;}
+
+    /*默认不进入手动标定状态*/
+    return 0;
+}
+
+/**
+  * @brief  底盘运动控制更新与处理函数
+  * @note   底盘运动控制的主要处理函数
+  *         包括腿长目标值更新、LQR计算处理、VMC计算处理、关节电机与轮毂电机目标值更新等
+  *         在允许运动的底盘策略Stratgy中调用
+  * @param  RMCtrl：RobotControl_StructTypeDef类型，机器人控制结构体变量
+  * @retval 无
+*/
+void CH_MotionUpdateAndProcess(RobotControl_StructTypeDef RMCtrl)
+{
+    /*******************腿长目标值更新*******************/
+    CH_LegLenDes_Update(RMCtrl);    //采用TD算法更新腿长目标值
+
+    /******************LQR的赋值与计算*******************/
+    CH_LQR_DesDataUpdate(RMCtrl);   //更新LQR相关数据的目标值
+    CH_LQRCal_Process();            //LQR计算处理
+
+    /*******************VMC的赋值与计算******************/
+    CH_VMC_DesDataUpdate(RMCtrl);   //更新VMC相关数据的目标值
+    CH_VMCCal_Process();            //VMC计算处理
+
+    /*******************更新电机目标值*******************/
+    JM_DesDataUpdate(RMCtrl);       //更新关节电机目标值
+    HM_DesDataUpdate(RMCtrl);       //更新轮毂电机目标值
+}
+#pragma endregion
+
+#pragma region 底盘控制策略里面使用的相关函数
+/**************************************底盘控制策略里面使用的相关函数***************************************************************************/
+/*底盘的移动相关函数*/
+/**
+  * @brief  底盘运动状态选择函数
+  * @note   根据左摇杆的前后移动，选择底盘的运动状态
+  *         前进、后退、制动三种状态
+  * @param  无
+  * @retval Chassis_MoveDirection_EnumTypeDef类型，底盘运动状态枚举变量
+*/
+Chassis_MoveDirection_EnumTypeDef _CH_Move_DirectionChoose(void)
+{
+    Chassis_MoveDirection_EnumTypeDef MoveDirection;
+
+    /*如果左摇杆Up，则前进*/
+    if(IsLeftJoyStickBeyondDeadZoneUp() == true)
+    {
+        MoveDirection = MoveDirection_Forward;
+    }
+    /*如果左摇杆Down，则后退*/
+    else if(IsLeftJoyStickBeyondDeadZoneDown() == true)
+    {
+        MoveDirection = MoveDirection_Backward;
+    }
+    /*否则都是Brake*/
+    else
+    {
+        MoveDirection = MoveDirection_Brake;
+    }
+
+    return MoveDirection;
+}
+
+/**
+  * @brief  底盘速度目标值获取函数
+  * @note   根据当前底盘运动状态，计算并获取底盘速度目标值
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @retval float类型，底盘速度目标值
+*/
+float _CH_Move_GetDesVel(CHData_StructTypeDef* CHData)
+{
+    Chassis_MoveDirection_EnumTypeDef MoveDirection = CHData->EM_MoveDirection; //获取当前底盘运动状态
+    bool F_DirectionInvert = CHData->F_DirectionInvert;    //获取底盘运动方向反转标志位
+
+    float VelFBNow   = CHData->VelFB;     //获取当前底盘速度反馈值
+    float VelDesPre  = CHData->VelDes;   //获取上次底盘速度目标值
+    float VelDesNext = 0.0f;            //定义本次底盘速度目标值变量
+
+    if(MoveDirection == MoveDirection_Forward && F_DirectionInvert == false || MoveDirection == MoveDirection_Backward && F_DirectionInvert == true)
+    {
+        if(VelFBNow <= -ChMove_StillVelTH)
+        {
+            VelDesNext = VelFBNow + ChMove_VelBrakingChangeRateMax;
+        }
+        else
+        {
+            VelDesNext = StepChangeValue(VelDesPre, ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime);    //逐步改变目标速度
+            VelDesNext = Limit(VelDesNext, VelFBNow + ChMove_VelMovingChangeRateMin, VelFBNow + ChMove_VelMovingChangeRateMax); //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, ChMove_VelDesMin, ChMove_VelDesMax);                                //限制目标速度最小最大值
+        }
+    }
+
+    else if(MoveDirection == MoveDirection_Backward && F_DirectionInvert == false || MoveDirection == MoveDirection_Forward && F_DirectionInvert == true)
+    {
+        if(VelFBNow >= ChMove_StillVelTH)
+        {
+            VelDesNext = VelFBNow - ChMove_VelBrakingChangeRateMax;
+        }
+        else
+        {
+            VelDesNext = StepChangeValue(VelDesPre, -ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime); //逐步改变目标速度
+            VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelMovingChangeRateMax, VelFBNow - ChMove_VelMovingChangeRateMin);//限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, -ChMove_VelDesMax, -ChMove_VelDesMin);                                 //限制目标速度最小最大值
+        }
+    }
+
+    else if (MoveDirection == MoveDirection_Brake)
+    {
+        VelDesNext = StepChangeValue(VelDesPre, 0.0f, ChMove_Acc_Brake * GCH_TaskTime);
+        if(VelFBNow > ChMove_BrakeVelLimitTH)//如果当前速度是正的
+        {
+            VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelBrakingChangeRateMax, VelFBNow);   //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, 0.0f, 0.8f);  //限制目标速度最小最大值
+        }
+        else if(VelFBNow < -ChMove_BrakeVelLimitTH)//如果当前速度是负的
+        {
+            VelDesNext = Limit(VelDesNext, VelFBNow, VelFBNow + ChMove_VelBrakingChangeRateMax);   //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, -0.8f, 0.0f); //限制目标速度最小最大值
+        }
+    }
+
+    return VelDesNext;
+}
+
+/**
+  * @brief  底盘位移目标值处理函数
+  * @note   如果底盘没有停下，则把位移目标值设为当前的位移反馈值。即运动过程中位移控制不介入
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @param  RMCtrl：RobotControl_StructTypeDef类型，机器人控制结构体指针
+  * @retval 无
+*/
+void _CH_Move_DisHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDef *RMCtrl)
+{
+    float VelFBNow   = CHData->VelFB;     //获取当前底盘速度反馈值
+
+    /*没停下，目标位移等于实际位移*/
+    if(MyAbsf(VelFBNow) > ChMove_StillVelTH)
+    {
+        RMCtrl->STCH_Default.DisDes = CHData->DisFB;
+    }
+}
+
+/**
+  * @brief  底盘转向偏航角速度获取函数
+  * @note   根据左摇杆的左右移动，获取底盘转向偏航角速度目标值
+  * @param  无
+  * @retval float类型，底盘偏航角速度目标值
+*/
+float _CH_Move_GetTurnVel(CHData_StructTypeDef* CHData)
+{
+    float YawAngleVelDes_Pre = CHData->YawAngleVelDes; //获取上次偏航角速度目标值
+    float YawAngleVelDes_Next = 0.0f;                //定义本次偏航角速度目标值变量
+
+    if(IsLeftJoyStickLeft() == true)
+    {YawAngleVelDes_Next = StepChangeValue(YawAngleVelDes_Pre, ChMove_TurnYawVel_Normal, ChMove_YawAngleVelAddStep);}
+    else if(IsLeftJoyStickRight() == true)
+    {YawAngleVelDes_Next = StepChangeValue(YawAngleVelDes_Pre, -ChMove_TurnYawVel_Normal, ChMove_YawAngleVelAddStep);}
+    else
+    {YawAngleVelDes_Next = 0.0f;}
+
+    return YawAngleVelDes_Next;
+}
+
+/**
+  * @brief  底盘移动处理函数
+  * @note   底盘移动的主要处理函数
+  *         包括底盘运动状态选择、底盘速度目标值获取、底盘位移目标值处理等
+  *         在允许运动的底盘策略Stratgy中调用
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @param  RMCtrl：RobotControl_StructTypeDef类型，机器人控制结构体指针
+  * @retval 无
+*/
+void ChModeControl_FreeMode_RCControl_MoveHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDef *RMCtrl)
+{
+    /*选择底盘运动状态、获取底盘速度目标值*/
+    CHData->EM_MoveDirection = _CH_Move_DirectionChoose();
+    RMCtrl->STCH_Default.VelDes = _CH_Move_GetDesVel(CHData);
+
+    /*转向的偏航角速度获取*/
+    RMCtrl->STCH_Default.YawAngleVelDes = _CH_Move_GetTurnVel(CHData);
+
+    /*底盘位移目标值处理*/
+    _CH_Move_DisHandler(CHData, RMCtrl);
+}
+
+/**
+  * @brief  RC控制Free模式下，判断陀螺模式进入函数
+  * @note   在Free模式下，根据摇杆输入判断是否需要进入陀螺模式
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体变量
+  * @retval true：进入陀螺模式
+  *         false：不进入陀螺模式
+*/
+bool ChModeControl_FreeMode_RCControl_IsEnterTopMode(CHData_StructTypeDef CHData)
+{
+    /*提取需要用到的变量*/
+    float VelocityFBNow = CHData.VelFB;
+    float YawAngleVelFBNow = CHData.YawAngleVelFB;
+
+    /*定义需要用到的变量*/
+    static uint32_t RC_TopModeDetectTime = 0;   //用来检测进入陀螺模式的时间变量
+
+    /*************************进入陀螺模式与否的判断****************************/
+    /*水平速度过大，不进入陀螺模式（防止运动时进入陀螺导致机器人甩飞出去）*/
+    if(VelocityFBNow >= RCTopMode_EnterVelMinTH)
+    {
+        RC_TopModeDetectTime = 0;
+        return false;
+    }
+
+    /*Yaw角速度较大，认为处于小陀螺模式，不退出*/
+    if(MyAbsf(YawAngleVelFBNow) >= RCTopMode_ExitAngleVelTH)
+    {
+        return true;
+    }
+
+    /*摇杆回中，不进入陀螺模式*/
+    if(IsLeftJoyStickLeft() == false && IsLeftJoyStickRight() == false)
+    {
+        RC_TopModeDetectTime = 0;
+        return false;
+    }
+
+    /*车子水平速度较小时，检测摇杆左/右偏转时长*/
+    /*摇杆持续偏转超过RCTopMode_EnterDelayTime，进入陀螺模式*/
+    else if(RC_TopModeDetectTime == 0)
+    {
+        RC_TopModeDetectTime = RunTimeGet();
+    }
+    else if(RunTimeGet() - RC_TopModeDetectTime > RCTopMode_EnterDelayTime)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+  * @brief  RC控制Free模式下，小陀螺陀螺模式处理函数
+  * @note   在Free模式下，陀螺模式的主要处理函数
+  *         包括关闭位移控制和速度控制、获取Yaw角速度目标值等
+  * @param  CHData：CHData_StructTypeDef类型，底盘数据结构体指针
+  * @param  RMCtrl：RobotControl_StructTypeDef类型，机器人控制结构体指针
+  * @retval 无
+*/
+void ChModeControl_FreeMode_RCControl_TopHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDef *RMCtrl)
+{
+    /*关闭位移控制和速度控制*/
+    RMCtrl->STCH_Default.DisDes = GSTCH_Data.DisFB; //陀螺模式下不进行前后移动，位移目标值设为当前位移反馈值
+    RMCtrl->STCH_Default.VelDes = 0.0f;             //陀螺模式下不进行前后移动，速度目标值设为0
+
+    /*************获取下一个偏航角速度目标值*************/
+    float TopAngleVelDes_Pre = RMCtrl->STCH_Default.YawAngleVelDes; //获取上次陀螺模式偏航角速度目标值
+    float TopAngleVelDes_Next = 0;
+
+    /*根据摇杆左/右偏转，设定陀螺旋转方向*/
+    if(IsLeftJoyStickLeft() == true)
+    {TopAngleVelDes_Next = StepChangeValue(GST_RMCtrl.STCH_Default.YawAngleVelDes , RCTopMode_TopAngleVelDesMax , RCTopMode_TopAngleVelAddStep);}
+    else if(IsLeftJoyStickRight() == true)
+    {TopAngleVelDes_Next = StepChangeValue(GST_RMCtrl.STCH_Default.YawAngleVelDes , -RCTopMode_TopAngleVelDesMax , RCTopMode_TopAngleVelAddStep);}
+
+    /*否则缓慢退出小陀螺*/
+    else
+    {TopAngleVelDes_Next = StepChangeValue(TopAngleVelDes_Pre , 0.0f , RCTopMode_TopAngleVelBrakeStep);}
+
+    /*赋值给实际控制的结构体成员*/
+    RMCtrl->STCH_Default.YawAngleVelDes = TopAngleVelDes_Next;
+}
+#pragma endregion

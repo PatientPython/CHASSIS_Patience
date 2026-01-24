@@ -31,4 +31,4 @@ PID_StructTypeDef GstGB_PitchPosPID;    //云台Pitch位置环PID结构体
 PID_StructTypeDef GstGB_PitchSpeedPID;  //云台Pitch速度环PID结构体
 PID_StructTypeDef GstGB_YawPosPID;      //云台Yaw位置环PID结构体
 PID_StructTypeDef GstGB_YawSpeedPID;    //云台Yaw速度环PID结构体
-float GGB_RollAngle = 0;                //云台Roll轴角度            //待优化：只在发给视觉的时候用到
+float GGB_RollAngle = 0;                //云台Roll轴角度            //TODO 只在发给视觉的时候用到
