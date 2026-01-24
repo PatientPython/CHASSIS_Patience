@@ -406,11 +406,6 @@
               <FilePath>..\Global\GlobalDeclare_Chassis.h</FilePath>
             </File>
             <File>
-              <FileName>GlobalDeclare_Gimbal.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Global\GlobalDeclare_Gimbal.c</FilePath>
-            </File>
-            <File>
               <FileName>GlobalDeclare_Gimbal.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Global\GlobalDeclare_Gimbal.h</FilePath>
@@ -439,6 +434,11 @@
               <FileName>Algorithm_Simple.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\API\Algorithm_Simple.h</FilePath>
+            </File>
+            <File>
+              <FileName>GlobalDeclare_Gimbal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Global\GlobalDeclare_Gimbal.c</FilePath>
             </File>
             <File>
               <FileName>General_AuxiliaryFunc.c</FileName>

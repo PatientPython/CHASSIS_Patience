@@ -262,6 +262,13 @@ typedef struct {
     float HM1_VelErr;  // 左轮毂电机速度误差，单位：rad/s
     float HM2_VelErr;  // 右轮毂电机速度误差，单位：rad/s
 
+    /*卡尔曼滤波相关*/
+    float VelBody_HM_Obs;  // 轮毂电机观测的车身速度，单位：m/s
+
+    /*手动腿长调整相关标志位*/
+    bool F_JoyUpLatched;   // 摇杆上抬锁存标志
+    bool F_JoyDownLatched; // 摇杆下拨锁存标志
+
     /*标志位相关*/
     bool F_OffGround1;  // 左腿离地状态标志位，true表示离地，false表示未离地
     bool F_OffGround2;  // 右腿离地状态标志位，true表示离地，false表示未离地
@@ -271,11 +278,6 @@ typedef struct {
 
     bool F_BlockHM1;    // 左轮受阻状态标志位，true表示受阻，false表示未受阻
     bool F_BlockHM2;    // 右轮受阻状态标志位，true表示受阻，false表示未受阻
-
-    /*腿长变化相关*/
-    float LegLenManualDes; // 手动控制的目标腿长（三档：Min, Mid, High）
-    bool F_JoyUpLatched; // 摇杆上抬锁存标志
-    bool F_JoyDownLatched; // 摇杆下拨锁存标志
 } CHData_StructTypeDef;
 // #pragma endregion
 

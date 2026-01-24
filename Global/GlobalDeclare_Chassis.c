@@ -93,7 +93,7 @@ float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速�
 #define PID_LegLen_AddMax 0.01f           // 腿长PID：误差单次累加最大值
 
 // #pragma region /****轮毂电机力矩补偿相关参数***************************************/
-#define K_Trac_Norm 3.0f                    // 正常模式下的牵引补偿力矩比例系数(过弹丸大概要0.4，除以轮半径0.072大概就是5.5左右)
+#define K_Trac_Norm 0.5f                    // 正常模式下的牵引补偿力矩比例系数(过弹丸大概要0.4，除以轮半径0.072大概就是5.5左右)
 #define K_Trac_Strg 5.5f                    // 脱困模式下的牵引补偿力矩比例系数
 #define K_Stab 0.0f                         // 稳定补偿力矩比例系数
 #define Max_HM_Comp_Ratio 0.0f              // 轮毂电机补偿力矩最大比例值

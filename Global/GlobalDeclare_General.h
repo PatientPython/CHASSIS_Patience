@@ -18,6 +18,8 @@ typedef struct {
     /*增加一个成员就需要在Chassis_RobotCtrlDefaultConfigDataReset里增加对应的清零代码*/
     float LegLen1Des;  // 左腿腿长目标值（未经过TD处理），单位mm
     float LegLen2Des;  // 右腿腿长目标值（未经过TD处理），单位mm
+    float LegLen1ManualDes; // 手动控制的目标腿长（三档：Min, Mid, High）
+    float LegLen2ManualDes; // 手动控制的目标腿长（三档：Min, Mid, High）
 
     float DisDes;          // 底盘位移目标值，向前为正，单位m
     float VelDes;          // 底盘速度目标值，向前为正，单位m/s
@@ -32,8 +34,7 @@ typedef struct {
 typedef struct {
     /*增加一个成员就需要在Chassis_RobotCtrlForceConfigDataReset里增加对应的清零代码*/
     /*LQR用户自定义配置*/
-    bool
-        F_LQR_UserSetEnable;  // LQR自定义配置标志位。true：所有目标值均可由用户自定义。false：除了前四项外，其他目标值保持默认0值
+    bool F_LQR_UserSetEnable;  // LQR自定义配置标志位。true：所有目标值均可由用户自定义。false：除了前四项外，其他目标值保持默认0值
 
     float Theta1Des;          // 左腿摆角目标值，后摆为正，单位度
     float Theta1AngleVelDes;  // 左腿摆角速度目标值，后摆为正，单位度/s
@@ -43,8 +44,7 @@ typedef struct {
     float PitchAngleVelDes;   // 俯仰角速度目标值，抬头为正，单位度/s
 
     /*VMC用户自定义配置*/
-    bool
-        F_VMC_UserSetEnable;  // VMC自定义配置标志位。true：VMC的力、力矩由用户自定义，Leg1F、Leg2F、Leg1T、Leg2T自定义变量生效。false：VMC自动计算力和力矩
+    bool F_VMC_UserSetEnable;  // VMC自定义配置标志位。true：VMC的力、力矩由用户自定义，Leg1F、Leg2F、Leg1T、Leg2T自定义变量生效。false：VMC自动计算力和力矩
 
     float Leg1FDes;  // 左腿沿杆力的目标值，单位N
     float Leg2FDes;  // 右腿沿杆力的目标值，单位N
@@ -52,15 +52,13 @@ typedef struct {
     float Leg2TDes;  // 右腿力矩目标值，后摆为正，单位N·m
 
     /*轮毂电机扭矩用户自定义配置*/
-    bool
-        F_HMTorque_UserSetEnable;  // 轮毂电机扭矩自定义配置标志位。true：轮毂电机扭矩由用户自定义，HM1T、HM2T生效。false：轮毂电机扭矩由底盘控制策略计算得出
+    bool F_HMTorque_UserSetEnable;  // 轮毂电机扭矩自定义配置标志位。true：轮毂电机扭矩由用户自定义，HM1T、HM2T生效。false：轮毂电机扭矩由底盘控制策略计算得出
 
     float HM1TDes;  // 左轮毂电机扭矩目标值，正值为前进，单位N·m
     float HM2TDes;  // 右轮毂电机扭矩目标值，正值为前进，单位N·m
 
     /*关节电机扭矩用户自定义配置*/
-    bool
-        F_JMTorque_UserSetEnable;  // 关节电机扭矩自定义配置标志位。true：关节电机扭矩由用户自定义，JM1T~JM4T生效。false：关节电机扭矩由底盘控制策略计算得出
+    bool F_JMTorque_UserSetEnable;  // 关节电机扭矩自定义配置标志位。true：关节电机扭矩由用户自定义，JM1T~JM4T生效。false：关节电机扭矩由底盘控制策略计算得出
 
     float JM1TDes;  // 关节电机1力矩目标值，单位N·m
     float JM2TDes;  // 关节电机2力矩目标值，单位N·m

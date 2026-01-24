@@ -86,11 +86,18 @@ void VofaPrint(void)
 /*4*/   (float)GstCH_LegLen1PID.Des,
 /*5*/   (float)GstCH_LegLen1PID.FB,
 /*6*/   (float)GstCH_LegLen1PID.U,
-/*7*/   (float)G_u8Test,
-/*8*/   (float)G_u16Test,
-/*9*/   (float)G_u32Test
+/*7*/   (float)GSTCH_Data.VelBody_HM_Obs,
+/*8*/   (float)GSTCH_Data.AccXFB,
+/*9*/   (float)LegFFForce_Inertial_1
     );
 }
+
+// /*0*/   (float)GSTCH_Data.Leg1F_N,
+// /*1*/   (float)GSTCH_Data.Leg2F_N,
+// /*7*/   (float)G_u8Test,
+// /*8*/   (float)G_u16Test,
+// /*9*/   (float)G_u32Test,
+
 
 /**
   * @brief  统计所有任务帧率的函数

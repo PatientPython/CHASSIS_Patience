@@ -728,7 +728,6 @@ void LQR_K_MatrixUpdate(LQR_StructTypeDef* LQRptr, float LegLen1, float LegLen2)
         }
     }
 
-    // TODO 离地状态下的腿长处理学习
     /*****************离地状态特殊处理*****************/
     /*如果离地，仅保留K矩阵中控制腿部摆角的增益量*/
     // 状态向量X：
@@ -858,15 +857,15 @@ float LQR_Get_uVector(LQR_StructTypeDef* LQRptr, int index) {
 // 主要功能更新动态前馈力、更新虚拟力和力矩，将虚拟力和力矩转化成关节电机力矩，并实现对关节电机力矩的读取
 
 /**
- * @brief  底盘侧向惯性前馈力计算处理函数
- * @note   基于物理公式实时更新 LegFFForce_Norm
+ * @brief  更新底盘前馈力函数（动态前馈力加上静态前馈力）
+ * @note   基于物理公式实时更新
  * @param  CHData：RobotControl_StructTypeDef类型的指针，底盘控制数据结构体指针
  * @retval 无
  */
 //* 底盘侧向惯性前馈力计算处理函数
 void VMC_FFForceUpdate(RobotControl_StructTypeDef* CHData) {
     // 当前腿长，单位m
-    float l_current = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f * MM2M;
+    float l_current = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f;
     float YawRate = GSTCH_Data.YawAngleVelFB * A2R;  // 偏航角速度，单位rad/s
     float v_forward = GSTCH_Data.VelFB;              // 前进速度，单位m/s
     //* F_bl,inertial = InertialCoeff * l_current * YawRate * v_forward
@@ -1189,8 +1188,8 @@ void KF_ChassisVel_StructInit(KF_StructTypeDef *KFptr, float dt) {
     // 需要调参：传感器的噪声
     // R[0][0] 是轮速编码器的测量噪声，R[1][1] 是IMU加速度计的测量噪声
     // IMU加速度计是BMI088情况下，噪声比较小，具体可以看底盘云控代码+查手册，建议从0.0001开始调
-    KFptr->R[0][0] = 0.05f;  KFptr->R[0][1] = 0.0f;
-    KFptr->R[1][0] = 0.0f;   KFptr->R[1][1] = 0.0001f;
+    KFptr->R[0][0] = 100000.0f;  KFptr->R[0][1] = 0.0f;
+    KFptr->R[1][0] = 0.0f;   KFptr->R[1][1] = 0.00015f;
 }
 
 /**

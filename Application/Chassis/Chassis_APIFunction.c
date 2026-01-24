@@ -31,6 +31,8 @@ float PID_RollComp_Kp_tmp = 20.0f;  // Roll轴补偿PID：比例系数Kp
 float PID_RollComp_Ki_tmp = 0.0f;    // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
 float PID_RollComp_Kd_tmp = 1000.0f;              // Roll轴补偿PID：微分系数Kd
 
+float K_Trac_Norm_tmp = 0.0f;
+
 // 底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值
 // TODO 可能需要改一下位置
 //! 由于需要用到部分前面用到的函数修改和处理写在后面了（然后我改了一下函数名称）
@@ -248,9 +250,9 @@ void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {
      * 2. F_bl,inertial 同样对左右腿作用相反（抵抗由前进及旋转运动产生的侧倾）
      * 3. F_l 和 F_bl,gravity 对双腿作用相同。
      */
-    VMC_FFForceUpdate(&RMCtrl);                          //更新底盘前馈力
-    float Leg1FFForce = RMCtrl.STCH_Default.Leg1FFForce; //获取左腿前馈力
-    float Leg2FFForce = RMCtrl.STCH_Default.Leg2FFForce; //获取右腿前馈力
+    VMC_FFForceUpdate(&RMCtrl);                          // 更新底盘前馈力（动态前馈力加上静态前馈力）
+    float Leg1FFForce = RMCtrl.STCH_Default.Leg1FFForce; // 获取左腿前馈力
+    float Leg2FFForce = RMCtrl.STCH_Default.Leg2FFForce; // 获取右腿前馈力
 
     /****Roll轴补偿力PID计算****/
     //! ROLL的PID参数已经在结构体初始化里面赋值完了 
@@ -258,7 +260,8 @@ void CH_VMC_DesDataUpdate(RobotControl_StructTypeDef RMCtrl) {
     PID_SetDes(&GstCH_RollCompPID, 0.0f * A2R); //底盘Roll轴补偿PID目标值，默认设为0rad
     PID_SetFB(&GstCH_RollCompPID, (GSTCH_Data.RollAngleFB - ChassisRollAngleZP) * A2R); //底盘Roll轴补偿PID反馈值，单位转为弧度
     PID_Cal(&GstCH_RollCompPID);
-    float RollCompForce = PID_GetOutput(&GstCH_RollCompPID); //获取底盘Roll轴补偿力
+    float RollCompForce = PID_GetOutput(&GstCH_RollCompPID); // 获取底盘Roll轴补偿力
+    // float RollCompForce = 0.0f;                              // 取消Roll轴补偿力
 
     /****获取腿长PID的输出力****/
     /*左腿*/
@@ -355,12 +358,12 @@ void HM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
     /*否则采取默认的LQR计算控制*/
     else
     {
-        GSTCH_HM1.TorqueDes  = LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值
-        GSTCH_HM2.TorqueDes  = LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2; //右轮毂电机力矩目标值
+        GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值
+        GSTCH_HM2.TorqueDes  = + LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2; //右轮毂电机力矩目标值
     }
     // 理论上讲轮毂电机应该是左轮为正、右轮为负，但是行星减速箱会反转方向，所以这里取反
-    GSTCH_HM1.CurrentDes = -_HM_DesData_TorqueToCurrent(GSTCH_HM1.TorqueDes); //左轮毂电机电流目标值
-    GSTCH_HM2.CurrentDes = +_HM_DesData_TorqueToCurrent(GSTCH_HM2.TorqueDes); //右轮毂电机电流目标值
+    GSTCH_HM1.CurrentDes = _HM_DesData_TorqueToCurrent(GSTCH_HM1.TorqueDes); //左轮毂电机电流目标值
+    GSTCH_HM2.CurrentDes = _HM_DesData_TorqueToCurrent(GSTCH_HM2.TorqueDes); //右轮毂电机电流目标值
 }
 
 /**
@@ -506,6 +509,8 @@ void CH_VelKF_Process(void) {
 
     GSTCH_Data.VelFB = GstCH_VelKF.VelFB;   // 底盘速度滤波、观测处理
     GSTCH_Data.DisFB += GSTCH_Data.VelFB * GCH_TaskTime;  // 位移 = 上次位移 + 速度*时间
+
+    GSTCH_Data.VelBody_HM_Obs = v_body_obs; // 底盘速度观测值存储
 }
 
 
@@ -520,8 +525,8 @@ void CH_VelKF_Process(void) {
 void CH_HMTorqueComp_Process(void) {
     _HM_StruggleStateDetect();
     // 计算正常牵引力矩补偿
-    GSTCH_HMTorqueComp.T_Trac_HM1 = GSTCH_HMTorqueComp.K_Trac_Norm * GSTCH_HMTorqueComp.Err_HM1;
-    GSTCH_HMTorqueComp.T_Trac_HM2 = GSTCH_HMTorqueComp.K_Trac_Norm * GSTCH_HMTorqueComp.Err_HM2;
+    GSTCH_HMTorqueComp.T_Trac_HM1 = K_Trac_Norm_tmp * GSTCH_HMTorqueComp.Err_HM1;
+    GSTCH_HMTorqueComp.T_Trac_HM2 = K_Trac_Norm_tmp * GSTCH_HMTorqueComp.Err_HM2;
     // 进入打滑模式后会改这个值
     GSTCH_HMTorqueComp.T_Comp_HM1 = GSTCH_HMTorqueComp.T_Trac_HM1;
     GSTCH_HMTorqueComp.T_Comp_HM2 = GSTCH_HMTorqueComp.T_Trac_HM2;
@@ -555,7 +560,7 @@ void CH_LQRCal_Process(void) {
 
     /*更新LQR的K矩阵*/
     //* 刚开始腿长是0，然后K矩阵直接就是代入的几个默认值中的一个 LQR_DefaultK_Matrix
-    LQR_K_MatrixUpdate(&GstCH_LQRCal, GSTCH_Data.LegLenManualDes, GSTCH_Data.LegLenManualDes);
+    LQR_K_MatrixUpdate(&GstCH_LQRCal, GST_RMCtrl.STCH_Default.LegLen1ManualDes, GST_RMCtrl.STCH_Default.LegLen2ManualDes);
     // TODO 暂时不根据腿长更新K矩阵，直接用默认值，后面需要使用拟合时，先写了这个函数里面的拟合，然后解除上面的函数注释，删除该行
     /*调用LQR计算函数*/
     //* 得到了虚拟摆杆力矩和轮毂电机力矩，存储在u_Vector[4]里面
@@ -744,8 +749,10 @@ void Chassis_DisFBClear(void)
 void Chassis_RobotCtrlDefaultConfigDataReset(void)
 {
     /*腿长数据*/
-    GST_RMCtrl.STCH_Default.LegLen1Des      = GSTCH_Data.LegLen1FB;
-    GST_RMCtrl.STCH_Default.LegLen2Des      = GSTCH_Data.LegLen2FB;
+    GST_RMCtrl.STCH_Default.LegLen1Des        = GSTCH_Data.LegLen1FB;
+    GST_RMCtrl.STCH_Default.LegLen2Des        = GSTCH_Data.LegLen2FB;
+    GST_RMCtrl.STCH_Default.LegLen1ManualDes  = GSTCH_Data.LegLen1FB;
+    GST_RMCtrl.STCH_Default.LegLen2ManualDes  = GSTCH_Data.LegLen2FB;
 
     /*LQR相关数据*/
     GST_RMCtrl.STCH_Default.DisDes          = GSTCH_Data.DisFB;
