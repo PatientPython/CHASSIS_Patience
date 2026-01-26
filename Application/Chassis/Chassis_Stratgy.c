@@ -822,76 +822,79 @@ void ChModeControl_OffGroundMode_RCControl(void) {
  * @retval 无
  */
 void ChModeControl_StruggleMode_RCControl(void) {
-    //* 利用static变量保存进入模式时的偏航角度
-    static float YawAngle_Ref = 0.0f;
-    /****************************该模式的前置处理****************************/
-    if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_Struggle < CHMode_AllMode_PreProcessTime)
-    {
-        /*腿长PID系数赋值*/
-        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
-        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
+    // //* 利用static变量保存进入模式时的偏航角度
+    // static float YawAngle_Ref = 0.0f;
+    // /****************************该模式的前置处理****************************/
+    // if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_Struggle < CHMode_AllMode_PreProcessTime)
+    // {
+    //     /*腿长PID系数赋值*/
+    //     PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
+    //     PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
-        /*腿长TD系数赋值*/
-        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);   //左腿长TD系数r赋值
-        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);   //右腿长TD系数r赋值
+    //     /*腿长TD系数赋值*/
+    //     TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);   //左腿长TD系数r赋值
+    //     TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);   //右腿长TD系数r赋值
         
-        Chassis_DisFBClear();                         //底盘位移反馈值清零
+    //     Chassis_DisFBClear();                         //底盘位移反馈值清零
 
-        /*配置默认可配置的控制量*/
-        GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
-        // TODO 如果是从Follow切换过来，速度是不是应该保持不变呢？
-        GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
-        GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
-        GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
-        GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
-        GST_RMCtrl.STCH_Default.Leg2FFForce     = LegFFForce_Gravity_2;  //右腿前馈力（静止时的默认值）
+    //     /*配置默认可配置的控制量*/
+    //     GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
+    //     // TODO 如果是从Follow切换过来，速度是不是应该保持不变呢？
+    //     GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
+    //     GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
+    //     GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
+    //     GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
+    //     GST_RMCtrl.STCH_Default.Leg2FFForce     = LegFFForce_Gravity_2;  //右腿前馈力（静止时的默认值）
 
-        /*获取当前回转角度*/
-        YawAngle_Ref = GSTCH_Data.YawAngleFB; //当前偏航角度反馈值
-    };
+    //     /*获取当前回转角度*/
+    //     YawAngle_Ref = GSTCH_Data.YawAngleFB; //当前偏航角度反馈值
+    // };
 
-    /*配置默认可配置的控制量*/
-    // 放在外面才能实现实时控制
-    GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
-    GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+    // /*配置默认可配置的控制量*/
+    // // 放在外面才能实现实时控制
+    // GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
+    // GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
     
-    /*************************任务开始一段时间后*************************/
-    // 处于脱困模式不能进入小陀螺状态
-    ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);
+    // /*************************任务开始一段时间后*************************/
+    // // 处于脱困模式不能进入小陀螺状态
+    // ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);
 
-    /*基于速度目标值计算角度误差*/
-    float YawAngle_Now = GSTCH_Data.YawAngleFB;                                  //当前偏航角度反馈值
-    float YawDelta_RC = GST_RMCtrl.STCH_Default.YawAngleVelDes * GCH_TaskTime;   //遥控器目标偏航角度
-    float YawDelta_Hold = YawAngle_Now - YawAngle_Ref;                           //保持偏航角度变化值
-    float YawDelta_Err = YawDelta_RC - YawDelta_Hold;                            //偏航角度误差值  
+    // /*基于速度目标值计算角度误差*/
+    // float YawAngle_Now = GSTCH_Data.YawAngleFB;                                  //当前偏航角度反馈值
+    // float YawDelta_RC = GST_RMCtrl.STCH_Default.YawAngleVelDes * GCH_TaskTime;   //遥控器目标偏航角度
+    // float YawDelta_Hold = YawAngle_Ref - YawAngle_Now;                           //保持偏航角度变化值（初 - 末）
+    // float YawDelta_Err = YawDelta_RC + YawDelta_Hold;                            //偏航角度误差值（目标值 - 实际值）
     
-    // 计算状态强度系数
-    float HM1_ErrOverDead = MyAbsf(GSTCH_HMTorqueComp.Err_HM1) - GSTCH_HMTorqueComp.Err_DZ;
-    float HM1_IntensitySpan = GSTCH_HMTorqueComp.Err_Sat - GSTCH_HMTorqueComp.Err_DZ;
-    float HM1_StatusIntensity = HM1_ErrOverDead / HM1_IntensitySpan; // 归一化到0~1之间的值
-    GSTCH_HMTorqueComp.Lambda_HM1 = Limit(HM1_StatusIntensity, 0.0f, 1.0f); // 归一化到0~1之间的值
+    // // 计算状态强度系数
+    // float HM1_ErrOverDead = MyAbsf(GSTCH_HMTorqueComp.Err_HM1) - GSTCH_HMTorqueComp.Err_DZ;
+    // float HM1_IntensitySpan = GSTCH_HMTorqueComp.Err_Sat - GSTCH_HMTorqueComp.Err_DZ;
+    // float HM1_StatusIntensity = HM1_ErrOverDead / HM1_IntensitySpan; // 归一化到0~1之间的值
+    // GSTCH_HMTorqueComp.Lambda_HM1 = Limit(HM1_StatusIntensity, 0.0f, 1.0f); // 归一化到0~1之间的值
 
-    float HM2_ErrOverDead = MyAbsf(GSTCH_HMTorqueComp.Err_HM2) - GSTCH_HMTorqueComp.Err_DZ;
-    float HM2_IntensitySpan = GSTCH_HMTorqueComp.Err_Sat - GSTCH_HMTorqueComp.Err_DZ;
-    float HM2_StatusIntensity = HM2_ErrOverDead / HM2_IntensitySpan; // 归一化到0~1之间的值
-    GSTCH_HMTorqueComp.Lambda_HM2 = Limit(HM2_StatusIntensity, 0.0f, 1.0f); // 归一化到0~1之间的值
+    // float HM2_ErrOverDead = MyAbsf(GSTCH_HMTorqueComp.Err_HM2) - GSTCH_HMTorqueComp.Err_DZ;
+    // float HM2_IntensitySpan = GSTCH_HMTorqueComp.Err_Sat - GSTCH_HMTorqueComp.Err_DZ;
+    // float HM2_StatusIntensity = HM2_ErrOverDead / HM2_IntensitySpan; // 归一化到0~1之间的值
+    // GSTCH_HMTorqueComp.Lambda_HM2 = Limit(HM2_StatusIntensity, 0.0f, 1.0f); // 归一化到0~1之间的值
 
-    float HM1_WeightSlipDec = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_SlipHM1 * GSTCH_HMTorqueComp.Lambda_HM1;
-    float HM1_WeightBlockDec = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_BlockHM1 * GSTCH_HMTorqueComp.Lambda_HM1;
+    // float HM1_WeightSlipMinus = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_SlipHM1 * GSTCH_HMTorqueComp.Lambda_HM1;
+    // float HM1_WeightBlockPlus = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_BlockHM1 * GSTCH_HMTorqueComp.Lambda_HM1;
 
-    float HM2_WeightSlipDec = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_SlipHM2 * GSTCH_HMTorqueComp.Lambda_HM2;
-    float HM2_WeightBlockDec = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_BlockHM2 * GSTCH_HMTorqueComp.Lambda_HM2;
+    // float HM2_WeightSlipMinus = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_SlipHM2 * GSTCH_HMTorqueComp.Lambda_HM2;
+    // float HM2_WeightBlockPlus = GSTCH_HMTorqueComp.Max_HM_Comp_Ratio * GSTCH_Data.F_BlockHM2 * GSTCH_HMTorqueComp.Lambda_HM2;
+
+    // GSTCH_HMTorqueComp.Weight_HM1 = 1.0f - HM1_WeightSlipMinus + HM1_WeightBlockPlus;
+    // GSTCH_HMTorqueComp.Weight_HM2 = 1.0f - HM2_WeightSlipMinus + HM2_WeightBlockPlus;
     
-    GSTCH_HMTorqueComp.Weight_HM1 = 1.0f - GSTCH_HMTorqueComp.Lambda_HM1 
+    // float T_yaw_req = GSTCH_HMTorqueComp.K_Stab * YawDelta_Err; // 计算所需的偏航力矩补偿值
 
+    // GSTCH_HMTorqueComp.T_Stab_HM1 = - T_yaw_req * GSTCH_HMTorqueComp.Weight_HM1;
+    // GSTCH_HMTorqueComp.T_Stab_HM2 = + T_yaw_req * GSTCH_HMTorqueComp.Weight_HM2;
 
-    // 先都在这个地方写吧，目前没想好写在哪里
+    // GSTCH_HMTorqueComp.T_Comp_HM1 = GSTCH_HMTorqueComp.T_Stab_HM1 + GSTCH_HMTorqueComp.T_Trac_HM1;
+    // GSTCH_HMTorqueComp.T_Comp_HM2 = GSTCH_HMTorqueComp.T_Stab_HM2 + GSTCH_HMTorqueComp.T_Trac_HM2;
 
-    // GSTCH_HMTorqueComp.Lambda_HM1 = 
-
-
-    /*********************从控制结构体中获取数据，进行相关解算*************************/
-    CH_MotionUpdateAndProcess(GST_RMCtrl);
+    // /*********************从控制结构体中获取数据，进行相关解算*************************/
+    // CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
 
 // #pragma endregion
