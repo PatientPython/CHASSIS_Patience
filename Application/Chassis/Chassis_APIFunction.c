@@ -32,7 +32,6 @@ float PID_RollComp_Ki_tmp = 0.0f;    // Roll轴补偿PID：积分系数Ki，取0
 float PID_RollComp_Kd_tmp = 1000.0f;              // Roll轴补偿PID：微分系数Kd
 
 float K_Trac_Norm_tmp = 0.0f;
-
 // 底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值
 // TODO 可能需要改一下位置
 //! 由于需要用到部分前面用到的函数修改和处理写在后面了（然后我改了一下函数名称）
@@ -352,10 +351,21 @@ void HM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
     /*如果用户开启自定义轮毂电机扭矩控制，则使用用户设置的目标值*/
     if(RMCtrl.STCH_Force.F_HMTorque_UserSetEnable == true)
     {
-        GSTCH_HM1.TorqueDes  = RMCtrl.STCH_Force.HM1TDes + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值
-        GSTCH_HM2.TorqueDes  = RMCtrl.STCH_Force.HM2TDes + GSTCH_HMTorqueComp.T_Comp_HM2; //右轮毂电机力矩目标值
+        GSTCH_HM1.TorqueDes  = RMCtrl.STCH_Force.HM1TDes; //左轮毂电机力矩目标值
+        GSTCH_HM2.TorqueDes  = RMCtrl.STCH_Force.HM2TDes; //右轮毂电机力矩目标值
     }
     /*否则采取默认的LQR计算控制*/
+    /*离地检测部分*/
+    else if(GSTCH_Data.F_OffGround1 == true) 
+    {
+        GSTCH_HM1.TorqueDes  = 0.0f;                                                                   // 左腿离地左轮目标力矩为零
+        GSTCH_HM2.TorqueDes  = + LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2; // 右轮毂电机力矩目标值
+    }
+    else if(GSTCH_Data.F_OffGround2 == true) 
+    {
+        GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; // 左轮毂电机力矩目标值
+        GSTCH_HM2.TorqueDes  = 0.0f;                                                                   // 右腿离地右轮目标力矩为零
+    }
     else
     {
         GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值

@@ -646,18 +646,26 @@ void ChModeControl_FreeMode_RCControl(void) {
         TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);   //右腿长TD系数r赋值
         
         Chassis_DisFBClear();                         //底盘位移反馈值清零
-    }
 
         /*配置默认可配置的控制量*/
+        GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+        GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
+        // TODO 如果是从Follow切换过来，速度是不是应该保持不变呢？
+        GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
+        GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
+        GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
+        GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
+        GST_RMCtrl.STCH_Default.Leg2FFForce     = LegFFForce_Gravity_2;  //右腿前馈力（静止时的默认值）
+    }
+    //* 方便调参数
+    /*腿长PID系数赋值*/
+    // PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
+    // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
+
+    /*配置默认可配置的控制量*/
     GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
     GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
-    GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
-    // TODO 如果是从Follow切换过来，速度是不是应该保持不变呢？
-    GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
-    GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
-    GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
-    GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
-    GST_RMCtrl.STCH_Default.Leg2FFForce     = LegFFForce_Gravity_2;  //右腿前馈力（静止时的默认值）
     
     /*************************任务开始一段时间后*************************/
     /*检测是否进入小陀螺模式*/
@@ -804,20 +812,6 @@ void ChModeControl_OffGroundMode_RCControl(void) {
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
     CH_MotionUpdateAndProcess(GST_RMCtrl);
-
-    // 保持力矩不变，只强行改变力
-    // 我们保留刚才计算的 PID 输出和 Roll 补偿，但把 Algorithm.c 里算的前馈力丢掉，换成自定义的常量
-
-    GSTCH_Data.Leg1ForceDes = LegFFForce_OffGround;
-    GSTCH_Data.Leg2ForceDes = LegFFForce_OffGround;
-
-    // 此处的 GSTCH_Data.Leg1TorqueDes 已经是刚才 CH_MotionUpdateAndProcess 里算好的 LQR 结果了，不动力矩
-
-    // 既然“力”被人为变动了，就需要重新执行 VMC 逆运动学分解，把新的力映射到关节电机上
-    CH_VMCCal_Process();
-
-    // 将重新分解后的电机扭矩目标值更新到电机结构体中
-    JM_DesDataUpdate(GST_RMCtrl);
 }
 
 
@@ -843,10 +837,6 @@ void ChModeControl_StruggleMode_RCControl(void) {
         
     //     Chassis_DisFBClear();                         //底盘位移反馈值清零
 
-    //     /*获取当前回转角度*/
-    //     YawAngle_Ref = GSTCH_Data.YawAngleFB; //当前偏航角度反馈值
-    // };
-
     // /*配置默认可配置的控制量*/
     // GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
     // GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
@@ -857,6 +847,14 @@ void ChModeControl_StruggleMode_RCControl(void) {
     // GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
     // GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
     // GST_RMCtrl.STCH_Default.Leg2FFForce     = LegFFForce_Gravity_2;  //右腿前馈力（静止时的默认值）
+
+    //     /*获取当前回转角度*/
+    //     YawAngle_Ref = GSTCH_Data.YawAngleFB; //当前偏航角度反馈值
+    // };
+
+    /*配置默认可配置的控制量*/
+    // GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
+    // GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
     
     // /*************************任务开始一段时间后*************************/
     // // 处于脱困模式不能进入小陀螺状态
@@ -920,10 +918,10 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow) {
             ChModeControl_FollowMode_RCControl();
             break;
 
-        // /*RC离地模式*/
-        // case CHMode_RC_OffGround:
-        //     ChModeControl_OffGroundMode_RCControl();
-        //     break;
+        /*RC离地模式*/
+        case CHMode_RC_OffGround:
+            ChModeControl_OffGroundMode_RCControl();
+            break;
 
         /*RC脱困模式*/
         // case CHMode_RC_Struggle:
