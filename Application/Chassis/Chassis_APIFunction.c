@@ -922,21 +922,24 @@ float _CH_Move_GetDesVel(CHData_StructTypeDef* CHData)
     float VelDesPre  = CHData->VelDes;   //获取上次底盘速度目标值
     float VelDesNext = 0.0f;            //定义本次底盘速度目标值变量
 
-    if(MoveDirection == MoveDirection_Forward && F_DirectionInvert == false || MoveDirection == MoveDirection_Backward && F_DirectionInvert == true)
+    if((MoveDirection == MoveDirection_Forward && F_DirectionInvert == false) || (MoveDirection == MoveDirection_Backward && F_DirectionInvert == true))
     {
+        //* 检测到处于较快的后退状态，先以最大变化率刹车在向前移动
         if(VelFBNow <= -ChMove_StillVelTH)
         {
             VelDesNext = VelFBNow + ChMove_VelBrakingChangeRateMax;
         }
+
         else
         {
-            VelDesNext = StepChangeValue(VelDesPre, ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime);    //逐步改变目标速度
-            VelDesNext = Limit(VelDesNext, VelFBNow + ChMove_VelMovingChangeRateMin, VelFBNow + ChMove_VelMovingChangeRateMax); //限制目标速度变化范围
-            VelDesNext = Limit(VelDesNext, ChMove_VelDesMin, ChMove_VelDesMax);                                //限制目标速度最小最大值
+            //* 按照设定的加速度逐步向最大速度移动（摇杆控制的是方向或者以最大速度移动的时间） 
+            VelDesNext = StepChangeValue(VelDesPre, ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime);                         //* 逐步改变目标速度
+            VelDesNext = Limit(VelDesNext, VelFBNow + ChMove_VelMovingChangeRateMin, VelFBNow + ChMove_VelMovingChangeRateMax);  //* 限制目标速度变化范围（让实际速度能够更好跟上目标速度的）
+            VelDesNext = Limit(VelDesNext, ChMove_VelDesMin, ChMove_VelDesMax);                                                  //* 限制目标速度最小最大值
         }
     }
 
-    else if(MoveDirection == MoveDirection_Backward && F_DirectionInvert == false || MoveDirection == MoveDirection_Forward && F_DirectionInvert == true)
+    else if((MoveDirection == MoveDirection_Backward && F_DirectionInvert == false) || (MoveDirection == MoveDirection_Forward && F_DirectionInvert == true))
     {
         if(VelFBNow >= ChMove_StillVelTH)
         {
@@ -944,19 +947,20 @@ float _CH_Move_GetDesVel(CHData_StructTypeDef* CHData)
         }
         else
         {
-            VelDesNext = StepChangeValue(VelDesPre, -ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime); //逐步改变目标速度
-            VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelMovingChangeRateMax, VelFBNow - ChMove_VelMovingChangeRateMin);//限制目标速度变化范围
-            VelDesNext = Limit(VelDesNext, -ChMove_VelDesMax, -ChMove_VelDesMin);                                 //限制目标速度最小最大值
+            VelDesNext = StepChangeValue(VelDesPre, -ChMove_VelDesMax, ChMove_Acc_Moving * GCH_TaskTime);                         //逐步改变目标速度
+            VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelMovingChangeRateMax, VelFBNow - ChMove_VelMovingChangeRateMin);   //限制目标速度变化范围
+            VelDesNext = Limit(VelDesNext, -ChMove_VelDesMax, -ChMove_VelDesMin);                                                 //限制目标速度最小最大值
         }
     }
 
     else if (MoveDirection == MoveDirection_Brake)
     {
+        // 用更大的加速度来刹车
         VelDesNext = StepChangeValue(VelDesPre, 0.0f, ChMove_Acc_Brake * GCH_TaskTime);
         if(VelFBNow > ChMove_BrakeVelLimitTH)//如果当前速度是正的
         {
             VelDesNext = Limit(VelDesNext, VelFBNow - ChMove_VelBrakingChangeRateMax, VelFBNow);   //限制目标速度变化范围
-            VelDesNext = Limit(VelDesNext, 0.0f, 0.8f);  //限制目标速度最小最大值
+            VelDesNext = Limit(VelDesNext, 0.0f, 0.8f);                                            //限制目标速度最小最大值
         }
         else if(VelFBNow < -ChMove_BrakeVelLimitTH)//如果当前速度是负的
         {
@@ -964,7 +968,6 @@ float _CH_Move_GetDesVel(CHData_StructTypeDef* CHData)
             VelDesNext = Limit(VelDesNext, -0.8f, 0.0f); //限制目标速度最小最大值
         }
     }
-
     return VelDesNext;
 }
 
@@ -980,6 +983,7 @@ void _CH_Move_DisHandler(CHData_StructTypeDef* CHData, RobotControl_StructTypeDe
     float VelFBNow   = CHData->VelFB;     //获取当前底盘速度反馈值
 
     /*没停下，目标位移等于实际位移*/
+    // 只要当前速度超过死区速度就讲目标位移刷新为当前实际位移
     if(MyAbsf(VelFBNow) > ChMove_StillVelTH)
     {
         RMCtrl->STCH_Default.DisDes = CHData->DisFB;
@@ -1020,6 +1024,7 @@ void ChModeControl_FreeMode_RCControl_MoveHandler(CHData_StructTypeDef* CHData, 
 {
     /*选择底盘运动状态、获取底盘速度目标值*/
     CHData->EM_MoveDirection = _CH_Move_DirectionChoose();
+    // XXX 这个目标值变化设计的很好
     RMCtrl->STCH_Default.VelDes = _CH_Move_GetDesVel(CHData);
 
     /*转向的偏航角速度获取*/

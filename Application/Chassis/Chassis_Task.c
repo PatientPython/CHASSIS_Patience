@@ -24,8 +24,7 @@
 // TODO 到时候删除这个引用的头文件
 #include "General_AuxiliaryFunc.h"
 
-static TickType_t S_lastWakeTimeChassisTask =
-    0;  // 上次唤醒的时间，DelayUntil绝对延时函数的参数
+static TickType_t S_lastWakeTimeChassisTask = 0;  // 上次唤醒的时间，DelayUntil绝对延时函数的参数
 
 /**
  * @brief  ChassisTask底盘控制任务

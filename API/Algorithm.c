@@ -1322,4 +1322,6 @@ void HM_TorqueComp_StructInit (HM_TorqueComp_StructTypeDef *pHMComp,
     pHMComp->Err_DZ = Err_DZ;
 }
 
+// 轮毂电机补偿力矩计算函数 
+
 // #pragma endregion

@@ -119,9 +119,9 @@ float PID_LegLen_KdNorm = 10000.0f;     // 腿长PID：正常时的Kd值
 /*Roll轴补偿相关*/
 // TODO 可以试试给小陀螺单独一套PID参数
 // 20,1000是我自己测出来的
-#define PID_RollComp_Kp 20.0f  // Roll轴补偿PID：比例系数Kp
+#define PID_RollComp_Kp 650.0f  // Roll轴补偿PID：比例系数Kp
 #define PID_RollComp_Ki 0.0f  // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
-#define PID_RollComp_Kd 1000.0f  // Roll轴补偿PID：微分系数Kd
+#define PID_RollComp_Kd 15000.0f  // Roll轴补偿PID：微分系数Kd
 #define PID_RollComp_UMax 400.0f              // Roll轴补偿PID：总输出最大值
 #define PID_RollComp_UpMax PID_RollComp_UMax  // Roll轴补偿PID：Kp项输出最大值
 #define PID_RollComp_UiMax 0.0f               // Roll轴补偿PID：Ki项输出最大值
@@ -155,7 +155,8 @@ float LegLenOffGround = 0.250f; //离地腿长，单位m
 /*底盘零点补偿相关*/
 // 换车时需要修改
 float ChassisPitchAngleZP = 1.8f;  // 底盘Pitch轴零点补偿值，单位度，正值表示实际需要抬头才能平衡
-float ChassisRollAngleZP = 0.6f;  // 底盘Roll轴零点补偿值，单位度
+// float ChassisRollAngleZP = 0.6f;  // 底盘Roll轴零点补偿值，单位度
+float ChassisRollAngleZP = 0.0f;  // 底盘Roll轴零点补偿值，单位度
 
 /*腿部前馈力补偿相关*/
 //* 车身物理常数定义
