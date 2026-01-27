@@ -266,8 +266,10 @@ typedef struct {
     float VelBody_HM_Obs;  // 轮毂电机观测的车身速度，单位：m/s
 
     /*手动腿长调整相关标志位*/
-    bool F_JoyUpLatched;   // 摇杆上抬锁存标志
-    bool F_JoyDownLatched; // 摇杆下拨锁存标志
+    bool F_JoyUpLatched;       // 摇杆上抬锁存标志
+    bool F_JoyDownLatched;     // 摇杆下拨锁存标志
+    bool F_RollerUpLatched;    // 滚轮上滚锁存标志
+    bool F_RollerDownLatched;  // 滚轮下滚锁存标志
 
     /*标志位相关*/
     bool F_OffGround1;  // 左腿离地状态标志位，true表示离地，false表示未离地
