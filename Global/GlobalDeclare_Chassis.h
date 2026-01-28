@@ -37,7 +37,6 @@ typedef enum {
     CHMode_RC_Follow,      //遥控器底盘模式：跟随（随云台转动）
     CHMode_RC_OffGround,   //遥控器底盘模式：离地
     CHMode_RC_TouchGround, //遥控器底盘模式：触地（特指离地后触地）
-    CHMode_RC_Struggle,    //遥控器底盘模式：脱困（指轮打滑和受阻两种情况）
     // 待补充
 } ChassisMode_EnumTypeDef;
 
