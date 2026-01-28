@@ -28,15 +28,15 @@ typedef enum {
     // 5、在Chassis_Stratgy.c的ChassisControl函数中增加对应模式的控制策略实现
     // 6、如果需要，在Chassis_ModeChooseParameter_StructTypeDef结构体中增加对应的参数变量
 
-    CHMode_RC_ManualSafe,  //遥控器底盘模式：手动安全（遥控器拨杆左下右上）
-    CHMode_RC_AutoSafe,    //遥控器底盘模式：自动安全
-    CHMode_RC_Sitting,     //遥控器底盘模式：坐下
-    CHMode_RC_StandUp,     //遥控器底盘模式：起立
-    CHMode_RC_Free,        //遥控器底盘模式：自由（非跟随模式）
-    CHMode_RC_SlowSitDown, //遥控器底盘模式：缓慢坐下
-    CHMode_RC_Follow,      //遥控器底盘模式：跟随（随云台转动）
-    CHMode_RC_OffGround,   //遥控器底盘模式：离地
-    CHMode_RC_TouchGround, //遥控器底盘模式：触地（特指离地后触地）
+    CHMode_RC_ManualSafe = 0,  //遥控器底盘模式：手动安全（遥控器拨杆左下右上）
+    CHMode_RC_AutoSafe,        //遥控器底盘模式：自动安全
+    CHMode_RC_Standby,         //遥控器底盘模式：待机
+    CHMode_RC_StandUp,         //遥控器底盘模式：起立
+    CHMode_RC_Free,            //遥控器底盘模式：自由（非跟随模式）
+    CHMode_RC_Follow,          //遥控器底盘模式：跟随（随云台转动）
+    CHMode_RC_SitDown,         //遥控器底盘模式：坐下
+    CHMode_RC_OffGround,       //遥控器底盘模式：离地
+    CHMode_RC_Jump,            //遥控器底盘模式：跳跃
     // 待补充
 } ChassisMode_EnumTypeDef;
 
@@ -54,14 +54,13 @@ typedef enum {
 typedef struct {
     uint32_t RC_ManualSafe;   // RC遥控器控制下，手动安全模式开始时间，单位毫秒
     uint32_t RC_AutoSafe;     // RC遥控器控制下，自动安全模式开始时间，单位毫秒
-    uint32_t RC_Sitting;      // RC遥控器控制下，坐下模式开始时间，单位毫秒
+    uint32_t RC_Standby;      // RC遥控器控制下，待机模式开始时间，单位毫秒
     uint32_t RC_StandUp;      // RC遥控器控制下，起立模式开始时间，单位毫秒
     uint32_t RC_Free;         // RC遥控器控制下，自由模式开始时间，单位毫秒
-    uint32_t RC_SlowSitDown;  // RC遥控器控制下，缓慢坐下模式开始时间，单位毫秒
     uint32_t RC_Follow;       // RC遥控器控制下，跟随模式开始时间，单位毫秒
     uint32_t RC_OffGround;    // RC遥控器控制下，离地模式开始时间，单位毫秒
-    uint32_t RC_TouchGround;  // RC遥控器控制下，触地模式开始时间，单位毫秒
-    uint32_t RC_Struggle;     // RC遥控器控制下，脱困模式开始时间，单位毫秒
+    uint32_t RC_SitDown;      // RC遥控器控制下，坐下模式开始时间，单位毫秒
+    uint32_t RC_Jump;         // RC遥控器控制下，跳跃模式开始时间，单位毫秒
 } _CH_ModeStartTime_StructTypeDef;
 
 /*IMU2底盘云控数据处理结构体类型定义，包括发送和接收(注意4字节对齐)(32位单片机默认)*/
@@ -127,8 +126,7 @@ typedef struct {
         uint8_t head[2];
 
         /*一些标志位*/
-        uint8_t
-            ReloadStatus;  // TODO 原本是之前赛季的补弹标志位，由于规则改动，无需补弹功能，直接发false就行，后续可以删掉，记得IMU2里面也要一起删
+        uint8_t ReloadStatus;  // TODO 原本是之前赛季的补弹标志位，由于规则改动，无需补弹功能，直接发false就行，后续可以删掉，记得IMU2里面也要一起删
         uint8_t RestartFlag;         // IMU2底盘云控重启标志位
         uint8_t JM2StatusDes;        // TODO 并未使用的变量，不知道干嘛用的
         uint8_t LegCalibrationFlag;  // 腿部校准标志位
@@ -195,7 +193,6 @@ typedef struct {
     float TorqueDes;  // 电机力矩目标值，向前转为正，单位：Nm
     float TorqueAdapt; // 电机力矩补偿值，向前转为正，单位：Nm
     int16_t CurrentDes;  // 电机电流目标值，注意单位不是mA也不是A，是直接给电调的电流值
-                     // TODO
     // 电调手册上写了，这个值的范围是-16384到16384，代表-20A到20A的电流输出。
 } HMData_StructTypeDef;
 
@@ -257,16 +254,20 @@ typedef struct {
     float Leg1F_N;  // 左腿腿部支持力反馈值，单位N
     float Leg2F_N;  // 右腿腿部支持力反馈值，单位N
 
-    /*特殊工况相关*/
+    /*轮速误差补偿力矩相关*/
     float HM1_VelErr;  // 左轮毂电机速度误差，单位：rad/s
     float HM2_VelErr;  // 右轮毂电机速度误差，单位：rad/s
+    float HM1_TorqueComp;  // 左轮毂电机补偿力矩，单位：Nm
+    float HM2_TorqueComp;  // 右轮毂电机补偿力矩，单位：Nm
 
     /*卡尔曼滤波相关*/
     float VelBody_HM_Obs;  // 轮毂电机观测的车身速度，单位：m/s
 
     /*手动腿长调整相关标志位*/
-    bool F_JoyUpLatched;   // 摇杆上抬锁存标志
-    bool F_JoyDownLatched; // 摇杆下拨锁存标志
+    bool F_RJoyUpLatched;   // 右摇杆上抬锁存标志
+    bool F_RJoyDownLatched; // 右摇杆下拨锁存标志
+    bool F_RollerUpLatched; // 滚轮上滚锁存标志
+    bool F_RollerDownLatched; // 滚轮下滚锁存标志
 
     /*标志位相关*/
     bool F_OffGround1;  // 左腿离地状态标志位，true表示离地，false表示未离地

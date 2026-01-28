@@ -312,32 +312,8 @@ void _HM_StruggleStateDetect(void)
     float HM1_VelErr = HM1_VelRef - HM1_VelFB; // 左轮轮毂电机速度误差，单位m/s
     float HM2_VelErr = HM2_VelRef - HM2_VelFB; // 右轮轮毂电机速度误差，单位m/s
 
-    // 左轮轮毂电机打滑/受阻检测
-    if(HM1_VelErr < -GSTCH_HMTorqueComp.Err_DZ) {
-        GSTCH_Data.F_SlipHM1 = true;
-    }
-    else if(HM1_VelErr > GSTCH_HMTorqueComp.Err_DZ) {
-        GSTCH_Data.F_BlockHM1 = true;
-    }
-    else {
-        GSTCH_Data.F_SlipHM1 = false;
-        GSTCH_Data.F_BlockHM1 = false;
-    }
-
-    // 右轮轮毂电机打滑/受阻检测
-    if(HM2_VelErr < -GSTCH_HMTorqueComp.Err_DZ) {
-        GSTCH_Data.F_SlipHM2 = true;
-    }
-    else if(HM2_VelErr > GSTCH_HMTorqueComp.Err_DZ) {
-        GSTCH_Data.F_BlockHM2 = true;
-    }
-    else {
-        GSTCH_Data.F_SlipHM2 = false;
-        GSTCH_Data.F_BlockHM2 = false;
-    }
-
-    GSTCH_HMTorqueComp.Err_HM1 = HM1_VelErr;
-    GSTCH_HMTorqueComp.Err_HM2 = HM2_VelErr;
+    GSTCH_Data.HM1_VelErr = HM1_VelErr;
+    GSTCH_Data.HM2_VelErr = HM2_VelErr;
 }
 
 /**
@@ -528,18 +504,15 @@ void CH_VelKF_Process(void) {
 // TODO 细化这个注释
 /**
  * @brief  左右轮轮毂电机打滑和受阻检测
- * @note   实现轮毂电机打滑和受阻检测功能，计算轮毂电机速度误差，并根据误差判断是否打滑或受阻
+ * @note   计算轮毂电机速度误差，并给以合适的补偿力矩
  * @param  无
  * @retval 无
  */
 void CH_HMTorqueComp_Process(void) {
     _HM_StruggleStateDetect();
     // 计算正常牵引力矩补偿
-    GSTCH_HMTorqueComp.T_Trac_HM1 = K_Trac_Norm_tmp * GSTCH_HMTorqueComp.Err_HM1;
-    GSTCH_HMTorqueComp.T_Trac_HM2 = K_Trac_Norm_tmp * GSTCH_HMTorqueComp.Err_HM2;
-    // 进入打滑模式后会改这个值
-    GSTCH_HMTorqueComp.T_Comp_HM1 = GSTCH_HMTorqueComp.T_Trac_HM1;
-    GSTCH_HMTorqueComp.T_Comp_HM2 = GSTCH_HMTorqueComp.T_Trac_HM2;
+    GSTCH_Data.HM1_TorqueComp = K_Trac_Norm_tmp * GSTCH_Data.HM1_VelErr;
+    GSTCH_Data.HM2_TorqueComp = K_Trac_Norm_tmp * GSTCH_Data.HM2_VelErr;
 }
 
 /**

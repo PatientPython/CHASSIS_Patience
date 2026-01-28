@@ -196,9 +196,6 @@ typedef struct {
 
     float Err_HM1;           // 左轮轮速误差 E_l = \dot\theta_{w,l}R_w - (\hat{\dot{s}} - R_l\hat{\dot{\phi}}) * R_w
     float Err_HM2;           // 右轮轮速误差 E_r = \dot\theta_{w,r}R_w - (\hat{\dot{s}} + R_l\hat{\dot{\phi}}) * R_w
-    float Lambda_HM1;        // 左轮速误差归一化值（状态强度系数）
-    float Lambda_HM2;        // 右轮速误差归一化值（状态强度系数）
-    // 打滑和受阻的标志位写在了底盘数据总结构体里面
 
 } HM_TorqueComp_StructTypeDef;
 // #pragma endregion

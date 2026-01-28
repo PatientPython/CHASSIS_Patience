@@ -43,12 +43,7 @@ void ChassisStrategy_ModeChooseParaStructUpdate(Chassis_ModeChooseParameter_Stru
     {pModeChoosePara->MC_F_OffGround = true;}//离地状态标志，只要有任何一侧离地都算
     else
     {pModeChoosePara->MC_F_OffGround = false;}
-
-    if(GSTCH_Data.F_SlipHM1 || GSTCH_Data.F_SlipHM2 || GSTCH_Data.F_BlockHM1 || GSTCH_Data.F_BlockHM2)
-    {pModeChoosePara->MC_F_Struggle = true;}//脱困状态标志，只要有任何一侧异常都算
-    else
-    {pModeChoosePara->MC_F_Struggle = false;}
-
+		
     /*AutoSafe模式专用变量*/
     pModeChoosePara->MC_HubMotor1Rx_fps = GST_SystemMonitor.HubMotor1Rx_fps;    //轮毂电机1接收帧率
     pModeChoosePara->MC_HubMotor2Rx_fps = GST_SystemMonitor.HubMotor2Rx_fps;    //轮毂电机2接收帧率
@@ -57,37 +52,21 @@ void ChassisStrategy_ModeChooseParaStructUpdate(Chassis_ModeChooseParameter_Stru
 
 // #pragma region 检测当前条件是否满足进入某模式的函数
 
-/**
-  * @brief  遥控器模式下，检测是否需要进入手动安全模式的函数
-  * @note   在函数内部会进行判断，如果达到其中任何一个条件就会进入手动安全模式
-  * @param  无
-  * @retval false：所有判断条件都正常，不需要进入ManualSafeMode
-  *         true：任何一项判断条件生效，需要进入ManualSafeMode
-*/
-bool _ChIsEnter_ManualSafeMode_RCControl(void)
-{
-    /* 如果遥控器断开连接，不进入ManualSafeMode（应该进入AutoSafe） */
-    if(IsRCConnected() == false)
-    {return false;}
+// ==========================================
+// 全局中断 (Global Interrupts)
+// ==========================================
 
+// 正常状态 -> ManualSafe: 左拨杆在下且右拨杆在上
+bool _IsTrans_Normal_To_ManualSafe(void) {
     /* 如果遥控器拨杆为左下右上，进入ManualSafeMode */
     if(IsLeftLevelDown() && IsRightLevelUp())
     {return true;}
-
-    /*其他情况不进入ManualSafeMode*/
-    return false;
+    else
+    {return false;} // 否则不进入
 }
 
-
-/**
-  * @brief  遥控器模式下，检测是否需要进入自动安全模式的函数
-  * @note   在函数内部会进行一系列判断，如果达到其中任何一个条件就会进入自动安全模式
-  * @param  ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
-  * @retval false：所有判断条件都正常，不需要进入AutoSafeMode
-  *         true：任何一项判断条件生效，需要进入AutoSafeMode
-*/
-bool _ChIsEnter_AutoSafeMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara)
-{
+// 正常状态 -> AutoSafe: 通讯异常
+bool _IsTrans_Normal_To_AutoSafe(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
     /*用一些临时变量来存储相关变量*/
     float HM1_Rx_fps = ST_ModeChoosePara.MC_HubMotor1Rx_fps; //轮毂电机1通讯帧率
     float HM2_Rx_fps = ST_ModeChoosePara.MC_HubMotor2Rx_fps; //轮毂电机2通讯帧率
@@ -104,255 +83,112 @@ bool _ChIsEnter_AutoSafeMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef
     /* 如果IMU2通讯异常，进入AutoSafeMode */
     if(UART4_Rx_fps < UART4Rx_fpsMinTH)
     {return true;}
-
-    //老代码说明：
-	// TODO 考虑在保护中加入腿部摆角的判断
-    // if(
-	// 				((/* capacitor_msg.CAP_Vol < 13 || */capacitor_msg.CAP_Vol> 55)|| // 超电保护
-    //                 ((fabs(G_ST_IMU2.Receive.pitch_angle - Med_Angle_Norm)>=20.0f || (fabs(-LegLeftPosDistribute.Theta)>28.0f && fabs(-LegRightPosDistribute.Theta)>28.0f && fabs(G_ST_IMU2.Receive.pitch_angle - Med_Angle_Norm)>=8.0f)) && Height_Choose_Cnt == 0)||
-	// 				(fabs(G_ST_IMU2.Receive.pitch_angle - Med_Angle_Norm)>=18.0f && Height_Choose_Cnt == 1)||
-    //                 stuck_flag || stuck_flag_still || stair_lay_flag) 
-	// 				&& Speed_Flag &&  (OS_TIME() - Start_Time_Cnt )> 800000 && OffGround_Flag == 0 && Up_Stair_Flag==0)
-    // {return true;}
-
-    // if((stuck_flag_start && OS_TIME()-Start_Time_Cnt > 100000 && OS_TIME()-Start_Time_Cnt < 800000 && Speed_Flag) == true)
-    // {return true;}
-	
-    /*如果全部判断条件正常，不进入AutoSafeMode*/
+    /* 否则不进入 */
     return false;
 }
 
-/**
-  * @brief  遥控器模式下，检测是否需要进入坐下模式的函数（相当于待机模式）
-  * @note   在函数内部会进行一系列判断，如果达到其中任何一个条件就会进入坐下模式
-  * @param  ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
-  * @retval false：不需要进入SitDownMode
-  *         true： 需要进入SitDownMode
-  */
-bool _ChIsEnter_SittingMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara)
-{
-    /*用一些临时变量来存储相关变量*/
-    float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;      //上次模式
-    float LegLenAvgFB = ST_ModeChoosePara.MC_LegLenAvgFB;  //腿长平均值
+// ==========================================
+// 状态恢复 (Recovery)
+// ==========================================
 
-    /*如果左拨杆不在中位，不进入坐下模式*/
-    if(IsLeftLevelMid() == false)
-    {return false;}
-
-    /*如果上次状态是离地，不进入坐下模式*/
-    if(ModePre_tmp == CHMode_RC_OffGround)
-    {return false;}
-
-    /*如果上次状态是ManualSafe、AutoSafe其中一个，允许进入坐下模式*/
-    if(ModePre_tmp == CHMode_RC_ManualSafe)
+// ManualSafe -> Standby: 左拨杆在中
+bool _IsTrans_ManualSafe_To_Standby(void) {
+    /*如果左拨杆在中位，进入StandbyMode*/
+    if(IsLeftLevelMid() == true)
     {return true;}
-    else if(ModePre_tmp == CHMode_RC_AutoSafe)
-    {return true;}
-
-    /*如果上次状态是SlowSitDown，且腿长已经到达最小值附近，进入坐下模式*/
-    if(ModePre_tmp == CHMode_RC_SlowSitDown && LegLenAvgFB <= LegLenMin + LegLenMinTH)
-    {return true;}
-
-    /*如果上次状态是Sitting，且拨轮没有上推，继续保持坐下模式*/
-    if(ModePre_tmp == CHMode_RC_Sitting && IsRollerUp() == false)
-    {return true;}
-
-    /*否则不进入*/
-    return false;
+    else
+    {return false;} // 否则不进入
+    
 }
 
-/**
- * @brief  遥控器模式下，检测是否需要进入起立模式的函数
- * @param
- * ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
- * @retval false：不进入StandUpMode
- *         true： 进入StandUpMode
- */
-bool _ChIsEnter_StandUpMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
-    /*用一些临时变量来存储相关变量*/
-    float ModePre = ST_ModeChoosePara.MC_ModePre;      //上次模式
+// AutoSafe -> Standby: 所有通讯正常
+bool _IsTrans_AutoSafe_To_Standby(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
+    // 复用上面的检测，取反
+    if(_IsTrans_Normal_To_AutoSafe(ST_ModeChoosePara) == false)
+    {return true;} // 通讯正常，进入
+    else
+    {return false;}  // 通讯异常，不进入
+}
+
+// ==========================================
+// 核心流程 (Core Flow)
+// ==========================================
+
+// Standby -> StandUp: 拨轮向上并回正
+bool _IsTrans_Cmd_StandUp(void) {
+    if (GSTCH_Data.F_RollerUpLatched == true){
+        GSTCH_Data.F_RollerUpLatched = false;
+        return true;
+    }
+    else
+    {return false;}
+}
+
+// StandUp -> Free: 时间到了
+bool _IsTrans_StandUp_To_Free(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
     float TimeNow = ST_ModeChoosePara.MC_TimeNow;      //当前时间
     float ThisModeStartTime = ST_ModeChoosePara.MC_ST_ModeStartTime.RC_StandUp; //起立模式开始时间
     float ThisModeTotalTime = TimeNow - ThisModeStartTime;  //起立模式总时长 = 当前时间 - 起立模式开始时间
-
-    /*如果左拨杆不在中位，不进入起立模式*/
-    if(IsLeftLevelMid() == false)
+    // 如果StandUp模式总时间没有到，继续保持StandUp模式
+    if(ThisModeTotalTime < CHMode_RC_StandUp_TotalTime)
+    {return true;}
+    else
     {return false;}
-
-    /*如果上次状态是Sitting、StandUp允许进入起立模式*/
-    if(ModePre == CHMode_RC_Sitting)
-    {return true;}
-    
-    /*如果上次状态是StandUp，且StandUp模式总时间没有到，继续保持StandUp模式（否则应该进入Free）*/
-    if(ModePre == CHMode_RC_StandUp && ThisModeTotalTime < CHMode_RC_StandUp_TotalTime)
-    {return true;}
-
-    /*其他情况，不进入*/
-    return false;
 }
 
-/**
-* @brief  遥控器模式下，检测是否需要进入底盘自由模式的函数
-* @note   待补充
-* @param
-* ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
-* @retval false：不进入FreeMode
-*         true： 进入FreeMode
-*/
-bool _ChIsEnter_FreeMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
-    /*用一些临时变量来存储相关变量*/
-    float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;  //上次模式
-    bool  F_OffGround_tmp = ST_ModeChoosePara.MC_F_OffGround; //离地状态标志，true表示离地，false表示触地
-
-    /*如果左拨杆不在中位，不进入*/
-    if(IsLeftLevelMid() == false)
+// Free -> Sitting: 拨轮向上并回正
+bool _IsTrans_Cmd_SitDown(void) {
+    if (GSTCH_Data.F_RollerUpLatched == true){
+        GSTCH_Data.F_RollerUpLatched = false;
+        return true;
+    }
+    else
     {return false;}
-
-    /*如果拨轮上推，不进入（应该进入SlowSitDown）*/
-    if(IsRollerUp() == true)
-    {return false;}
-
-    /*离地状态下，不进入Free模式*/
-    if(F_OffGround_tmp == true)
-    {return false;}
-
-    /*离地状态后触地，允许进入Free模式*/
-    if(ModePre_tmp == CHMode_RC_OffGround && F_OffGround_tmp == false)
-    {return true;}
-
-    /*如果上次模式是Free，允许进入*/
-    if(ModePre_tmp == CHMode_RC_Free)
-    {return true;}
-
-    /*如果上次模式是StandUp，允许进入*/
-    if(ModePre_tmp == CHMode_RC_StandUp)
-    {return true;}
-
-    // TODO 写到Follow模式的时候再补充
-    /*如果上次状态是Follow，允许进入*/
-    if(ST_ModeChoosePara.MC_ModePre == CHMode_RC_Follow)
-    {return true;}
-
-    return false;
 }
 
-/**
-  * @brief  遥控器模式下，检测是否需要进入缓慢坐下模式的函数
-  * @note   待补充
-  * @param  ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
-  * @retval false：不进入SlowSitDownMode
-  *         true： 进入SlowSitDownMode
-*/
-bool _ChIsEnter_SlowSitDownMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara)
-{
-    /*用一些临时变量来存储相关变量*/
-    float ModePre = ST_ModeChoosePara.MC_ModePre;  //上次模式
-
-    /*如果上次模式是缓慢坐下，允许进入*/
-    if(ModePre == CHMode_RC_SlowSitDown)
+// SitDown -> Standby: 腿长达到最小
+bool _IsTrans_SitDown_To_Standby(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
+    float LegLenAvgFB = ST_ModeChoosePara.MC_LegLenAvgFB;  //腿长平均值
+    if(LegLenAvgFB <= LegLenMin + LegLenMinTH)
     {return true;}
-
-    /*如果上次模式是Free，且拨轮上推，允许进入*/
-    if(ModePre == CHMode_RC_Free && IsRollerUp() == true)
-    {return true;}
-
-    /*其他情况，不进入*/
-    return false;
-}
-
-/**
-  * @brief  遥控器模式下，检测是否需要进入底盘跟随模式的函数
-  * @note   待补充
-  * @param  ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
-  * @retval false：不进入FollowMode
-  *         true： 进入FollowMode
-  */
-bool _ChIsEnter_FollowMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
-    float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;         // 上次模式
-    bool F_OffGround_tmp = ST_ModeChoosePara.MC_F_OffGround;  //离地状态标志，true表示离地，false表示触地
-    // TODO （记得把StandUp模式加进去）
-    /*如果左拨杆不在上位，不进入*/
-    if(IsLeftLevelUp() == false)
+    else
     {return false;}
+}
 
-    /*离地状态下，不进入Follow模式*/
-    if(F_OffGround_tmp == true)
+// ==========================================
+// 模式切换与动作 (Mode Switch & Actions)
+// ==========================================
+
+// Free -> Follow: 左拨杆在上
+bool _IsTrans_Free_To_Follow(void) {
+    return IsLeftLevelUp();
+}
+
+// Follow -> Free: 左拨杆在中
+bool _IsTrans_Follow_To_Free(void) {
+    return IsLeftLevelMid();
+}
+
+// Free/Follow -> Jump: 拨轮向下并回正
+bool _IsTrans_Cmd_Jump(void) {
+    if (GSTCH_Data.F_RollerDownLatched == true){
+        GSTCH_Data.F_RollerDownLatched = false;
+        return true;
+    }
+    else
     {return false;}
-
-    /* 如果当前已经是 Follow 模式，继续保持 */
-    if(ModePre_tmp == CHMode_RC_Follow)
-    {return true;}
-
-    /* 允许从起立模式 (StandUp) 或 自由模式 (Free) 切换进入跟随模式 */
-    if(ModePre_tmp == CHMode_RC_StandUp || ModePre_tmp == CHMode_RC_Free)
-    {return true;}
-
-    return false;
 }
 
-/**
-  * @brief  遥控器模式下，检测是否需要进入离地模式的函数
-  * @note   待补充
-  * @param  ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
-  * @retval false：不进入OffGroundMode
-  *         true： 进入OffGroundMode
-  */
-bool _ChIsEnter_OffGroundMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
-    /*用一些临时变量来存储相关变量*/
-    float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;  //上次模式
-    bool  F_OffGround_tmp = ST_ModeChoosePara.MC_F_OffGround; //离地状态标志，true表示离地，false表示触地
-
-    /*上次模式不是OffGround、Free、Follow模式中任何一个，不进入离地模式*/
-    if(ModePre_tmp != CHMode_RC_OffGround && ModePre_tmp != CHMode_RC_Free && ModePre_tmp != CHMode_RC_Follow)
-    {return false;}
-
-    /*离地标志位开启了，认为进入离地模式*/
-    if(F_OffGround_tmp == true)
-    {return true;}
-
-    return false;
+// Free/Follow -> OffGround: 离地标志位成立
+bool _IsTrans_To_OffGround(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
+    return ST_ModeChoosePara.MC_F_OffGround;
 }
 
-/**
- * @brief     遥控器模式下，检测是否需要进入脱困模式的函数
- * @param[in] ST_ModeChoosePara：Chassis_ModeChooseParameter_StructTypeDef类型的结构体，底盘模式选择相关参数，包含的内容由用户自定义
- * @retval    false：不进入OffGroundMode
- *            true： 进入OffGroundMode
- */
-bool _ChIsEnter_StruggleMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara){
-    // float ModePre_tmp = ST_ModeChoosePara.MC_ModePre;         // 上次模式
-    // bool F_OffGround_tmp = ST_ModeChoosePara.MC_F_OffGround;  //离地状态标志，true表示离地，false表示触地
-    // bool F_Struggle_tmp = ST_ModeChoosePara.MC_F_Struggle;  //脱困状态标志，true表示脱困，false表示正常
-
-    // /*离地状态下，不进入Follow模式*/
-    // if(F_OffGround_tmp == true)
-    // {return false;}
-
-    // /*排除其他不允许进入脱困模式的状态 */
-    // if (ModePre_tmp == CHMode_RC_ManualSafe || 
-    //     ModePre_tmp == CHMode_RC_AutoSafe   || 
-    //     ModePre_tmp == CHMode_RC_Sitting    || 
-    //     ModePre_tmp == CHMode_RC_SlowSitDown) 
-    // {
-    //     return false;
-    // }
-
-    // /*如果已经处于脱困模式，根据内部逻辑决定是否退出*/
-    // if (ModePre_tmp == CHMode_RC_Struggle) {
-    //     // 如果标志位还在，继续保持
-    //     if (F_Struggle_tmp == true)
-    //     {return true;}
-    //     // 如果标志位消失，退出（由后续优先级决定去向，通常回 Free 模式）
-    //     return false;
-    // }
-
-    // /*触发进入条件：不在排除列表内，且触发标志位置位*/
-    // if (F_Struggle_tmp == true) {
-    //     return true;
-    // }
-
-    // return false;
+// OffGround/Jump -> Landed: 检测到落地 (离地标志位清零)
+bool _IsTrans_To_Landed(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) {
+    return !ST_ModeChoosePara.MC_F_OffGround;
 }
+
 
 // #pragma endregion
 
@@ -366,40 +202,98 @@ bool _ChIsEnter_StruggleMode_RCControl(Chassis_ModeChooseParameter_StructTypeDef
 */
 ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) 
 {
-    ChassisMode_EnumTypeDef ModeTemp = CHMode_RC_AutoSafe;  // 底盘状态，默认进入RC自动安全模式，如果遥控器有指令会进行修改
+    // 状态变量准备
 
-    /************切换底盘的状态************/
-    /*注意！！为了更加方便管理，下面的模式判断选择中，只使用ST_ModeChoosePara里的变量、遥控器相关函数来做判断*/
-    /*如果想要用其他的变量来做判断，可以在Chassis_ModeChooseParameter_StructTypeDef里面添加变量*/
-    /*然后在ChassisStratgy_ModeChooseParaStructUpdate中添加该变量的更新语句，最后在这里调用*/
+    ChassisMode_EnumTypeDef CurrentMode = ST_ModeChoosePara.MC_ModePre;
+    ChassisMode_EnumTypeDef NextMode = CurrentMode;
 
-    /*注意！！下面的一些语句可能会有优先级要求，没有必要的话不要打乱排列顺序*/
-    // 优先级最高的是ManualSafe，保证了进入ManualSafe之后不会切换到其他模式
-    if(_ChIsEnter_ManualSafeMode_RCControl() == true)
-    {ModeTemp = CHMode_RC_ManualSafe;}     //进入RC手动安全模式
+    // 用于记忆跳跃或者离地前是 Free 还是 Follow（默认是free）
+    static ChassisMode_EnumTypeDef LastActiveMode = CHMode_RC_Free; 
 
-    else if(_ChIsEnter_AutoSafeMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_AutoSafe;}       //进入RC自动安全模式
+    /* ========================================================== */
+    /*   Layer 1: 全局中断 (Global Interrupts)                    */
+    /* ========================================================== */
+    
+    if (_IsTrans_Normal_To_ManualSafe()) {
+        return CHMode_RC_ManualSafe;
+    }
 
-    else if(_ChIsEnter_SittingMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_Sitting;}        //进入RC坐下模式
+    if (_IsTrans_Normal_To_AutoSafe(ST_ModeChoosePara)) {
+        return CHMode_RC_AutoSafe;
+    }
 
-    else if(_ChIsEnter_StandUpMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_StandUp;}        //进入RC起立模式
+    /* ========================================================== */
+    /*   Layer 2: 状态机流转 (Switch-Case)                        */
+    /* ========================================================== */
 
-    else if(_ChIsEnter_FreeMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_Free;}           //进入RC底盘自由模式
+    switch (CurrentMode) 
+    {
+        /* --- 故障与待机 --- */
+        case CHMode_RC_ManualSafe:
+            if (_IsTrans_ManualSafe_To_Standby()) NextMode = CHMode_RC_Standby;
+            break;
 
-    else if(_ChIsEnter_SlowSitDownMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_SlowSitDown;}    //进入RC底盘缓慢坐下模式
+        case CHMode_RC_AutoSafe:
+            if (_IsTrans_AutoSafe_To_Standby(ST_ModeChoosePara)) NextMode = CHMode_RC_Standby;
+            break;
 
-    else if(_ChIsEnter_FollowMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_Follow;}         //进入RC底盘跟随模式
+        case CHMode_RC_Standby: 
+            if (_IsTrans_Cmd_StandUp()) NextMode = CHMode_RC_StandUp;
+            break;
 
-    else if (_ChIsEnter_OffGroundMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_OffGround;}      //进入RC底盘离地模式
+        /* --- 启动与关闭 --- */
+        case CHMode_RC_StandUp:
+            if (_IsTrans_StandUp_To_Free(ST_ModeChoosePara)) {
+                NextMode = CHMode_RC_Free;
+                LastActiveMode = CHMode_RC_Free; // 初始化记忆
+            }
+            break;
 
-    return ModeTemp;
+        case CHMode_RC_SitDown: 
+            if (_IsTrans_SitDown_To_Standby(ST_ModeChoosePara)) NextMode = CHMode_RC_Standby;
+            break;
+
+        /* --- 核心运动模式 (Free) --- */
+        case CHMode_RC_Free:
+            LastActiveMode = CHMode_RC_Free; // 持续更新记忆：我在Free
+
+            if (_IsTrans_Cmd_SitDown())          NextMode = CHMode_RC_SitDown;
+            else if (_IsTrans_Free_To_Follow())  NextMode = CHMode_RC_Follow;
+            else if (_IsTrans_Cmd_Jump())        NextMode = CHMode_RC_Jump;
+            else if (_IsTrans_To_OffGround(ST_ModeChoosePara)) NextMode = CHMode_RC_OffGround;
+            break;
+
+        /* --- 核心运动模式 (Follow) --- */
+        case CHMode_RC_Follow:
+            LastActiveMode = CHMode_RC_Follow; // 持续更新记忆：我在Follow
+
+            if (_IsTrans_Follow_To_Free())       NextMode = CHMode_RC_Free;
+            else if (_IsTrans_Cmd_Jump())        NextMode = CHMode_RC_Jump;
+            else if (_IsTrans_To_OffGround(ST_ModeChoosePara)) NextMode = CHMode_RC_OffGround;
+            break;
+
+        /* --- 特殊动作 (Jump) --- */
+        case CHMode_RC_Jump:
+            // 检测到落地 -> 回到 LastActiveMode (Free 或 Follow)
+            if (_IsTrans_To_Landed(ST_ModeChoosePara)) { 
+                NextMode = LastActiveMode; 
+            }
+            break;
+
+        /* --- 特殊状态 (OffGround) --- */
+        case CHMode_RC_OffGround:
+            // 检测到落地 -> 回到 LastActiveMode (Free 或 Follow)
+            if (_IsTrans_To_Landed(ST_ModeChoosePara)) {
+                NextMode = LastActiveMode;
+            }
+            break;
+
+        default:
+            NextMode = CHMode_RC_ManualSafe;
+            break;
+    }
+
+    return NextMode;
 }
 
 //* 获取底盘各模式开始时间函数。当除安全模式以外有多个模式时需要加入（只有起立模式如果没有计时会无法设置目标值）
@@ -421,33 +315,20 @@ void ChassisStrategy_ModeStartTimeUpdate(CHData_StructTypeDef* pCHData,
     }
 
     /*如果模式切换，记录当前时间为该模式的开始时间*/
+    uint32_t TimeNow = RunTimeGet();
     switch (Mode) {
-        case CHMode_RC_ManualSafe:
-            pCHData->ST_ModeStartTime.RC_ManualSafe = RunTimeGet();
-            break;
-        case CHMode_RC_AutoSafe:
-            pCHData->ST_ModeStartTime.RC_AutoSafe = RunTimeGet();
-            break;
-        case CHMode_RC_StandUp:
-            pCHData->ST_ModeStartTime.RC_StandUp = RunTimeGet();
-            break;
-        case CHMode_RC_Sitting:
-            pCHData->ST_ModeStartTime.RC_Sitting = RunTimeGet();
-            break;
-        case CHMode_RC_Free:
-            pCHData->ST_ModeStartTime.RC_Free = RunTimeGet();
-            break;
-        case CHMode_RC_OffGround:
-            pCHData->ST_ModeStartTime.RC_OffGround = RunTimeGet();
-            break;
-        case CHMode_RC_TouchGround:
-            pCHData->ST_ModeStartTime.RC_TouchGround = RunTimeGet();
-            break;
-        case CHMode_RC_Struggle:
-            pCHData->ST_ModeStartTime.RC_Struggle = RunTimeGet();
-            break;
+        case CHMode_RC_ManualSafe:   pCHData->ST_ModeStartTime.RC_ManualSafe = TimeNow; break;
+        case CHMode_RC_AutoSafe:     pCHData->ST_ModeStartTime.RC_AutoSafe = TimeNow; break;
+        case CHMode_RC_StandUp:      pCHData->ST_ModeStartTime.RC_StandUp = TimeNow; break;
+        case CHMode_RC_Standby:      pCHData->ST_ModeStartTime.RC_Standby = TimeNow; break;
+        case CHMode_RC_Free:         pCHData->ST_ModeStartTime.RC_Free = TimeNow; break;
+        case CHMode_RC_SitDown:      pCHData->ST_ModeStartTime.RC_SitDown = TimeNow; break; // 补齐
+        case CHMode_RC_Follow:       pCHData->ST_ModeStartTime.RC_Follow = TimeNow; break;      // 补齐
+        case CHMode_RC_OffGround:    pCHData->ST_ModeStartTime.RC_OffGround = TimeNow; break;
+        case CHMode_RC_Jump:         pCHData->ST_ModeStartTime.RC_Jump = TimeNow; break;
     }
 }
+
 //* 底盘运动模式更新函数
 // 在keil里面看GEMCH_Mode和GEMCH_ModePre就能观察状态了
 /**
@@ -470,74 +351,159 @@ void CH_ChassisModeUpdate(void) {
 // #pragma region 模式具体功能实现函数
 
 /**
- * @brief  底盘手动腿长三档控制处理函数
- * @note   实现“摇杆上推回中-变长”、“摇杆下拨回中-变短”的逻辑
+ * @brief  遥控器指令预处理函数
+ * @note   实现对遥控器拨轮和摇杆这种不能自动锁定的输入的预处理
  */
-void CH_LegLenAdjust_Process(void) {
-    // 仅在允许的模式下运行（Free, Follow, Struggle）
-    if (GEMCH_Mode != CHMode_RC_Free && GEMCH_Mode != CHMode_RC_Follow && GEMCH_Mode != CHMode_RC_Struggle) {
-        GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-        GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
-        GSTCH_Data.F_JoyUpLatched = false;
-        GSTCH_Data.F_JoyDownLatched = false;
-        return;
-    }
+void CH_RCInputPre_Process(void) {
+    // === 静态变量：用于记忆历史状态 (上膛标志) ===
+    static bool Latch_Roller_Up = false;
+    static bool Latch_Roller_Down = false;
+    static bool Latch_RJoy_Up = false;
+    static bool Latch_RJoy_Down = false;
 
-    // 1. 检测上抬动作
-    if (IsRightJoyStickUp()) {
-        GSTCH_Data.F_JoyUpLatched = true;
-    }
-    // 2. 检测下拨动作
-    if (IsRightJoyStickDown()) {
-        GSTCH_Data.F_JoyDownLatched = true;
-    }
-
-    // 3. 检测回中触发（回中时判定刚才是否有推/拨动作）
-    if (IsRightJoyStickUp() == false && IsRightJoyStickDown() == false) {
-        // 上抬回中触发：Min -> Mid -> High
-        if (GSTCH_Data.F_JoyUpLatched) {
-            // 如果当前在 LegLenMin 附近，变到 LegLenMid
-            if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenMid - 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;     
-            } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenHigh - 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen1ManualDes = 0.500f;
-            }
-            // 如果当前已经接近 LegLenMid，变到 LegLenHigh
-            if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenMid - 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;       
-            } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenHigh - 0.001f) {
-                // GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenHigh;
-                GST_RMCtrl.STCH_Default.LegLen2ManualDes = 0.500f;
-            }
-            GSTCH_Data.F_JoyUpLatched = false; // 清除标志
+    // ============================================================
+    // 拨轮处理 (Roller Logic) - 用于状态机切换
+    // ============================================================
+    
+    // --- 上拨处理 ---
+    if (IsRollerUp()) {
+        Latch_Roller_Up = true;         // 上膛
+        Latch_Roller_Down = false;      // 互斥
+    } 
+    else if (!IsRollerUp() && !IsRollerDown()) {
+        if (Latch_Roller_Up) {
+            GSTCH_Data.F_RollerUpLatched = true; // 击发
+            Latch_Roller_Up = false;    // 复位
+        } else {
+            GSTCH_Data.F_RollerUpLatched = false;
         }
-        
-        // // 下拨回中触发：High -> Mid -> Min
-        // if (GSTCH_Data.F_JoyDownLatched) {
-        //     // 如果当前在 High 附近，下调到 Mid
-        //     if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMid + 0.001f) {
-        //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-        //     } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMin + 0.001f) {
-        //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMin;
-        //     }
-        //     // 如果当前在 Mid 附近，下调到 Min
-        //     if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMid + 0.001f) {
-        //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
-        //     } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMin + 0.001f) {
-        //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMin;
-        //     }
-        //     GSTCH_Data.F_JoyDownLatched = false; // 清除标志
-        //}
+    } else { // 异常/下拨
+        GSTCH_Data.F_RollerUpLatched = false;
+        if(IsRollerDown()) 
+        {Latch_Roller_Up = false;}
     }
 
-    // 5. 如果从未触发过上述逻辑且变量未初始化，设置默认值为中腿长
-    if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < 0.01f) { // 简单初值保护
-        GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
+    // --- 下拨处理 ---
+    if (IsRollerDown()) {
+        Latch_Roller_Down = true;
+        Latch_Roller_Up = false;
+    } else if (!IsRollerUp() && !IsRollerDown()) {
+        if (Latch_Roller_Down) {
+            GSTCH_Data.F_RollerDownLatched = true;
+            Latch_Roller_Down = false;
+        } else {
+            GSTCH_Data.F_RollerDownLatched = false;
+        }
+    } else {
+        GSTCH_Data.F_RollerDownLatched = false;
+        if(IsRollerUp()) 
+        {Latch_Roller_Down = false;}
     }
-    if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < 0.01f) { // 简单初值保护
-        GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
+
+    // ============================================================
+    // 右摇杆处理 (Right Joystick Logic) - 用于腿长控制
+    // ============================================================
+    
+    // --- 上推处理 ---
+    if (IsRightJoyStickUp()) {
+        Latch_RJoy_Up = true;
+        Latch_RJoy_Down = false;
+    } else if (!IsRightJoyStickUp() && !IsRightJoyStickDown()) { // 摇杆回中
+        if (Latch_RJoy_Up) {
+            GSTCH_Data.F_RJoyUpLatched = true;
+            Latch_RJoy_Up = false;
+        } else {
+            GSTCH_Data.F_RJoyUpLatched = false;
+        }
+    } else {
+        GSTCH_Data.F_RJoyUpLatched = false;
+        if(IsRightJoyStickDown()) 
+        {Latch_RJoy_Up = false;}
+    }
+
+    // --- 下推处理 ---
+    if (IsRightJoyStickDown()) {
+        Latch_RJoy_Down = true;
+        Latch_RJoy_Up = false;
+    } else if (!IsRightJoyStickUp() && !IsRightJoyStickDown()) { // 摇杆回中
+        if (Latch_RJoy_Down) {
+            GSTCH_Data.F_RJoyDownLatched = true;
+            Latch_RJoy_Down = false;
+        } else {
+            GSTCH_Data.F_RJoyDownLatched = false;
+        }
+    } else {
+        GSTCH_Data.F_RJoyDownLatched = false;
+        if(IsRightJoyStickUp()) 
+        {Latch_RJoy_Down = false;}
     }
 }
+
+// TODO 腿长变化写在控制里面
+//     // 仅在允许的模式下运行（Free, Follow, Struggle）
+//     if (GEMCH_Mode != CHMode_RC_Free && GEMCH_Mode != CHMode_RC_Follow && GEMCH_Mode != CHMode_RC_Struggle) {
+//         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
+//         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
+//         GSTCH_Data.F_JoyUpLatched = false;
+//         GSTCH_Data.F_JoyDownLatched = false;
+//         return;
+//     }
+
+//     // 1. 检测上抬动作
+//     if (IsRightJoyStickUp()) {
+//         GSTCH_Data.F_JoyUpLatched = true;
+//     }
+//     // 2. 检测下拨动作
+//     if (IsRightJoyStickDown()) {
+//         GSTCH_Data.F_JoyDownLatched = true;
+//     }
+
+//     // 3. 检测回中触发（回中时判定刚才是否有推/拨动作）
+//     if (IsRightJoyStickUp() == false && IsRightJoyStickDown() == false) {
+//         // 上抬回中触发：Min -> Mid -> High
+//         if (GSTCH_Data.F_JoyUpLatched) {
+//             // 如果当前在 LegLenMin 附近，变到 LegLenMid
+//             if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenMid - 0.001f) {
+//                 GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;     
+//             } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenHigh - 0.001f) {
+//                 GST_RMCtrl.STCH_Default.LegLen1ManualDes = 0.500f;
+//             }
+//             // 如果当前已经接近 LegLenMid，变到 LegLenHigh
+//             if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenMid - 0.001f) {
+//                 GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;       
+//             } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenHigh - 0.001f) {
+//                 // GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenHigh;
+//                 GST_RMCtrl.STCH_Default.LegLen2ManualDes = 0.500f;
+//             }
+//             GSTCH_Data.F_JoyUpLatched = false; // 清除标志
+//         }
+        
+//         // // 下拨回中触发：High -> Mid -> Min
+//         // if (GSTCH_Data.F_JoyDownLatched) {
+//         //     // 如果当前在 High 附近，下调到 Mid
+//         //     if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMid + 0.001f) {
+//         //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
+//         //     } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMin + 0.001f) {
+//         //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMin;
+//         //     }
+//         //     // 如果当前在 Mid 附近，下调到 Min
+//         //     if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMid + 0.001f) {
+//         //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
+//         //     } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMin + 0.001f) {
+//         //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMin;
+//         //     }
+//         //     GSTCH_Data.F_JoyDownLatched = false; // 清除标志
+//         //}
+//     }
+
+//     // 5. 如果从未触发过上述逻辑且变量未初始化，设置默认值为中腿长
+//     if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < 0.01f) { // 简单初值保护
+//         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
+//     }
+//     if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < 0.01f) { // 简单初值保护
+//         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
+//     }
+// }
 
 
 /**
@@ -570,12 +536,12 @@ void ChModeControl_AutoSafeMode_RCControl(void) {
 }
 
 /**
- * @brief  遥控器模式下，坐下模式控制函数
- * @note   坐下模式下的控制策略
+ * @brief  遥控器模式下，待机模式控制函数
+ * @note   待机模式下的控制策略
  * @param  无
  * @retval 无
  */
-void ChModeControl_SittingMode_RCControl(void)
+void ChModeControl_StandbyMode_RCControl(void)
 {
     /*清空底盘相关的Des数据、位移、控制数据*/
     Chassis_AllDesDataReset();      //清空底盘相关的Des数据
@@ -624,6 +590,45 @@ void ChModeControl_StandUpMode_RCControl(void) {
     CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
 
+/**
+  * @brief  遥控器模式下，缓慢坐下模式控制函数
+  * @note   缓慢坐下模式下的控制策略
+  * @param  无
+  * @retval 无
+*/
+void ChModeControl_SitDownMode_RCControl(void) {
+    if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_SitDown < CHMode_AllMode_PreProcessTime)
+    {
+        /*腿长PID系数赋值*/
+        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
+        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
+
+        /*腿长TD系数赋值*/
+        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rSlowSitDown);   //左腿长TD系数r赋值
+        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rSlowSitDown);   //右腿长TD系数r赋值
+    }
+
+    Chassis_DisFBClear();           //底盘位移反馈值清零
+
+    /*配置默认可配置的控制量*/
+    float YawAngleVelDes_Pre = GSTCH_Data.YawAngleVelDes;   //目标偏航角速度上次值
+    float Leg1FFForce_Pre = GSTCH_Data.Leg1ForceDes;        //左腿前馈力上次值
+    float Leg2FFForce_Pre = GSTCH_Data.Leg2ForceDes;        //右腿前馈力上次值
+
+    GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMin;        //左腿目标腿长
+    GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMin;        //右腿目标腿长
+    GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
+    GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
+    GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
+    GST_RMCtrl.STCH_Default.YawAngleVelDes  = StepChangeValue(YawAngleVelDes_Pre, 0.0f, SlowSitDown_YawAngleVelBrakeStep);  //目标偏航角速度
+    GST_RMCtrl.STCH_Default.Leg1FFForce     = StepChangeValue(Leg1FFForce_Pre, LegFFForce_SlowSitDown, SlowSitDown_LegFFForceDecStep);  //左腿前馈力
+    GST_RMCtrl.STCH_Default.Leg2FFForce     = StepChangeValue(Leg2FFForce_Pre, LegFFForce_SlowSitDown, SlowSitDown_LegFFForceDecStep);  //右腿前馈力
+
+    /*********************从控制结构体中获取数据，进行相关解算*************************/
+    CH_MotionUpdateAndProcess(GST_RMCtrl);
+    //! 在模式切换函数中有个腿长判断函数位置，在那里实现的腿长小于一个值就切换到坐下模式 
+}
+
 
 /**
  * @brief  遥控器模式下，自由模式控制函数
@@ -649,8 +654,7 @@ void ChModeControl_FreeMode_RCControl(void) {
         GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
         GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
         GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
-        // TODO 如果是从Follow切换过来，速度是不是应该保持不变呢？
-        GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
+        GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB; //目标速度
         GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
         GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
         GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
@@ -661,7 +665,7 @@ void ChModeControl_FreeMode_RCControl(void) {
     // PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
     // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
-    /*配置默认可配置的控制量*/
+    // 只有这样才能实时修改
     GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
     GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
     
@@ -682,47 +686,6 @@ void ChModeControl_FreeMode_RCControl(void) {
     CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
 
-
-
-/**
-  * @brief  遥控器模式下，缓慢坐下模式控制函数
-  * @note   缓慢坐下模式下的控制策略
-  * @param  无
-  * @retval 无
-*/
-void ChModeControl_SlowSitDownMode_RCControl(void) {
-    if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_SlowSitDown < CHMode_AllMode_PreProcessTime)
-    {
-        /*腿长PID系数赋值*/
-        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
-        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
-
-        /*腿长TD系数赋值*/
-        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rSlowSitDown);   //左腿长TD系数r赋值
-        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rSlowSitDown);   //右腿长TD系数r赋值
-    }
-
-    Chassis_DisFBClear();           //底盘位移反馈值清零
-
-    /*配置默认可配置的控制量*/
-    float YawAngleVelDes_Pre = GSTCH_Data.YawAngleVelDes; //目标偏航角速度上次值
-    float Leg1FFForce_Pre = GSTCH_Data.Leg1ForceDes; //左腿前馈力上次值
-    float Leg2FFForce_Pre = GSTCH_Data.Leg2ForceDes; //右腿前馈力上次值
-
-    GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMin;        //左腿目标腿长
-    GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMin;        //右腿目标腿长
-    GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
-    GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
-    GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
-    GST_RMCtrl.STCH_Default.YawAngleVelDes  = StepChangeValue(YawAngleVelDes_Pre, 0.0f, SlowSitDown_YawAngleVelBrakeStep);  //目标偏航角速度
-    GST_RMCtrl.STCH_Default.Leg1FFForce     = StepChangeValue(Leg1FFForce_Pre, LegFFForce_SlowSitDown, SlowSitDown_LegFFForceDecStep);  //左腿前馈力
-    GST_RMCtrl.STCH_Default.Leg2FFForce     = StepChangeValue(Leg2FFForce_Pre, LegFFForce_SlowSitDown, SlowSitDown_LegFFForceDecStep);  //右腿前馈力
-
-    /*********************从控制结构体中获取数据，进行相关解算*************************/
-    CH_MotionUpdateAndProcess(GST_RMCtrl);
-    //! 在模式切换函数中有个腿长判断函数位置，在那里实现的腿长小于一个值就切换到坐下模式 
-}
-
 /**
  * @brief  遥控器模式下，跟随模式控制函数
  * @note   跟随模式下的控制策略
@@ -731,33 +694,53 @@ void ChModeControl_SlowSitDownMode_RCControl(void) {
  */
 void ChModeControl_FollowMode_RCControl(void) {
     /****************************该模式的前置处理****************************/
-    // if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_Follow < CHMode_AllMode_PreProcessTime)
-    // {
-    //     /*腿长PID系数赋值*/
-    //     PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
-    //     PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
+    if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_Free < CHMode_AllMode_PreProcessTime)
+    {
+        /*腿长PID系数赋值*/
+        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
+        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
-    //     /*腿长TD系数赋值*/
-    //     TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);   //左腿长TD系数r赋值
-    //     TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);   //右腿长TD系数r赋值
-    // }
+        /*腿长TD系数赋值*/
+        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);   //左腿长TD系数r赋值
+        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);   //右腿长TD系数r赋值
+        
+        Chassis_DisFBClear();                         //底盘位移反馈值清零
 
-    // /* 使用手动控制的三档高度 */
-    // GST_RMCtrl.STCH_Default.LegLen1Des = GST_RMCtrl.STCH_Default.LegLen1ManualDes;
-    // GST_RMCtrl.STCH_Default.LegLen2Des = GST_RMCtrl.STCH_Default.LegLen2ManualDes;
-    //待补充：Follow模式的控制策略
+        /*配置默认可配置的控制量*/
+        GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+        GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
+        GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB;             //目标速度
+        GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
+        GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
+        GST_RMCtrl.STCH_Default.Leg1FFForce     = LegFFForce_Gravity_1;  //左腿前馈力（静止时的默认值）
+        GST_RMCtrl.STCH_Default.Leg2FFForce     = LegFFForce_Gravity_2;  //右腿前馈力（静止时的默认值）
+    }
+    //* 方便调参数
+    /*腿长PID系数赋值*/
+    // PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
+    // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
-// 	else if( g_stDBus.stRC.SW_L == RC_SW_UP && abs(X_Offset) <= RC_CH_VALUE_CHASSIS_DEAD )
-// 	{
-// 		Chassis_Follow();   //底盘跟随模式
-// 		LQR_Yaw_Delta = Clip(Angle_Inf_To_180(Benjamin_Position),-90,90);
-// 		Turn_Flag = false;
-// 	}
+    // 只有这样才能实时修改
+    GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
+    GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+    
+    /*************************任务开始一段时间后*************************/
+    /*检测是否进入小陀螺模式*/
+    static bool F_TopMode = false;
+    F_TopMode = ChModeControl_FreeMode_RCControl_IsEnterTopMode(GSTCH_Data);
+
+    /*如果不是小陀螺模式，正常进行速度、转向的调控*/
+    if(F_TopMode == false)
+    {ChModeControl_FreeMode_RCControl_MoveHandler(&GSTCH_Data, &GST_RMCtrl);} //移动处理函数，包括平移、转弯的速度获取
+
+    /*如果是小陀螺模式，进行小陀螺的相关处理*/
+    else if(F_TopMode == true)
+    {ChModeControl_FreeMode_RCControl_TopHandler(&GSTCH_Data, &GST_RMCtrl);} //小陀螺处理函数
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
-    // CH_MotionUpdateAndProcess(GST_RMCtrl);
+    CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
-
 
 /**
  * @brief  遥控器模式下，离地模式控制函数
@@ -767,7 +750,6 @@ void ChModeControl_FollowMode_RCControl(void) {
  */
 void ChModeControl_OffGroundMode_RCControl(void) {
     // TODO 腿部前馈力要不要变？PID、TD参数要不要变？腿长是否需要考虑一下变化？
-    // FIXME 现在离地后如果底盘Pitch过大可能会腿部抽搐，考虑一下怎么解决
     
     /****************************该模式的前置处理****************************/
     if(RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_OffGround < CHMode_AllMode_PreProcessTime)
@@ -787,7 +769,7 @@ void ChModeControl_OffGroundMode_RCControl(void) {
 
     /*************************任务开始一段时间后*************************/
     GST_RMCtrl.STCH_Default.DisDes          = GSTCH_Data.DisFB; //目标位移
-    GST_RMCtrl.STCH_Default.VelDes          = 0.0f;             //目标速度
+    GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB; //目标速度
     GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
     GST_RMCtrl.STCH_Default.YawAngleVelDes  = 0.0f;             //目标偏航角速度
 
@@ -795,22 +777,27 @@ void ChModeControl_OffGroundMode_RCControl(void) {
     if(GSTCH_Data.F_OffGround1 == true)
     {GST_RMCtrl.STCH_Default.LegLen1Des  = LegLenOffGround;}
     else
-    {GST_RMCtrl.STCH_Default.LegLen1Des  = LegLenMid;}
+    {GST_RMCtrl.STCH_Default.LegLen1Des  = GST_RMCtrl.STCH_Default.LegLen1ManualDes;}
 
     /*右腿目标腿长*/
     if(GSTCH_Data.F_OffGround2 == true)
     {GST_RMCtrl.STCH_Default.LegLen2Des  = LegLenOffGround;}
     else
-    {GST_RMCtrl.STCH_Default.LegLen2Des  = LegLenMid;}
-
-    GST_RMCtrl.STCH_Force.Leg1FDes = LegFFForce_OffGround;         //左腿力目标值
-    GST_RMCtrl.STCH_Force.Leg1TDes = GSTCH_Data.Leg1TorqueDes;     //左腿力矩目标值
-    GST_RMCtrl.STCH_Force.Leg2FDes = LegFFForce_OffGround;         //右腿力目标值
-    GST_RMCtrl.STCH_Force.Leg2TDes = GSTCH_Data.Leg2TorqueDes;     //右腿力矩目标值
+    {GST_RMCtrl.STCH_Default.LegLen2Des  = GST_RMCtrl.STCH_Default.LegLen2ManualDes;}
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
     CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
+
+/**
+ * @brief  遥控器模式下，跳跃模式控制函数
+ * @note   跳跃模式下的控制策略
+ * @param  无
+ * @retval 无
+ */
+// void ChModeControl_JumpMode_RCControl(void) {
+//     // TODO 跳跃模式控制函数待完成
+// }
 
 // #pragma endregion
 
@@ -834,8 +821,8 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow) {
             break;
 
         /*RC坐下模式*/
-        case CHMode_RC_Sitting:
-            ChModeControl_SittingMode_RCControl();
+        case CHMode_RC_Standby:
+            ChModeControl_StandbyMode_RCControl();
             break;
 
         /*RC起立模式*/
@@ -849,8 +836,8 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow) {
             break;
 
         /*RC底盘缓慢坐下模式*/
-        case CHMode_RC_SlowSitDown:
-            ChModeControl_SlowSitDownMode_RCControl();
+        case CHMode_RC_SitDown:
+            ChModeControl_SitDownMode_RCControl();
             break;
 
         /*RC底盘跟随模式*/
@@ -863,9 +850,9 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow) {
             ChModeControl_OffGroundMode_RCControl();
             break;
 
-        /*RC脱困模式*/
-        case CHMode_RC_Struggle:
-            ChModeControl_StruggleMode_RCControl();
-            break;
+        /*RC跳跃模式*/
+        // case CHMode_RC_Jump:
+        //     ChModeControl_JumpMode_RCControl();
+        //     break;
     }
 }
