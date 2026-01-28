@@ -146,7 +146,7 @@ float PID_LegLen_KdNorm = 120000.0f;     // 腿长PID：正常时的Kd值
 
 //* 以m为单位的腿长 
 float LegLenMin   = 0.108f;   //腿长最小值，单位m
-float LegLenMinTH = 0.012f;     //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
+float LegLenMinTH = 0.022f;     //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
 float LegLenLow  = 0.140f;    //低腿长，单位m
 float LegLenMid  = 0.200f;    //中腿长，单位m
 float LegLenHigh = 0.300f;    //高腿长，单位m

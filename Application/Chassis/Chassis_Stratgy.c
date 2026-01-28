@@ -130,7 +130,7 @@ bool _IsTrans_StandUp_To_Free(Chassis_ModeChooseParameter_StructTypeDef ST_ModeC
     float ThisModeStartTime = ST_ModeChoosePara.MC_ST_ModeStartTime.RC_StandUp; //起立模式开始时间
     float ThisModeTotalTime = TimeNow - ThisModeStartTime;  //起立模式总时长 = 当前时间 - 起立模式开始时间
     // 如果StandUp模式总时间没有到，继续保持StandUp模式
-    if(ThisModeTotalTime < CHMode_RC_StandUp_TotalTime)
+    if(ThisModeTotalTime >= CHMode_RC_StandUp_TotalTime)
     {return true;}
     else
     {return false;}
@@ -203,7 +203,6 @@ bool _IsTrans_To_Landed(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChooseP
 ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara) 
 {
     // 状态变量准备
-
     ChassisMode_EnumTypeDef CurrentMode = ST_ModeChoosePara.MC_ModePre;
     ChassisMode_EnumTypeDef NextMode = CurrentMode;
 
@@ -339,10 +338,10 @@ void ChassisStrategy_ModeStartTimeUpdate(CHData_StructTypeDef* pCHData,
  */
 void CH_ChassisModeUpdate(void) {
     Chassis_ModeChooseParameter_StructTypeDef ST_ModeChoosePara_tmp;
-    ChassisStrategy_ModeChooseParaStructUpdate(&ST_ModeChoosePara_tmp);  // 更新底盘模式选择参数结构体
     //* 实现的是局部变量：ModeTemp、MC_ModePre 向全局变量
     // GEMCH_ModePre、GEMCH_Mode 赋值
     GEMCH_ModePre = GEMCH_Mode;
+    ChassisStrategy_ModeChooseParaStructUpdate(&ST_ModeChoosePara_tmp);  // 更新底盘模式选择参数结构体
     //! 这个函数会在这里检测当前是否有遥控器指令指示需要切换到什么状态
     GEMCH_Mode = ChassisStrategy_ModeChoose_RCControl(ST_ModeChoosePara_tmp);  // 调用底盘模式选择函数
     ChassisStrategy_ModeStartTimeUpdate(&GSTCH_Data, GEMCH_Mode, GEMCH_ModePre);
@@ -651,8 +650,8 @@ void ChModeControl_FreeMode_RCControl(void) {
         Chassis_DisFBClear();                         //底盘位移反馈值清零
 
         /*配置默认可配置的控制量*/
-        GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
-        GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
         GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
         GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB; //目标速度
         GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
@@ -666,8 +665,8 @@ void ChModeControl_FreeMode_RCControl(void) {
     // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
     // 只有这样才能实时修改
-    GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
-    GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+    GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
+    GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
     
     /*************************任务开始一段时间后*************************/
     /*检测是否进入小陀螺模式*/
@@ -707,8 +706,8 @@ void ChModeControl_FollowMode_RCControl(void) {
         Chassis_DisFBClear();                         //底盘位移反馈值清零
 
         /*配置默认可配置的控制量*/
-        GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
-        GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
+        GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
         GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
         GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB;             //目标速度
         GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
@@ -722,8 +721,8 @@ void ChModeControl_FollowMode_RCControl(void) {
     // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
     // 只有这样才能实时修改
-    GST_RMCtrl.STCH_Default.LegLen1Des      = GST_RMCtrl.STCH_Default.LegLen1ManualDes; //左腿目标腿长
-    GST_RMCtrl.STCH_Default.LegLen2Des      = GST_RMCtrl.STCH_Default.LegLen2ManualDes; //右腿目标腿长
+    GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
+    GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
     
     /*************************任务开始一段时间后*************************/
     /*检测是否进入小陀螺模式*/
@@ -777,13 +776,13 @@ void ChModeControl_OffGroundMode_RCControl(void) {
     if(GSTCH_Data.F_OffGround1 == true)
     {GST_RMCtrl.STCH_Default.LegLen1Des  = LegLenOffGround;}
     else
-    {GST_RMCtrl.STCH_Default.LegLen1Des  = GST_RMCtrl.STCH_Default.LegLen1ManualDes;}
+    {GST_RMCtrl.STCH_Default.LegLen1Des  = LegLenMid;}
 
     /*右腿目标腿长*/
     if(GSTCH_Data.F_OffGround2 == true)
     {GST_RMCtrl.STCH_Default.LegLen2Des  = LegLenOffGround;}
     else
-    {GST_RMCtrl.STCH_Default.LegLen2Des  = GST_RMCtrl.STCH_Default.LegLen2ManualDes;}
+    {GST_RMCtrl.STCH_Default.LegLen2Des  = LegLenMid;}
 
     /*********************从控制结构体中获取数据，进行相关解算*************************/
     CH_MotionUpdateAndProcess(GST_RMCtrl);
