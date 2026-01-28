@@ -27,11 +27,11 @@
 
 #include "TIM_Config.h"
 
-float PID_RollComp_Kp_tmp = 20.0f;  // Roll轴补偿PID：比例系数Kp
+float PID_RollComp_Kp_tmp = 1500.0f;  // Roll轴补偿PID：比例系数Kp
 float PID_RollComp_Ki_tmp = 0.0f;    // Roll轴补偿PID：积分系数Ki，取0表示不使用积分
-float PID_RollComp_Kd_tmp = 1000.0f;              // Roll轴补偿PID：微分系数Kd
+float PID_RollComp_Kd_tmp = 35000.0f;              // Roll轴补偿PID：微分系数Kd
 
-float K_Trac_Norm_tmp = 0.0f;
+float K_Trac_Norm_tmp = 3.0f;
 // 底盘的数据修改、处理、更新相关函数：允许更改正式结构体的值
 // TODO 可能需要改一下位置
 //! 由于需要用到部分前面用到的函数修改和处理写在后面了（然后我改了一下函数名称）
@@ -307,8 +307,8 @@ void _HM_StruggleStateDetect(void)
     // 计算轮毂电机速度误差
     float HM1_VelFB = GSTCH_HM1.AngleVelFB * R_w; // 左轮轮毂电机线速度，单位m/s
     float HM2_VelFB = GSTCH_HM2.AngleVelFB * R_w; // 右轮轮毂电机线速度，单位m/s
-    float HM1_VelRef = GSTCH_Data.VelFB + GSTCH_Data.xC1_dot - R_l * GSTCH_Data.YawAngleVelFB; // 左轮轮毂电机参考线速度，单位m/s
-    float HM2_VelRef = GSTCH_Data.VelFB + GSTCH_Data.xC2_dot + R_l * GSTCH_Data.YawAngleVelFB; // 右轮轮毂电机参考线速度，单位m/s
+    float HM1_VelRef = GSTCH_Data.VelFB + GSTCH_Data.xC1_dot - R_l * GSTCH_Data.YawAngleVelFB * A2R; // 左轮轮毂电机参考线速度，单位m/s
+    float HM2_VelRef = GSTCH_Data.VelFB + GSTCH_Data.xC2_dot + R_l * GSTCH_Data.YawAngleVelFB * A2R; // 右轮轮毂电机参考线速度，单位m/s
     float HM1_VelErr = HM1_VelRef - HM1_VelFB; // 左轮轮毂电机速度误差，单位m/s
     float HM2_VelErr = HM2_VelRef - HM2_VelFB; // 右轮轮毂电机速度误差，单位m/s
 

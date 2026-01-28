@@ -399,8 +399,8 @@ ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseP
     else if (_ChIsEnter_OffGroundMode_RCControl(ST_ModeChoosePara) == true)
     {ModeTemp = CHMode_RC_OffGround;}      //进入RC底盘离地模式
 
-    else if (_ChIsEnter_StruggleMode_RCControl(ST_ModeChoosePara) == true)
-    {ModeTemp = CHMode_RC_Struggle;}      //进入RC底盘脱困模式
+    // else if (_ChIsEnter_StruggleMode_RCControl(ST_ModeChoosePara) == true)
+    // {ModeTemp = CHMode_RC_Struggle;}      //进入RC底盘脱困模式
 
     return ModeTemp;
 }
@@ -503,33 +503,34 @@ void CH_LegLenAdjust_Process(void) {
             if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenMid - 0.001f) {
                 GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;     
             } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenHigh - 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenHigh;
+                GST_RMCtrl.STCH_Default.LegLen1ManualDes = 0.500f;
             }
             // 如果当前已经接近 LegLenMid，变到 LegLenHigh
             if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenMid - 0.001f) {
                 GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;       
             } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenHigh - 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenHigh;
+                // GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenHigh;
+                GST_RMCtrl.STCH_Default.LegLen2ManualDes = 0.500f;
             }
             GSTCH_Data.F_JoyUpLatched = false; // 清除标志
         }
         
-        // 下拨回中触发：High -> Mid -> Min
-        if (GSTCH_Data.F_JoyDownLatched) {
-            // 如果当前在 High 附近，下调到 Mid
-            if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMid + 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-            } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMin + 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMin;
-            }
-            // 如果当前在 Mid 附近，下调到 Min
-            if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMid + 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
-            } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMin + 0.001f) {
-                GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMin;
-            }
-            GSTCH_Data.F_JoyDownLatched = false; // 清除标志
-        }
+        // // 下拨回中触发：High -> Mid -> Min
+        // if (GSTCH_Data.F_JoyDownLatched) {
+        //     // 如果当前在 High 附近，下调到 Mid
+        //     if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMid + 0.001f) {
+        //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
+        //     } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMin + 0.001f) {
+        //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMin;
+        //     }
+        //     // 如果当前在 Mid 附近，下调到 Min
+        //     if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMid + 0.001f) {
+        //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
+        //     } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMin + 0.001f) {
+        //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMin;
+        //     }
+        //     GSTCH_Data.F_JoyDownLatched = false; // 清除标志
+        //}
     }
 
     // 5. 如果从未触发过上述逻辑且变量未初始化，设置默认值为中腿长

@@ -86,8 +86,8 @@ void VofaPrint(void)
 /*4*/   (float)GstCH_LegLen1PID.Des,
 /*5*/   (float)GstCH_LegLen1PID.FB,
 /*6*/   (float)GstCH_LegLen1PID.U,
-/*7*/   (float)GSTCH_Data.VelBody_HM_Obs,
-/*8*/   (float)GSTCH_Data.AccXFB,
+/*7*/   (float)GSTCH_HMTorqueComp.Err_HM1,
+/*8*/   (float)GSTCH_HMTorqueComp.Err_HM2,
 /*9*/   (float)GEMCH_Mode * 10.0f
     );
 }

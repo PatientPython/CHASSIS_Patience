@@ -113,8 +113,8 @@ float TD_LegLen_rSlowSitDown = 0.2f;  // 腿长TD：缓慢坐下模式下的速�
 float PID_LegLen_KpStandUp = 800.0f;  // 腿长PID：起立状态下Kp值
 float PID_LegLen_KdStandUp = 20000.0f;  // 腿长PID：起立状态下Kd值
 //* 实测效果很好，下二级台阶和飞小坡正常
-float PID_LegLen_KpNorm = 2000.0f;     // 腿长PID：正常时的Kp值
-float PID_LegLen_KdNorm = 10000.0f;     // 腿长PID：正常时的Kd值
+float PID_LegLen_KpNorm = 1500.0f;     // 腿长PID：正常时的Kp值
+float PID_LegLen_KdNorm = 120000.0f;     // 腿长PID：正常时的Kd值
 
 /*Roll轴补偿相关*/
 // TODO 可以试试给小陀螺单独一套PID参数

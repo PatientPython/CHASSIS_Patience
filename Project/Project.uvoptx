@@ -250,6 +250,16 @@
           <WinNumber>1</WinNumber>
           <ItemText>ChassisRollAngleZP</ItemText>
         </Ww>
+        <Ww>
+          <count>19</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>GstCH_LegLen1PID</ItemText>
+        </Ww>
+        <Ww>
+          <count>20</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>GstCH_LegLen2PID</ItemText>
+        </Ww>
       </WatchWindow1>
       <Tracepoint>
         <THDelay>0</THDelay>
