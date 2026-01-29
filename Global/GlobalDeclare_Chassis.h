@@ -359,6 +359,10 @@ extern float PID_LegLen_KdStandUp;
 extern float PID_LegLen_KpNorm;
 extern float PID_LegLen_KdNorm;
 
+//* 跳跃模式相关PID参数
+extern float PID_LegLen_KpJump;     // 腿长PID：跳跃起跳阶段Kp值
+extern float PID_LegLen_KdJump;     // 腿长PID：跳跃起跳阶段Kd值
+
 // #pragma endregion
 
 // #pragma region /****底盘平移、旋转控制相关*****************************/
@@ -409,6 +413,11 @@ extern float LegLenMid;
 extern float LegLenHigh;
 extern float LegLenOffGround;
 
+//* 跳跃模式相关腿长参数
+extern float LegLenJumpTarget;           // 跳跃目标腿长
+extern float LegLenJumpRetractThreshold; // 收腿触发阈值
+extern float LegLenJumpRetractTarget;    // 收腿目标腿长
+
 extern const float m_w;
 extern const float R_l;
 extern const float R_w;
@@ -420,6 +429,7 @@ extern const float CH_Phys_InertialCoeff;
 
 extern const float LegFFForce_Gravity_1;
 extern const float LegFFForce_Gravity_2;
+extern float LegFFForce_Jump;        // 跳跃起跳阶段的腿部前馈力
 extern float LegFFForce_Inertial_1;
 extern float LegFFForce_Inertial_2;
 

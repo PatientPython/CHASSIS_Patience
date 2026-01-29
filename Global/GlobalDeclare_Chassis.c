@@ -116,6 +116,10 @@ float PID_LegLen_KdStandUp = 20000.0f;  // 腿长PID：起立状态下Kd值
 float PID_LegLen_KpNorm = 1500.0f;     // 腿长PID：正常时的Kp值
 float PID_LegLen_KdNorm = 120000.0f;     // 腿长PID：正常时的Kd值
 
+//* 跳跃模式相关PID参数
+float PID_LegLen_KpJump = 1000.0f;     // 腿长PID：跳跃起跳阶段Kp值（中等偏软，因为有足够大的前馈）
+float PID_LegLen_KdJump = 0.0f;        // 腿长PID：跳跃起跳阶段Kd值（零）
+
 /*Roll轴补偿相关*/
 // TODO 可以试试给小陀螺单独一套PID参数
 // 20,1000是我自己测出来的
@@ -152,6 +156,11 @@ float LegLenMid  = 0.200f;    //中腿长，单位m
 float LegLenHigh = 0.300f;    //高腿长，单位m
 float LegLenOffGround = 0.250f; //离地腿长，单位m
 
+//* 跳跃模式相关腿长参数
+float LegLenJumpTarget = 0.350f;     //跳跃目标腿长：机械限位0.400m减去安全余量0.050m，单位m
+float LegLenJumpRetractThreshold = 0.330f; //收腿触发阈值：目标腿长的95%左右，单位m
+float LegLenJumpRetractTarget = 0.200f;    //收腿目标腿长：中腿长0.200m，单位m
+
 /*底盘零点补偿相关*/
 // 换车时需要修改
 float ChassisPitchAngleZP = 1.8f;  // 底盘Pitch轴零点补偿值，单位度，正值表示实际需要抬头才能平衡
@@ -177,6 +186,38 @@ const float CH_Phys_InertialCoeff = (CH_Phys_EffMass / (2.0f * R_l));  // 惯性
 // 左右腿静态重力补偿，单位N
 const float LegFFForce_Gravity_1 = CH_Phys_EffMass * GravityAcc_Harbin;
 const float LegFFForce_Gravity_2 = CH_Phys_EffMass * GravityAcc_Harbin;
+
+/*
+ * 跳跃前馈力计算说明（爆发起跳阶段 Thrust Phase）：
+ * 
+ * 目标：跳跃0.200m高的台阶
+ * 
+ * 起跳前腿长（下蹲）：LegLenLow = 0.180m
+ * 目标腿长（起跳）：LegLenJumpTarget = 0.350m
+ * 加速行程 d_stroke = 0.350 - 0.180 = 0.170m
+ * 
+ * 物理计算：
+ * 1. 目标高度 H = 0.2m，所需起跳速度 v_takeoff = sqrt(2*g*H) ≈ 1.98 m/s
+ * 2. 根据动能定理：(F_avg - mg) * d_stroke = 0.5 * m * v_takeoff^2 = m * g * H
+ * 3. 平均推力 F_avg = mg + mg*H/d_stroke = mg * (1 + H/d_stroke)
+ *    = mg * (1 + 0.2/0.17) ≈ 2.17 * mg
+ * 
+ * 这意味着电机需要输出约2.17倍机身重力的爆发力。
+ * 
+ * 单腿计算：
+ * - 单腿等效质量 M_eff = 0.5*m_b + eta_l*m_l = 0.5*12.5 + 0.3*1.72 ≈ 6.766 kg
+ * - 单腿重力补偿 = 6.766 * 9.8 ≈ 66.3 N
+ * - 起跳额外所需力 = 1.17 * 66.3 ≈ 77.6 N
+ * - 总前馈力 = 66.3 + 77.6 ≈ 144 N
+ * 
+ * 控制策略：
+ * - 前馈力矩（Feed-Forward）：PID响应太慢，直接注入前馈电流产生爆发力
+ * - 推力曲线设计为"先大后小"的脉冲形状，克服静摩擦并减少末端冲击
+ * - LQR保持高权重，通过轮子高频抖动维持机身姿态垂直
+ * 
+ * 实际上车测试后，根据跳跃效果调整此值
+ */
+float LegFFForce_Jump = 144.0f;  // 跳跃起跳阶段的腿部前馈力，单位N（约2.17倍重力，产生爆发起跳）
 
 // 左右腿侧向惯性力补偿，单位N
 float LegFFForce_Inertial_1 = 0.0f;  // 正常模式下左腿侧向惯性力补偿，单位N

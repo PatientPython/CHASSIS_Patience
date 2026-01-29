@@ -61,6 +61,7 @@ void ChModeControl_SitDownMode_RCControl(void);
 void ChModeControl_FreeMode_RCControl(void);
 void ChModeControl_FollowMode_RCControl(void);
 void ChModeControl_OffGroundMode_RCControl(void);
+void ChModeControl_JumpMode_RCControl(void);
 
 //* 模式控制最终执行函数
 void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow);

@@ -791,12 +791,89 @@ void ChModeControl_OffGroundMode_RCControl(void) {
 /**
  * @brief  遥控器模式下，跳跃模式控制函数
  * @note   跳跃模式下的控制策略
+ *         起跳阶段：目标腿长0.350m，PID(Kp=1000, Kd=0)，前馈力约144N
+ *         收腿阶段：当腿长>=0.330m或离地后，目标腿长0.200m，PID(Kp=1500, Kd=120000)
  * @param  无
  * @retval 无
  */
-// void ChModeControl_JumpMode_RCControl(void) {
-//     // TODO 跳跃模式控制函数待完成
-// }
+void ChModeControl_JumpMode_RCControl(void) {
+    // 静态变量：记录当前跳跃阶段
+    // 0: 起跳阶段(伸腿)  1: 收腿阶段
+    static uint8_t JumpPhase = 0;
+    
+    // 前置处理：模式首次进入时初始化
+    // 注意：PID参数不在这里设置，保持Free/Follow模式的参数平滑过渡
+    if (RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_Jump < CHMode_AllMode_PreProcessTime) {
+        JumpPhase = 0;  // 重置为起跳阶段
+        
+        // 只进行位移清零，PID参数保持上一模式的值（Free/Follow的正常参数）
+        Chassis_DisFBClear();
+        return;
+    }
+    
+    // 获取当前腿长平均值
+    float LegLenAvg = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f;
+    
+    // 检测是否需要切换到收腿阶段
+    // 条件1：腿长达到目标腿长的95%左右(0.330m)
+    // 条件2：检测到离地（任意一条腿离地就切换）
+    if (JumpPhase == 0) {
+        if ((LegLenAvg >= LegLenJumpRetractThreshold) || 
+            (GSTCH_Data.F_OffGround1 == true) || 
+            (GSTCH_Data.F_OffGround2 == true)) {
+            JumpPhase = 1;  // 切换到收腿阶段
+        }
+    }
+    
+    // 根据当前阶段设置目标值和PID参数
+    if (JumpPhase == 0) {
+        // ========== 起跳阶段（伸腿） ==========
+        // PID参数：中等偏软，依赖前馈力产生爆发
+        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump, 0.0f, PID_LegLen_KdJump);
+        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump, 0.0f, PID_LegLen_KdJump);
+        
+        // TD参数：较快速度跟踪
+        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+        
+        // 目标腿长：起跳目标
+        GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpTarget;
+        GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpTarget;
+        
+        // 前馈力：爆发起跳（约2.17倍重力）
+        GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Jump;
+        GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Jump;
+        
+    } else {
+        // ========== 收腿阶段 ==========
+        // PID参数：中等偏大，微分很大（正常运行的参数）
+        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm);
+        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm);
+        
+        // TD参数：正常
+        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+        
+        // 目标腿长：中腿长（准备落地）
+        GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpRetractTarget;
+        GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpRetractTarget;
+        
+        // 前馈力：恢复为重力补偿
+        GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Gravity_1;
+        GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Gravity_2;
+    }
+    
+    // 其他控制量
+    GST_RMCtrl.STCH_Default.VelDes = 0.0f;
+    GST_RMCtrl.STCH_Default.YawDeltaDes = 0.0f;
+    GST_RMCtrl.STCH_Default.YawAngleVelDes = 0.0f;
+    
+    // LQR会自动处理位移目标值，保持当前位置
+    GST_RMCtrl.STCH_Default.DisDes = GSTCH_Data.DisFB;
+    
+    // 调用运动处理函数
+    CH_MotionUpdateAndProcess(GST_RMCtrl);
+}
 
 // #pragma endregion
 
