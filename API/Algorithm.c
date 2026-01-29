@@ -1173,16 +1173,16 @@ void KF_ChassisVel_StructInit(KF_StructTypeDef *KFptr, float dt) {
     //? 对角矩阵版本（好调参）
     // 调大Q[0][0]更怀疑模型预测的先验速度，倾向于相信传感器的观测数据
     // 调大Q[1][1]更怀疑模型预测的先验加速度，倾向于相信传感器的观测数据
-    KFptr->Q[0][0] = 0.001f; KFptr->Q[0][1] = 0.0f;
-    KFptr->Q[1][0] = 0.0f;   KFptr->Q[1][1] = 0.1f; 
+    // KFptr->Q[0][0] = 0.001f; KFptr->Q[0][1] = 0.0f;
+    // KFptr->Q[1][0] = 0.0f;   KFptr->Q[1][1] = 0.1f; 
     //? 离散化白噪声加速度模型版本（不好调参） 
     // 如果假设噪声主要来自加加速度（跃度），根据离散白噪声加速度模型，理论上的Q矩阵如下：
     // Q = sigma_a^2 * [[dt^3/3, dt^2/2], [dt^2/2, dt]]
-    // float sigma_a = 0.1f; // 假设的加加速度噪声标准差，单位：m/s^3
-    // KFptr->Q[0][0] = MySqr(sigma_a) * MyCube(dt) / 3.0f;
-    // KFptr->Q[0][1] = MySqr(sigma_a) * MySqr(dt) / 2.0f;
-    // KFptr->Q[1][0] = KFptr->Q[0][1];
-    // KFptr->Q[1][1] = MySqr(sigma_a) * dt;
+    float sigma_a = 10.0f; // 假设的加加速度噪声标准差，单位：m/s^3
+    KFptr->Q[0][0] = MySqr(sigma_a) * MyCube(KFptr->dt) / 3.0f;
+    KFptr->Q[0][1] = MySqr(sigma_a) * MySqr(KFptr->dt) / 2.0f;
+    KFptr->Q[1][0] = KFptr->Q[0][1];
+    KFptr->Q[1][1] = MySqr(sigma_a) * KFptr->dt;
 
     //* R_c (2*2)测量噪声协方差矩阵（对角矩阵）
     // 需要调参：传感器的噪声
