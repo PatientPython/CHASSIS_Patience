@@ -40,12 +40,24 @@ typedef enum {
     // 待补充
 } ChassisMode_EnumTypeDef;
 
+
+
 /*底盘运动方向相关枚举*/
 typedef enum {
     MoveDirection_Brake,   // 停止
     MoveDirection_Forward, // 前进
     MoveDirection_Backward // 后退
 } Chassis_MoveDirection_EnumTypeDef;
+
+/*跳跃阶段枚举定义*/
+typedef enum {
+    CH_JumpPhase_Wait = 0,     // 等待
+    CH_JumpPhase_Compress,     // 压缩蓄力
+    CH_JumpPhase_Takeoff,      // 起跳伸展
+    CH_JumpPhase_Retract,      // 收腿
+    CH_JumpPhase_AirFree,      // 空中自由
+    CH_JumpPhase_Landing,      // 着陆缓冲
+} ChassisJumpPhase_EnumTypeDef;
 // #pragma endregion
 
 // #pragma region
@@ -272,12 +284,10 @@ typedef struct {
     /*标志位相关*/
     bool F_OffGround1;  // 左腿离地状态标志位，true表示离地，false表示未离地
     bool F_OffGround2;  // 右腿离地状态标志位，true表示离地，false表示未离地
-
-    bool F_SlipHM1;     // 左轮打滑状态标志位，true表示打滑，false表示未打滑
-    bool F_SlipHM2;     // 右轮打滑状态标志位，true表示打滑，false表示未打滑
-
-    bool F_BlockHM1;    // 左轮受阻状态标志位，true表示受阻，false表示未受阻
-    bool F_BlockHM2;    // 右轮受阻状态标志位，true表示受阻，false表示未受阻
+    
+    bool F_JumpTakeoff; // 跳跃起跳阶段标志位，true表示处于起跳阶段，false表示不处于起跳阶段
+    bool F_JumpRetract;  // 跳跃收腿阶段标志位，true表示处于收腿阶段，false表示不处于收腿阶段
+    bool F_JumpLanding;  // 跳跃着陆阶段标志位，true表示处于着陆阶段，false表示不处于着陆阶段
 } CHData_StructTypeDef;
 // #pragma endregion
 
@@ -359,10 +369,19 @@ extern float PID_LegLen_KdStandUp;
 extern float PID_LegLen_KpNorm;
 extern float PID_LegLen_KdNorm;
 
-//* 跳跃模式相关PID参数
-extern float PID_LegLen_KpJump;     // 腿长PID：跳跃起跳阶段Kp值
-extern float PID_LegLen_KdJump;     // 腿长PID：跳跃起跳阶段Kd值
+extern float PID_LegLen_KpJump_Compress;         // 压缩阶段Kp
+extern float PID_LegLen_KdJump_Compress;         // 压缩阶段Kd
+extern float PID_LegLen_KpJump_Takeoff;          // 起跳阶段远距离Kp
+extern float PID_LegLen_KdJump_Takeoff;          // 起跳阶段远距离Kd
+extern float PID_LegLen_KpJump_Retract;          // 收腿阶段远距离Kp
+extern float PID_LegLen_KdJump_Retract;          // 收腿阶段远距离Kd
+extern float PID_LegLen_KpJump_AirFree;          // 空中自由阶段Kp
+extern float PID_LegLen_KdJump_AirFree;          // 空中自由阶段Kd
+extern float PID_LegLen_KpJump_Landing;          // 着陆阶段Kp
 
+/*跳跃阶段全局变量，用于VOFA观察*/
+extern ChassisJumpPhase_EnumTypeDef JumpPhase;
+extern float PID_LegLen_KdJump_Landing;          // 着陆阶段Kd
 // #pragma endregion
 
 // #pragma region /****底盘平移、旋转控制相关*****************************/
@@ -414,6 +433,7 @@ extern float LegLenHigh;
 extern float LegLenOffGround;
 
 //* 跳跃模式相关腿长参数
+extern float LegLenJumpCompressTarget;       // 起跳触发阈值
 extern float LegLenJumpTarget;           // 跳跃目标腿长
 extern float LegLenJumpRetractThreshold; // 收腿触发阈值
 extern float LegLenJumpRetractTarget;    // 收腿目标腿长

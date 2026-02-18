@@ -62,8 +62,6 @@ void ChassisControl(void) {
     CH_RCInputPre_Process();     // 遥控器指令预处理函数
     //* 更新底盘模式选择相关变量、读取当前模式
     CH_ChassisModeUpdate();
-    GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-    GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
     // 检测到安全模式之后会在这里执行清零操作
     ChassisModeControl_RCControl(GEMCH_Mode);
 }

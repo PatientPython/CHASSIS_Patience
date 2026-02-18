@@ -17,6 +17,7 @@
 #include "TIM_Config.h"
 #include "Chassis_Stratgy.h"
 
+
 /**
   * @brief  底盘模式选择参数结构体更新函数
   * @note   把底盘模式选择的相关参数，更新到底盘模式选择参数结构体中，以方便后面的模式选择处理
@@ -204,6 +205,7 @@ ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseP
 {
     // 状态变量准备
     ChassisMode_EnumTypeDef CurrentMode = ST_ModeChoosePara.MC_ModePre;
+    // 默认返回当前状态
     ChassisMode_EnumTypeDef NextMode = CurrentMode;
 
     // 用于记忆跳跃或者离地前是 Free 还是 Follow（默认是free）
@@ -249,7 +251,9 @@ ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseP
             break;
 
         case CHMode_RC_SitDown: 
-            if (_IsTrans_SitDown_To_Standby(ST_ModeChoosePara)) NextMode = CHMode_RC_Standby;
+            if (_IsTrans_SitDown_To_Standby(ST_ModeChoosePara)) {
+                NextMode = CHMode_RC_Standby;
+            }
             break;
 
         /* --- 核心运动模式 (Free) --- */
@@ -274,7 +278,7 @@ ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseP
         /* --- 特殊动作 (Jump) --- */
         case CHMode_RC_Jump:
             // 检测到落地 -> 回到 LastActiveMode (Free 或 Follow)
-            if (_IsTrans_To_Landed(ST_ModeChoosePara)) { 
+            if (GSTCH_Data.F_JumpLanding && _IsTrans_To_Landed(ST_ModeChoosePara)) { 
                 NextMode = LastActiveMode; 
             }
             break;
@@ -291,7 +295,6 @@ ChassisMode_EnumTypeDef ChassisStrategy_ModeChoose_RCControl(Chassis_ModeChooseP
             NextMode = CHMode_RC_ManualSafe;
             break;
     }
-
     return NextMode;
 }
 
@@ -438,71 +441,7 @@ void CH_RCInputPre_Process(void) {
     }
 }
 
-// TODO 腿长变化写在控制里面
-//     // 仅在允许的模式下运行（Free, Follow, Struggle）
-//     if (GEMCH_Mode != CHMode_RC_Free && GEMCH_Mode != CHMode_RC_Follow && GEMCH_Mode != CHMode_RC_Struggle) {
-//         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-//         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
-//         GSTCH_Data.F_JoyUpLatched = false;
-//         GSTCH_Data.F_JoyDownLatched = false;
-//         return;
-//     }
 
-//     // 1. 检测上抬动作
-//     if (IsRightJoyStickUp()) {
-//         GSTCH_Data.F_JoyUpLatched = true;
-//     }
-//     // 2. 检测下拨动作
-//     if (IsRightJoyStickDown()) {
-//         GSTCH_Data.F_JoyDownLatched = true;
-//     }
-
-//     // 3. 检测回中触发（回中时判定刚才是否有推/拨动作）
-//     if (IsRightJoyStickUp() == false && IsRightJoyStickDown() == false) {
-//         // 上抬回中触发：Min -> Mid -> High
-//         if (GSTCH_Data.F_JoyUpLatched) {
-//             // 如果当前在 LegLenMin 附近，变到 LegLenMid
-//             if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenMid - 0.001f) {
-//                 GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;     
-//             } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < LegLenHigh - 0.001f) {
-//                 GST_RMCtrl.STCH_Default.LegLen1ManualDes = 0.500f;
-//             }
-//             // 如果当前已经接近 LegLenMid，变到 LegLenHigh
-//             if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenMid - 0.001f) {
-//                 GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;       
-//             } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < LegLenHigh - 0.001f) {
-//                 // GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenHigh;
-//                 GST_RMCtrl.STCH_Default.LegLen2ManualDes = 0.500f;
-//             }
-//             GSTCH_Data.F_JoyUpLatched = false; // 清除标志
-//         }
-        
-//         // // 下拨回中触发：High -> Mid -> Min
-//         // if (GSTCH_Data.F_JoyDownLatched) {
-//         //     // 如果当前在 High 附近，下调到 Mid
-//         //     if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMid + 0.001f) {
-//         //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-//         //     } else if (GST_RMCtrl.STCH_Default.LegLen1ManualDes > LegLenMin + 0.001f) {
-//         //         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMin;
-//         //     }
-//         //     // 如果当前在 Mid 附近，下调到 Min
-//         //     if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMid + 0.001f) {
-//         //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
-//         //     } else if (GST_RMCtrl.STCH_Default.LegLen2ManualDes > LegLenMin + 0.001f) {
-//         //         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMin;
-//         //     }
-//         //     GSTCH_Data.F_JoyDownLatched = false; // 清除标志
-//         //}
-//     }
-
-//     // 5. 如果从未触发过上述逻辑且变量未初始化，设置默认值为中腿长
-//     if (GST_RMCtrl.STCH_Default.LegLen1ManualDes < 0.01f) { // 简单初值保护
-//         GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
-//     }
-//     if (GST_RMCtrl.STCH_Default.LegLen2ManualDes < 0.01f) { // 简单初值保护
-//         GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
-//     }
-// }
 
 
 /**
@@ -628,6 +567,82 @@ void ChModeControl_SitDownMode_RCControl(void) {
     //! 在模式切换函数中有个腿长判断函数位置，在那里实现的腿长小于一个值就切换到坐下模式 
 }
 
+/**
+ * @brief  Free/Follow模式下的腿长档位更新
+ * @note   仅在Free/Follow中调用，使用右摇杆和拨轮控制腿长档位，并进行平滑过渡
+ * @param  无
+ * @retval 无
+ */
+static void _CH_LegLenManualUpdate(void) {
+    typedef enum {
+        CH_LegLenLevel_Low = 0,
+        CH_LegLenLevel_Mid,
+        CH_LegLenLevel_High,
+    } ChassisLegLenLevel_EnumTypeDef;
+
+    static ChassisLegLenLevel_EnumTypeDef S_LegLenLevel = CH_LegLenLevel_Mid;
+    static float S_LegLen1Cmd = 0.0f;
+    static float S_LegLen2Cmd = 0.0f;
+    const float LegLenManualStep = 0.001f; // 单次变化步长，单位m
+
+    if (GEMCH_ModePre == CHMode_RC_SitDown) {
+        S_LegLenLevel = CH_LegLenLevel_Mid;
+        S_LegLen1Cmd = LegLenMid;
+        S_LegLen2Cmd = LegLenMid;
+    }
+
+    // 拨轮下拨：直接切换到低腿长
+    if (IsRollerDown()) {
+        S_LegLenLevel = CH_LegLenLevel_Low;
+    }
+    // 右摇杆上拨：逐级升高
+    else if (GSTCH_Data.F_RJoyUpLatched == true) {
+        if (S_LegLenLevel == CH_LegLenLevel_Low) {
+            S_LegLenLevel = CH_LegLenLevel_Mid;
+        } else if (S_LegLenLevel == CH_LegLenLevel_Mid) {
+            S_LegLenLevel = CH_LegLenLevel_High;
+        } else {
+            S_LegLenLevel = CH_LegLenLevel_High;
+        }
+        GSTCH_Data.F_RJoyUpLatched = false;
+    }
+    // 右摇杆下拨：逐级降低
+    else if (GSTCH_Data.F_RJoyDownLatched == true) {
+        if (S_LegLenLevel == CH_LegLenLevel_High) {
+            S_LegLenLevel = CH_LegLenLevel_Mid;
+        } else if (S_LegLenLevel == CH_LegLenLevel_Mid) {
+            S_LegLenLevel = CH_LegLenLevel_Low;
+        } else {
+            S_LegLenLevel = CH_LegLenLevel_Low;
+        }
+        GSTCH_Data.F_RJoyDownLatched = false;
+    }
+
+    // 手动腿长目标输出（左右腿一致）
+    switch (S_LegLenLevel) {
+        case CH_LegLenLevel_Low:
+            GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenLow;
+            GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenLow;
+            break;
+        case CH_LegLenLevel_High:
+            GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenHigh;
+            GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenHigh;
+            break;
+        case CH_LegLenLevel_Mid:
+        default:
+            GST_RMCtrl.STCH_Default.LegLen1ManualDes = LegLenMid;
+            GST_RMCtrl.STCH_Default.LegLen2ManualDes = LegLenMid;
+            break;
+    }
+
+    // 平滑更新默认目标腿长，避免切换瞬间冲击
+    S_LegLen1Cmd = StepChangeValue(S_LegLen1Cmd, GST_RMCtrl.STCH_Default.LegLen1ManualDes, LegLenManualStep);
+    S_LegLen2Cmd = StepChangeValue(S_LegLen2Cmd, GST_RMCtrl.STCH_Default.LegLen2ManualDes, LegLenManualStep);
+
+    GST_RMCtrl.STCH_Default.LegLen1Des = S_LegLen1Cmd;
+    GST_RMCtrl.STCH_Default.LegLen2Des = S_LegLen2Cmd;
+}
+
 
 /**
  * @brief  遥控器模式下，自由模式控制函数
@@ -650,8 +665,6 @@ void ChModeControl_FreeMode_RCControl(void) {
         Chassis_DisFBClear();                         //底盘位移反馈值清零
 
         /*配置默认可配置的控制量*/
-        GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
-        GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
         GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
         GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB; //目标速度
         GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
@@ -664,9 +677,8 @@ void ChModeControl_FreeMode_RCControl(void) {
     // PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
     // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
-    // 只有这样才能实时修改
-    GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
-    GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
+    // Free模式下腿长档位更新
+    _CH_LegLenManualUpdate();
     
     /*************************任务开始一段时间后*************************/
     /*检测是否进入小陀螺模式*/
@@ -706,8 +718,6 @@ void ChModeControl_FollowMode_RCControl(void) {
         Chassis_DisFBClear();                         //底盘位移反馈值清零
 
         /*配置默认可配置的控制量*/
-        GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
-        GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
         GST_RMCtrl.STCH_Default.DisDes          = 0.0f;             //目标位移
         GST_RMCtrl.STCH_Default.VelDes          = GSTCH_Data.VelFB;             //目标速度
         GST_RMCtrl.STCH_Default.YawDeltaDes     = 0.0f;             //目标偏航角度
@@ -720,9 +730,8 @@ void ChModeControl_FollowMode_RCControl(void) {
     // PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //左腿长PID系数Kp、Ki、Kd赋值
     // PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm); //右腿长PID系数Kp、Ki、Kd赋值
 
-    // 只有这样才能实时修改
-    GST_RMCtrl.STCH_Default.LegLen1Des      = LegLenMid; //左腿目标腿长
-    GST_RMCtrl.STCH_Default.LegLen2Des      = LegLenMid; //右腿目标腿长
+    // Follow模式下腿长档位更新
+    _CH_LegLenManualUpdate();
     
     /*************************任务开始一段时间后*************************/
     /*检测是否进入小陀螺模式*/
@@ -790,87 +799,220 @@ void ChModeControl_OffGroundMode_RCControl(void) {
 
 /**
  * @brief  遥控器模式下，跳跃模式控制函数
- * @note   跳跃模式下的控制策略
- *         起跳阶段：目标腿长0.350m，PID(Kp=1000, Kd=0)，前馈力约144N
- *         收腿阶段：当腿长>=0.330m或离地后，目标腿长0.200m，PID(Kp=1500, Kd=120000)
+ * @note   跳跃模式状态机实现，包含6个阶段：
+ *         1. Wait:      等待阶段，进入跳跃后的短暂准备
+ *         2. Compress:  压缩蓄力，下蹲储能
+ *         3. Takeoff:   起跳伸展，快速伸腿获得初速度
+ *         4. Retract:   收腿阶段，离地后快速收缩腿部
+ *         5. AirFree:   空中自由，保持姿态等待落地
+ *         6. Landing:   着陆缓冲，触地瞬间缓冲冲击
  * @param  无
  * @retval 无
  */
 void ChModeControl_JumpMode_RCControl(void) {
-    // 静态变量：记录当前跳跃阶段
-    // 0: 起跳阶段(伸腿)  1: 收腿阶段
-    static uint8_t JumpPhase = 0;
-    
-    // 前置处理：模式首次进入时初始化
-    // 注意：PID参数不在这里设置，保持Free/Follow模式的参数平滑过渡
-    if (RunTimeGet() - GSTCH_Data.ST_ModeStartTime.RC_Jump < CHMode_AllMode_PreProcessTime) {
-        JumpPhase = 0;  // 重置为起跳阶段
-        
-        // 只进行位移清零，PID参数保持上一模式的值（Free/Follow的正常参数）
-        Chassis_DisFBClear();
-        return;
-    }
-    
-    // 获取当前腿长平均值
+
+    // // 跳跃阶段枚举定义
+    // typedef enum {
+    //     CH_JumpPhase_Wait = 0,     // 等待
+    //     CH_JumpPhase_Compress,     // 压缩蓄力
+    //     CH_JumpPhase_Takeoff,      // 起跳伸展
+    //     CH_JumpPhase_Retract,      // 收腿
+    //     CH_JumpPhase_AirFree,      // 空中自由
+    //     CH_JumpPhase_Landing,      // 着陆缓冲
+    // } ChassisJumpPhase_EnumTypeDef;
+
+    // static ChassisJumpPhase_EnumTypeDef JumpPhase = CH_JumpPhase_Wait;
+    // 获取当前时间
+    uint32_t TimeNow = RunTimeGet();
+    uint32_t ModeStartTime = GSTCH_Data.ST_ModeStartTime.RC_Jump;
+
+    // 获取腿长平均值
     float LegLenAvg = (GSTCH_Data.LegLen1FB + GSTCH_Data.LegLen2FB) / 2.0f;
-    
-    // 检测是否需要切换到收腿阶段
-    // 条件1：腿长达到目标腿长的95%左右(0.330m)
-    // 条件2：检测到离地（任意一条腿离地就切换）
-    if (JumpPhase == 0) {
-        if ((LegLenAvg >= LegLenJumpRetractThreshold) || 
-            (GSTCH_Data.F_OffGround1 == true) || 
-            (GSTCH_Data.F_OffGround2 == true)) {
-            JumpPhase = 1;  // 切换到收腿阶段
+    float LegLen1Err = fabs(GSTCH_Data.LegLen1FB - LegLenJumpCompressTarget);
+    float LegLen2Err = fabs(GSTCH_Data.LegLen2FB - LegLenJumpCompressTarget);
+
+    // 离地标志（任一侧离地即为离地状态）
+    bool IsOffGround = GSTCH_Data.F_OffGround1 || GSTCH_Data.F_OffGround2;
+
+    // ========== 前置处理：进入跳跃后的短暂等待期 ==========
+    if (TimeNow - ModeStartTime < CHMode_AllMode_PreProcessTime) {
+        JumpPhase = CH_JumpPhase_Wait;
+    }
+
+    // ========== 状态机主逻辑 ==========
+    switch (JumpPhase) {
+        // -------------------- Wait: 等待阶段 --------------------
+        case CH_JumpPhase_Wait: {
+            // 等待期结束，进入压缩蓄力阶段
+            if (TimeNow - ModeStartTime >= CHMode_AllMode_PreProcessTime) {
+                JumpPhase = CH_JumpPhase_Compress;
+            }
+
+            // 保持低腿长准备起跳，前馈力为重力补偿
+            PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm);
+            PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm);
+
+            TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+            TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+
+            GST_RMCtrl.STCH_Default.LegLen1Des = LegLenLow;
+            GST_RMCtrl.STCH_Default.LegLen2Des = LegLenLow;
+            GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Gravity_1;
+            GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Gravity_2;
+
+            Chassis_DisFBClear();
+            break;
+        }
+
+        // -------------------- Compress: 压缩蓄力阶段 --------------------
+        case CH_JumpPhase_Compress: {
+            // 切换条件：双腿都接近压缩目标（误差<10mm 或 实际<目标）
+            bool Leg1Compressed = (LegLen1Err < 0.025f) || (GSTCH_Data.LegLen1FB < LegLenJumpCompressTarget);
+            bool Leg2Compressed = (LegLen2Err < 0.025f) || (GSTCH_Data.LegLen2FB < LegLenJumpCompressTarget);
+
+            if (Leg1Compressed && Leg2Compressed) {
+                JumpPhase = CH_JumpPhase_Takeoff;
+            }
+
+            // 压缩阶段：保持蓄力腿长，较大PID快速响应
+            PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_Compress, 0.0f, PID_LegLen_KdJump_Compress);
+            PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_Compress, 0.0f, PID_LegLen_KdJump_Compress);
+
+            TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+            TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+
+            GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpCompressTarget;
+            GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpCompressTarget;
+            // 压缩阶段前馈力：重力+额外下压力（可选）
+            GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Gravity_1;
+            GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Gravity_2;
+            break;
+        }
+
+        // -------------------- Takeoff: 起跳伸展阶段 --------------------
+        case CH_JumpPhase_Takeoff: {
+            // 切换条件：腿长达到阈值 或 检测到离地
+            if ((LegLenAvg >= LegLenJumpRetractThreshold) || IsOffGround) {
+                JumpPhase = CH_JumpPhase_Retract;
+            }
+
+            // 起跳阶段：分段PID控制
+            float TakeoffErr = LegLenJumpTarget - LegLenAvg;
+            if (TakeoffErr > 0.030f) {
+                // 远离目标：较大PID + 大前馈（快速伸展）
+                PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_Takeoff, 0.0f, PID_LegLen_KdJump_Takeoff);
+                PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_Takeoff, 0.0f, PID_LegLen_KdJump_Takeoff);
+            } else {
+                // 接近目标：减小前馈（缓冲）
+                PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_Takeoff * 0.8f, 0.0f, PID_LegLen_KdJump_Takeoff * 0.7f);
+                PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_Takeoff * 0.8f, 0.0f, PID_LegLen_KdJump_Takeoff * 0.7f);
+            }
+
+            // 起跳阶段不加TD跟踪，追求快速响应
+
+            GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpTarget;
+            GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpTarget;
+            GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Jump;
+            GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Jump;
+            break;
+        }
+
+        // -------------------- Retract: 收腿阶段 --------------------
+        case CH_JumpPhase_Retract: {
+            // 收腿完成判断
+            float RetractErr = fabs(LegLenAvg - LegLenJumpRetractTarget);
+            bool RetractDone = (RetractErr < 0.020f);
+
+            // 切换条件：收腿完成且在空中 -> 空中自由
+            //          收腿完成且已触地 -> 着陆缓冲
+            if (RetractDone) {
+                if (IsOffGround) {
+                    JumpPhase = CH_JumpPhase_AirFree;
+                } else {
+                    JumpPhase = CH_JumpPhase_Landing;
+                }
+            }
+
+            // 收腿阶段：较大PID快速收缩
+            float ErrThreshold = 0.030f;  // 分段阈值
+            if (RetractErr > ErrThreshold) {
+                // 远离目标：大PID + 大前馈（快速收缩）
+                PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_Retract, 0.0f, PID_LegLen_KdJump_Retract);
+                PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_Retract, 0.0f, PID_LegLen_KdJump_Retract);
+            } else {
+                // 接近目标：减小参数
+                PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_Retract * 0.8f, 0.0f, PID_LegLen_KdJump_Retract * 0.8f);
+                PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_Retract * 0.8f, 0.0f, PID_LegLen_KdJump_Retract * 0.8f);
+            }
+
+            TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+            TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+
+            GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpRetractTarget;
+            GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpRetractTarget;
+            GST_RMCtrl.STCH_Default.Leg1FFForce = - LegFFForce_Gravity_1;
+            GST_RMCtrl.STCH_Default.Leg2FFForce = - LegFFForce_Gravity_2;
+            break;
+        }
+
+        // -------------------- AirFree: 空中自由阶段 --------------------
+        case CH_JumpPhase_AirFree: {
+            // 切换条件：检测到触地（支持力恢复）
+            if (!IsOffGround) {
+                JumpPhase = CH_JumpPhase_Landing;
+            }
+
+            // 空中阶段：保持低腿长，较小PID保持柔顺
+            PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_AirFree, 0.0f, PID_LegLen_KdJump_AirFree);
+            PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_AirFree, 0.0f, PID_LegLen_KdJump_AirFree);
+
+            TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+            TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+
+            GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpRetractTarget;
+            GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpRetractTarget;
+            // 空中前馈力：较小，仅维持姿态
+            GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Gravity_1 * 0.5f;
+            GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Gravity_2 * 0.5f;
+            break;
+        }
+
+        // -------------------- Landing: 着陆缓冲阶段 --------------------
+        case CH_JumpPhase_Landing: {
+            // 着陆阶段持续一定时间后自动退出（由模式切换逻辑处理）
+            // 这里只负责缓冲控制
+
+            // 着陆阶段：较大PID抵抗冲击
+            PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump_Landing, 0.0f, PID_LegLen_KdJump_Landing);
+            PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump_Landing, 0.0f, PID_LegLen_KdJump_Landing);
+
+            TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
+            TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
+
+            GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpRetractTarget;
+            GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpRetractTarget;
+            GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Gravity_1;
+            GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Gravity_2;
+            break;
+        }
+
+        default: {
+            JumpPhase = CH_JumpPhase_Wait;
+            break;
         }
     }
-    
-    // 根据当前阶段设置目标值和PID参数
-    if (JumpPhase == 0) {
-        // ========== 起跳阶段（伸腿） ==========
-        // PID参数：中等偏软，依赖前馈力产生爆发
-        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpJump, 0.0f, PID_LegLen_KdJump);
-        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpJump, 0.0f, PID_LegLen_KdJump);
-        
-        // TD参数：较快速度跟踪
-        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
-        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
-        
-        // 目标腿长：起跳目标
-        GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpTarget;
-        GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpTarget;
-        
-        // 前馈力：爆发起跳（约2.17倍重力）
-        GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Jump;
-        GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Jump;
-        
-    } else {
-        // ========== 收腿阶段 ==========
-        // PID参数：中等偏大，微分很大（正常运行的参数）
-        PID_SetKpKiKd(&GstCH_LegLen1PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm);
-        PID_SetKpKiKd(&GstCH_LegLen2PID, PID_LegLen_KpNorm, 0.0f, PID_LegLen_KdNorm);
-        
-        // TD参数：正常
-        TD_Setr(&GstCH_LegLen1TD, TD_LegLen_rNorm);
-        TD_Setr(&GstCH_LegLen2TD, TD_LegLen_rNorm);
-        
-        // 目标腿长：中腿长（准备落地）
-        GST_RMCtrl.STCH_Default.LegLen1Des = LegLenJumpRetractTarget;
-        GST_RMCtrl.STCH_Default.LegLen2Des = LegLenJumpRetractTarget;
-        
-        // 前馈力：恢复为重力补偿
-        GST_RMCtrl.STCH_Default.Leg1FFForce = LegFFForce_Gravity_1;
-        GST_RMCtrl.STCH_Default.Leg2FFForce = LegFFForce_Gravity_2;
-    }
-    
-    // 其他控制量
-    GST_RMCtrl.STCH_Default.VelDes = 0.0f;
+
+    // ========== 更新全局标志位 ==========
+    GSTCH_Data.F_JumpTakeoff = (JumpPhase == CH_JumpPhase_Takeoff);
+    GSTCH_Data.F_JumpRetract = (JumpPhase == CH_JumpPhase_Retract);
+    GSTCH_Data.F_JumpLanding = (JumpPhase == CH_JumpPhase_Landing);
+
+    // ========== 通用控制量设置 ==========
+    GST_RMCtrl.STCH_Default.DisDes = GSTCH_Data.DisFB;
+    GST_RMCtrl.STCH_Default.VelDes = GSTCH_Data.VelFB;
     GST_RMCtrl.STCH_Default.YawDeltaDes = 0.0f;
     GST_RMCtrl.STCH_Default.YawAngleVelDes = 0.0f;
-    
-    // LQR会自动处理位移目标值，保持当前位置
-    GST_RMCtrl.STCH_Default.DisDes = GSTCH_Data.DisFB;
-    
+
     // 调用运动处理函数
     CH_MotionUpdateAndProcess(GST_RMCtrl);
 }
@@ -927,8 +1069,8 @@ void ChassisModeControl_RCControl(ChassisMode_EnumTypeDef ModeNow) {
             break;
 
         /*RC跳跃模式*/
-        // case CHMode_RC_Jump:
-        //     ChModeControl_JumpMode_RCControl();
-        //     break;
+        case CHMode_RC_Jump:
+            ChModeControl_JumpMode_RCControl();
+            break;
     }
 }

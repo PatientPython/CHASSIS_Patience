@@ -161,13 +161,20 @@ void CH_FBData_Parse(void) {
  */
 //* 更新腿长目标值
 void CH_LegLenDes_Update(RobotControl_StructTypeDef RMCtrl) {
+    // 跳跃起跳阶段：直接使用阶跃目标，不走TD
+    if ((GEMCH_Mode == CHMode_RC_Jump) && (GSTCH_Data.F_JumpTakeoff == true) && (GSTCH_Data.F_JumpRetract == false)) {
+        GSTCH_Data.LegLen1Des = RMCtrl.STCH_Default.LegLen1Des;
+        GSTCH_Data.LegLen2Des = RMCtrl.STCH_Default.LegLen2Des;
+        return;
+    }
+
     TD_SetInput(&GstCH_LegLen1TD, (RMCtrl.STCH_Default.LegLen1Des)); //左腿腿长TD输入值设为左腿腿长目标值
-    TD_Cal(&GstCH_LegLen1TD);                                       //左腿腿长TD计算
-    GSTCH_Data.LegLen1Des = TD_GetOutput(&GstCH_LegLen1TD);    //左腿腿长目标值更新为TD输出值
+    TD_Cal(&GstCH_LegLen1TD);                                        //左腿腿长TD计算
+    GSTCH_Data.LegLen1Des = TD_GetOutput(&GstCH_LegLen1TD);          //左腿腿长目标值更新为TD输出值
 
     TD_SetInput(&GstCH_LegLen2TD, (RMCtrl.STCH_Default.LegLen2Des)); //右腿腿长TD输入值设为右腿腿长目标值
-    TD_Cal(&GstCH_LegLen2TD);                                       //右腿腿长TD计算
-    GSTCH_Data.LegLen2Des = TD_GetOutput(&GstCH_LegLen2TD);    //右腿腿长目标值更新为TD输出值
+    TD_Cal(&GstCH_LegLen2TD);                                        //右腿腿长TD计算
+    GSTCH_Data.LegLen2Des = TD_GetOutput(&GstCH_LegLen2TD);          //右腿腿长目标值更新为TD输出值
 }
 
 /**
@@ -332,20 +339,29 @@ void HM_DesDataUpdate(RobotControl_StructTypeDef RMCtrl)
     }
     /*否则采取默认的LQR计算控制*/
     /*离地检测部分*/
+    if((GSTCH_Data.F_OffGround1 == true) && (GSTCH_Data.F_OffGround2 == true)) 
+    {
+        // 双腿离地：两侧轮毂都置零（可按需要改成安全策略）
+        GSTCH_HM1.TorqueDes  = 0.0f;
+        GSTCH_HM2.TorqueDes  = 0.0f;
+    }
     else if(GSTCH_Data.F_OffGround1 == true) 
     {
-        GSTCH_HM1.TorqueDes  = 0.0f;                                                                   // 左腿离地左轮目标力矩为零
-        GSTCH_HM2.TorqueDes  = + LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2; // 右轮毂电机力矩目标值
+        // 左腿离地
+        GSTCH_HM1.TorqueDes  = 0.0f;
+        GSTCH_HM2.TorqueDes  = + LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2;
     }
     else if(GSTCH_Data.F_OffGround2 == true) 
     {
-        GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; // 左轮毂电机力矩目标值
-        GSTCH_HM2.TorqueDes  = 0.0f;                                                                   // 右腿离地右轮目标力矩为零
+        // 右腿离地
+        GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1;
+        GSTCH_HM2.TorqueDes  = 0.0f;
     }
     else
     {
-        GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1; //左轮毂电机力矩目标值
-        GSTCH_HM2.TorqueDes  = + LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2; //右轮毂电机力矩目标值
+        // 正常落地
+        GSTCH_HM1.TorqueDes  = - LQR_Get_uVector(&GstCH_LQRCal, 1-1) + GSTCH_HMTorqueComp.T_Comp_HM1;
+        GSTCH_HM2.TorqueDes  = + LQR_Get_uVector(&GstCH_LQRCal, 2-1) + GSTCH_HMTorqueComp.T_Comp_HM2;
     }
     // 理论上讲轮毂电机应该是左轮为正、右轮为负，但是行星减速箱会反转方向，所以这里取反
     GSTCH_HM1.CurrentDes = _HM_DesData_TorqueToCurrent(GSTCH_HM1.TorqueDes); //左轮毂电机电流目标值
@@ -476,10 +492,10 @@ void CH_VelKF_Process(void) {
     // 这样观测值的物理意义才与 KF 预测的底盘速度(由IMU积分而来)保持一致
     float v_body_obs = v_wheel_theory - v_rel_leg;
 
-    // 2. 离地与打滑处理 (动态调节 R 矩阵)
+    // 2. 离地处理 (动态调节 R 矩阵)
     if(GSTCH_Data.F_OffGround1 || GSTCH_Data.F_OffGround2) {
         // 离地了，轮速观测值不可信，大幅增加 R[0][0]，使 KF 信任 IMU 积分
-        GstCH_VelKF.R[0][0] = 1000.0f; 
+        GstCH_VelKF.R[0][0] = 1000000.0f; 
     } else {
         // 正常状态
         GstCH_VelKF.R[0][0] = 0.05f; 
@@ -652,6 +668,10 @@ void _CH_Flag_Reset(void)
 {
     GFCH_IMU2Restart = IMU2RestartNO;//IMU2重启标志位清零
     GFCH_LegCalibration = 0;         //腿部校准标志位清零
+    GSTCH_Data.F_OffGround1 = false; //左腿离地标志位清零
+    GSTCH_Data.F_OffGround2 = false; //右腿离地标志位清零
+    GSTCH_Data.F_JumpRetract = false; //跳跃收缩标志位清零
+    GSTCH_Data.F_JumpTakeoff = false; //跳跃起跳标志位清零
 }
 
 /**

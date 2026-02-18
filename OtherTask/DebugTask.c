@@ -79,18 +79,30 @@ void VofaPrint(void)
 {
     USART3_DMA_printf
     ("C:%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
-/*0*/   (float)GSTCH_Data.Leg1F_N,
-/*1*/   (float)GSTCH_Data.Leg2F_N,
-/*2*/   (float)GstCH_Leg1F_N_LPF.Input,
-/*3*/   (float)GstCH_Leg2F_N_LPF.Input,
-/*4*/   (float)GstCH_LegLen1PID.Des,
-/*5*/   (float)GstCH_LegLen1PID.FB,
+/*0*/   (float)GstCH_LegLen1PID.Des,
+/*1*/   (float)GstCH_LegLen2PID.Des,
+/*2*/   (float)GstCH_LegLen1PID.FB,
+/*3*/   (float)GstCH_LegLen2PID.FB,
+/*4*/   (float)GSTCH_Data.F_OffGround1,
+/*5*/   (float)GSTCH_Data.F_OffGround2,
 /*6*/   (float)GstCH_LegLen1PID.U,
-/*7*/   (float)GSTCH_HMTorqueComp.Err_HM1,
-/*8*/   (float)GSTCH_HMTorqueComp.Err_HM2,
+/*7*/   (float)JumpPhase * 10.0f,
+/*8*/   (float)GstCH_LegLen1PID.FB,
 /*9*/   (float)GEMCH_Mode * 10.0f
     );
 }
+
+
+// /*0*/   (float)GSTCH_Data.Leg1F_N,
+// /*1*/   (float)GSTCH_Data.Leg2F_N,
+// /*2*/   (float)GstCH_Leg1F_N_LPF.Input,
+// /*3*/   (float)GstCH_Leg2F_N_LPF.Input,
+
+
+// bool F_RJoyUpLatched;   // 右摇杆上抬锁存标志
+// bool F_RJoyDownLatched; // 右摇杆下拨锁存标志
+// bool F_RollerUpLatched; // 滚轮上滚锁存标志
+// bool F_RollerDownLatched; // 滚轮下滚锁存标志
 
 // /*0*/   (float)GSTCH_Data.Leg1F_N,
 // /*1*/   (float)GSTCH_Data.Leg2F_N,

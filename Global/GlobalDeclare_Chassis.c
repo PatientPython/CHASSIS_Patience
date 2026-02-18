@@ -14,6 +14,9 @@
 #include "Algorithm.h"
 #include <arm_math.h>
 
+
+
+
 /****************************************宏定义、常量定义（不需要修改）****************************************/
 /*FreeRTOS任务相关*/
 const TickType_t GCH_TaskPeriod = 1;  // ChassisTask的任务周期，单位为FreeRTOS的系统节拍。默认是ms（取决于configTICK_RATE_HZ）
@@ -71,8 +74,8 @@ const float JointMotorMAXTorque = Motor_MG8016Ei6MaxTorque;  // 关节电机最�
 // #pragma region /****TD相关系数****************************************/
 #define TD_SampleTime SampleTime_Default  // TD采样时间，单位秒
 
-#define TD_LegLen_r 0.0f  // 腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
-#define TD_LegLen_h0 1 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
+#define TD_LegLen_r  0.0f  // 腿长TD：速度因子，越大跟踪越快，但微分信号的噪声也会越大
+#define TD_LegLen_h0 50 * TD_SampleTime  // 腿长TD：滤波因子，越大滤波效果越好，通常取采样时间的整数倍
 
 
 
@@ -117,8 +120,24 @@ float PID_LegLen_KpNorm = 1500.0f;     // 腿长PID：正常时的Kp值
 float PID_LegLen_KdNorm = 120000.0f;     // 腿长PID：正常时的Kd值
 
 //* 跳跃模式相关PID参数
-float PID_LegLen_KpJump = 1000.0f;     // 腿长PID：跳跃起跳阶段Kp值（中等偏软，因为有足够大的前馈）
+float PID_LegLen_KpJump = 1800.0f;     // 腿长PID：跳跃起跳阶段Kp值（中等偏软，因为有足够大的前馈）
 float PID_LegLen_KdJump = 0.0f;        // 腿长PID：跳跃起跳阶段Kd值（零）
+
+
+//* 跳跃状态机各阶段专用PID参数
+float PID_LegLen_KpJump_Compress = 1000.0f;       // 压缩阶段Kp
+float PID_LegLen_KdJump_Compress = 108000.0f;     // 压缩阶段Kd
+float PID_LegLen_KpJump_Takeoff = 1800.0f;        // 起跳阶段远距离Kp
+float PID_LegLen_KdJump_Takeoff = 0.0f;           // 起跳阶段远距离Kd
+float PID_LegLen_KpJump_Retract = 3000.0f;        // 收腿阶段远距离Kp
+float PID_LegLen_KdJump_Retract = 120000.0f;      // 收腿阶段远距离Kd
+float PID_LegLen_KpJump_AirFree = 750.0f;         // 空中自由阶段Kp
+float PID_LegLen_KdJump_AirFree = 120000.0f;      // 空中自由阶段Kd
+float PID_LegLen_KpJump_Landing = 1200.0f;        // 着陆阶段Kp
+float PID_LegLen_KdJump_Landing = 108000.0f;      // 着陆阶段Kd
+
+/*跳跃阶段全局变量，用于VOFA观察*/
+ChassisJumpPhase_EnumTypeDef JumpPhase = CH_JumpPhase_Wait;
 
 /*Roll轴补偿相关*/
 // TODO 可以试试给小陀螺单独一套PID参数
@@ -150,16 +169,17 @@ float PID_LegLen_KdJump = 0.0f;        // 腿长PID：跳跃起跳阶段Kd值（
 
 //* 以m为单位的腿长 
 float LegLenMin   = 0.108f;   //腿长最小值，单位m
-float LegLenMinTH = 0.022f;     //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
-float LegLenLow  = 0.140f;    //低腿长，单位m
-float LegLenMid  = 0.200f;    //中腿长，单位m
+float LegLenMinTH = 0.022f;   //腿长最小值阈值，单位m，腿长距离LegLenMin在该阈值内时，认为到达最小腿长位置
+float LegLenLow  = 0.180f;    //低腿长，单位m
+float LegLenMid  = 0.250f;    //中腿长，单位m
 float LegLenHigh = 0.300f;    //高腿长，单位m
 float LegLenOffGround = 0.250f; //离地腿长，单位m
 
 //* 跳跃模式相关腿长参数
-float LegLenJumpTarget = 0.350f;     //跳跃目标腿长：机械限位0.400m减去安全余量0.050m，单位m
-float LegLenJumpRetractThreshold = 0.330f; //收腿触发阈值：目标腿长的95%左右，单位m
-float LegLenJumpRetractTarget = 0.200f;    //收腿目标腿长：中腿长0.200m，单位m
+float LegLenJumpCompressTarget = 0.110f;    //跳跃蓄力腿长
+float LegLenJumpTarget = 0.400f;            //跳跃目标腿长
+float LegLenJumpRetractThreshold = 0.380f;  //收腿触发阈值
+float LegLenJumpRetractTarget = 0.180f;     //收腿目标腿长
 
 /*底盘零点补偿相关*/
 // 换车时需要修改
@@ -217,7 +237,7 @@ const float LegFFForce_Gravity_2 = CH_Phys_EffMass * GravityAcc_Harbin;
  * 
  * 实际上车测试后，根据跳跃效果调整此值
  */
-float LegFFForce_Jump = 144.0f;  // 跳跃起跳阶段的腿部前馈力，单位N（约2.17倍重力，产生爆发起跳）
+float LegFFForce_Jump = 1000.0f;  // 跳跃起跳阶段的腿部前馈力，单位N（约2.17倍重力，产生爆发起跳。这个算出来的是144，实际给很大的值也跳不了特别高）
 
 // 左右腿侧向惯性力补偿，单位N
 float LegFFForce_Inertial_1 = 0.0f;  // 正常模式下左腿侧向惯性力补偿，单位N
@@ -379,6 +399,7 @@ OffGround_StructTypeDef GstCH_OffGround2 = {GravityAcc_Harbin, SampleTime_Defaul
 // #pragma region
 // /****其他底盘运动控制相关-正式变量*****************************/
 /*底盘状态枚举*/
+
 ChassisMode_EnumTypeDef GEMCH_Mode = CHMode_RC_ManualSafe;  // 底盘模式，默认是手动安全模式
 ChassisMode_EnumTypeDef GEMCH_ModePre = CHMode_RC_ManualSafe;  // 上次的底盘模式，默认是手动安全模式
 
