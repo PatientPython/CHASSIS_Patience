@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Keil Build",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-Command",
+        "$ErrorActionPreference = 'Stop'\n$workspaceFolder = '${workspaceFolder}'\n$cacheFile = Join-Path $workspaceFolder '.vscode\\keil-path-cache.json'\n\n# 读取缓存\nif (Test-Path $cacheFile) {\n    $cache = Get-Content $cacheFile | ConvertFrom-Json\n    $uv4Path = $cache.uv4Path\n    $projectPath = $cache.projectPath\n} else {\n    $uv4Path = 'D:\\Programfile\\MDK\\Core\\UV4\\UV4.exe'\n    $projectPath = ''\n}\n\n# 验证 UV4\nif (-not (Test-Path $uv4Path)) {\n    Write-Host \"[ERROR] UV4.exe not found at: $uv4Path\"\n    exit 1\n}\n\n# 验证项目路径，如无效则重新扫描\nif (-not (Test-Path $projectPath)) {\n    Write-Host \"[INFO] Cached project path invalid, scanning...\"\n    $found = Get-ChildItem -Path $workspaceFolder -Recurse -Filter '*.uvprojx' | Select-Object -First 1\n    if ($found) {\n        $projectPath = $found.FullName\n        Write-Host \"[INFO] Found project: $projectPath\"\n        # 更新缓存\n        $newCache = @{\n            uv4Path = $uv4Path\n            projectPath = $projectPath\n            lastUpdated = (Get-Date -Format 'yyyy-MM-dd')\n        }\n        $newCache | ConvertTo-Json | Set-Content $cacheFile\n        Write-Host \"[INFO] Cache updated\"\n    } else {\n        Write-Host \"[ERROR] No .uvprojx found in workspace\"\n        exit 1\n    }\n}\n\n# 设置日志路径\n$logPath = Join-Path $workspaceFolder '.vscode\\uv4.log'\n$logDir = Split-Path -Parent $logPath\nif (-not (Test-Path $logDir)) {\n    New-Item -ItemType Directory -Path $logDir -Force | Out-Null\n}\n\n# 执行构建\nWrite-Host \"[BUILD] UV4: $uv4Path\"\nWrite-Host \"[BUILD] Project: $projectPath\"\nWrite-Host \"[BUILD] Log: $logPath\"\n$args = @('-b', $projectPath, '-j0', '-t', 'Target', '-o', $logPath)\n$proc = Start-Process -FilePath $uv4Path -ArgumentList $args -Wait -PassThru -NoNewWindow\n\n# 读取结果\nif (Test-Path $logPath) {\n    $logContent = Get-Content $logPath -Raw\n    if ($logContent -match '0 Error\\(s\\)') {\n        Write-Host \"[SUCCESS] Build: 0 Error(s)\"\n        if ($logContent -match 'Build Time Elapsed:\\s*[^\\r\\n]+') {\n            Write-Host $Matches[0]\n        }\n        exit 0\n    } else {\n        Write-Host \"[FAILED] Build errors:\"\n        $errLines = ($logContent -split \"`n\") | Where-Object { $_ -match 'error:|Error\\(' } | Select-Object -First 10\n        $errLines | ForEach-Object { Write-Host $_ }\n        exit 1\n    }\n} else {\n    Write-Host \"[ERROR] Log file not found\"\n    exit 1\n}"
+      ],
+      "problemMatcher": {
+        "owner": "keil",
+        "pattern": {
+          "regexp": "^(.+)\\((\\d+)\\):\\s*(.+)$",
+          "message": 3,
+          "line": 2,
+          "file": 1
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

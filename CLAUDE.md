@@ -21,6 +21,14 @@ keilkill.bat
 
 There is no Makefile or CMake - this is a Keil-only project. Build and flash through Keil µVision IDE.
 
+## Build Commands
+
+**Keil Build (via VS Code Task):**
+- Task name: "Keil Build"
+- Trigger: `shell: build` or request Copilot to build
+- Result: Check `.vscode/uv4.log` for compilation output
+- Cache: `.vscode/keil-path-cache.json` stores UV4 path and project path
+
 ## Architecture & Data Flow
 
 **Task-Based Architecture (FreeRTOS):**

@@ -75,5 +75,19 @@
   "C_Cpp_Runner.useLeakSanitizer": false,
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
-  "C_Cpp_Runner.msvcSecureNoWarnings": false
+  "C_Cpp_Runner.msvcSecureNoWarnings": false,
+  "oaicopilot.baseUrl": "https://api.minimaxi.com/v1",
+  "oaicopilot.models": [
+    {
+      "id": "MiniMax-M2.5",
+      "displayName": "MiniMax-M2.5",
+      "owned_by": "minimax",
+      "apiMode": "openai",
+      "context_length": 256000,
+      "max_tokens": 8192,
+      "temperature": 0,
+      "top_p": 1
+    }
+  ],
+  "chat.agentsControl.clickBehavior": "cycle"
 }
