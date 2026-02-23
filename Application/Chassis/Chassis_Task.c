@@ -35,7 +35,6 @@ static TickType_t S_lastWakeTimeChassisTask = 0;  // 上次唤醒的时间，Del
  */
 void ChassisTask(void* arg) {
     Chassis_AllParaInit(); //底盘所有参数初始化
-
     while (1) {
         ChassisControl();  // 底盘的总控制
 
