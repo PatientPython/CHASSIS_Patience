@@ -89,5 +89,6 @@
       "top_p": 1
     }
   ],
-  "chat.agentsControl.clickBehavior": "cycle"
+  "chat.agentsControl.clickBehavior": "cycle",
+  "chat.useNestedAgentsMdFiles": true
 }

@@ -20,11 +20,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/keil-build-pretooluse.ps1\"",
-            "timeout": 60
-          },
-          {
-            "type": "command",
             "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/log-pretooluse.ps1\""
           }
         ]
