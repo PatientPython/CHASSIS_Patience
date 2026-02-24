@@ -38,3 +38,4 @@ ReceiverData_StructTypeDef GST_Receiver;    //遥控器接收机接收数据结�
 
 /*机器人整体控制结构体*/
 RobotControl_StructTypeDef GST_RMCtrl; //机器人整体控制结构体，这个结构体只输入，不输出。如果要获取对应变量的输出，请前往对应的数据结构体，比如GSTCH_Data等。
+

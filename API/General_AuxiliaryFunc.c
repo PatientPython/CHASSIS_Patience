@@ -311,6 +311,21 @@ bool IsRollerDown(void)
 }
 
 /**
+  * @brief  判断遥控器拨轮是否自动回正的函数
+  * @note   注意拨轮往下是数值变大
+  * @param  无
+  * @retval true：拨轮回正 false：拨轮未回正
+*/
+bool IsRollerMid(void) {
+    if (GST_Receiver.ST_RC.Roller > RCRoller_UpTH && 
+        GST_Receiver.ST_RC.Roller < RCRoller_DownTH) {
+        return true;
+    }
+    return false;
+}
+
+
+/**
   * @brief  判断遥控器是否是内八手势的函数（左摇杆右下，右摇杆左下）
   * @note   （我很抱歉我没有找到更合适的“内八”翻译，只能写成InsideEight）
   * @param  无
