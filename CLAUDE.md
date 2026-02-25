@@ -9,12 +9,14 @@ This is an embedded C project for a **balancing infantry robot chassis control s
 ## Build System
 
 **Primary Build System: Keil µVision**
+
 - Project file: [Project/Project.uvprojx](Project/Project.uvprojx)
 - Target: STM32F407VETx (Cortex-M4, 512KB Flash)
 - Compiler: ARM Compiler 5.06 update 7 (build 960)
 - Output directory: `../STM32/Output/`
 
 **Clean Build Artifacts:**
+
 ```batch
 keilkill.bat
 ```
@@ -24,6 +26,7 @@ There is no Makefile or CMake - this is a Keil-only project. Build and flash thr
 ## Build Commands
 
 **Keil Build (via VS Code Task):**
+
 - Task name: "Keil Build"
 - Trigger: `shell: build` or request Copilot to build
 - Result: Check `.vscode/uv4.log` for compilation output
@@ -32,12 +35,14 @@ There is no Makefile or CMake - this is a Keil-only project. Build and flash thr
 ## Architecture & Data Flow
 
 **Task-Based Architecture (FreeRTOS):**
+
 - **ChassisTask** ([Application/Chassis/Chassis_Task.c](Application/Chassis/Chassis_Task.c)) - Priority 25, 1kHz main control loop
 - **ReceiverTask** ([OtherTask/ReceiverTask.c](OtherTask/ReceiverTask.c)) - Priority 30, data reception
 - **SendDataTask** ([OtherTask/SendDataTask.c](OtherTask/SendDataTask.c)) - Priority 20, data transmission
 - **DebugTask** ([OtherTask/DebugTask.c](OtherTask/DebugTask.c)) - Priority 4, ~100Hz debug output
 
 **Data Pipeline Pattern: Parse -> Process -> Distribute**
+
 1. **Parse**: Raw data from interrupts (CAN/UART) into auxiliary structs (prefix `st`). See [Communication/CAN_Communication.c](Communication/CAN_Communication.c).
 2. **Process**: Filtering and control calculations (LQR/VMC) in `ChassisTask`.
 3. **Distribute**: Update formal structs (prefix `ST`) for high-level logic. Upper-level code must **only** use formal structs.
@@ -57,6 +62,7 @@ Prefix order: `[Scope][Type][Component]_[Name]`
 Examples: `GFCH_SafeMode` (Global Flag Chassis SafeMode), `GSTCH_Data` (Global Struct Chassis Data)
 
 **Function Prefixes:**
+
 - `_FunctionName`: Helper function used within a single function
 - `__FunctionName`: Simple helper (e.g., if condition checks)
 
@@ -83,6 +89,7 @@ All algorithm orchestration happens in [Application/Chassis/Chassis_APIFunction.
 ## Chassis Control Modes
 
 Defined in [Global/GlobalDeclare_Chassis.h](Global/GlobalDeclare_Chassis.h):
+
 - `CHMode_RC_ManualSafe` - Manual safe mode
 - `CHMode_RC_AutoSafe` - Auto safe mode
 - `CHMode_RC_Standby` - Standby mode
@@ -94,6 +101,7 @@ Defined in [Global/GlobalDeclare_Chassis.h](Global/GlobalDeclare_Chassis.h):
 - `CHMode_RC_Jump` - Jump mode
 
 **Adding a New Mode** (6-step checklist in GlobalDeclare_Chassis.h:23):
+
 1. Add enum value in `ChassisMode_EnumTypeDef`
 2. Add start time field in `_CH_ModeStartTime_StructTypeDef`
 3. Add case in `ChassisModeStartTimeUpdate`
@@ -130,13 +138,21 @@ Defined in [Global/GlobalDeclare_Chassis.h](Global/GlobalDeclare_Chassis.h):
 ## LQR State Vector
 
 The LQR `x_Vector` state vector elements (target - actual):
+
 ```
 s, s_dot, phi, phi_dot, theta_l, theta_l_dot, theta_r, theta_r_dot, pitch, pitch_dot
 (位移, 位移速度, 偏航yaw, 偏航速度, 左腿夹角, 左腿角速度, 右腿夹角, 右腿角速度, 俯仰pitch, 俯仰角速度)
 ```
 
 The LQR `u_Vector` output:
+
 ```
 T_wl, T_wr, T_bl, T_br
 (左轮扭矩, 右轮扭矩, 左摆杆扭矩, 右摆杆扭矩)
 ```
+
+## Git and Claude Code Branch Rules
+
+- **Protected Branches (`main`, `master`, `v1-stable`)**: You are strictly prohibited from using `Edit`/`Write`/`MultiEdit`/`Replace` tools to directly modify files when checked out on these branches.
+- **Diagnostics & Git**: You have `Bash` permissions to run `git` (including `git worktree`), `ls`, `dir`, and other diagnostic commands on protected branches. Feel free to use `git worktree list` or `git checkout -b` directly.
+- **Workflow**: Always ensure you are on a working branch or appropriate worktree before beginning file modifications to avoid being blocked by system hooks.
