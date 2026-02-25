@@ -3,28 +3,22 @@
 This plan sets the reference architecture for the Session-Git synchronization workflow, deeply aligning with Claude Code's official extension mechanisms. The primary directive is to ensure robust branch switching mechanisms without risking errors like "null pointer dereferences." Every conversation must correspond to a specific Working Branch.
 
 ## 1. Branch Philosophy
-
 The architecture defines two distinct types of Git branches:
-
 1. **Protected Branch**: The official codebase baseline (e.g., `main`, `v1-stable`). AI cannot modify it directly.
 2. **Working Branch**: The branch where AI workflows run. Claude Session IDs are locked to specific working branches. Subsequent conversations default to the last used working branch.
 
 *(Note: The global behavioral rules concerning branch switches and prompting have already been securely placed in the user's `memory.md`.)*
 
 ## 2. Data Models & State Persistence
-
 To support eventual global installation while preserving project integrity, state is strictly scoped.
-
 - **Session Mapping File (`.claude/session-git-map.json`)**:
   - **Location Requirement**: Must ALWAYS reside in the local project's `.claude/` directory, regardless of where hooks are globally installed.
   - **Purpose**: A strict JSON map linking `${CLAUDE_SESSION_ID}` to an active Working Branch name, ensuring a 1:1 lock.
 
 ## 3. Official Hooks Implementation (The Guardrails)
-
 Hooks will rely strictly on the official Claude Code hooks framework using native lifecycle events. Instead of fragile prompt manipulations, we will use structured interactions as officially documented.
 
 ### [NEW] `hook_session_start.sh`
-
 - **Event**: `SessionStart` (matcher: `startup|resume`)
 - **Execution Mechanism**: `type: "command"`
 - **Purpose & Official Usage Tip Pipeline**:
@@ -32,24 +26,21 @@ Hooks will rely strictly on the official Claude Code hooks framework using nativ
   - **Missing Session Map Check**: If the system detects the user's current Git branch differs from the last saved branch for this Session ID in `session-git-map.json`, the hook will output to stdout: `SYSTEM ALERT: Branch mismatch. Stop and ask the user: 1) Mount this session on the current working branch? 2) Check out the previous working branch? 3) Use /fork-explore to create a new sub-working branch?`
 
 ### [NEW] `hook_pre_tool.sh`
-
 - **Event**: `PreToolUse` (matcher: `Bash|Edit|Write`)
 - **Execution Mechanism**: `type: "command"`
 - **Purpose**: A strict technical lock against Protected Branch modification.
 - **Payload Response**: Reads the incoming JSON tool payload via standard input `$(cat)`. If the command modifies a protected branch, it echoes the blockage and crucially `exit 2` to formally block Claude via the official platform mechanism.
 
 ### [NEW] `hook_prompt_submit.sh` (Checkpoint Control)
-
 - **Event**: `UserPromptSubmit` (matcher: `*`) / `PostToolUse`
 - **Execution Mechanism**: `type: "command"`
 - **Purpose**: Creates automatic git commits before specific interactions.
-- **Naming Rule Regulation**: Commits MUST adhere to exactly this format: `CP: "A brief introduction to the modifications in this submission (focusing on a global perspective to show the role of these modifications in the overall plan)"`.
+- **Naming Rule Regulation**: Commits MUST adhere to exactly this format: `CP: "A brief introduction to the modifications in this submission (focusing on a global perspective to show the role of these modifications in the overall plan)"`. 
   - **Strict Constraint**: Under no circumstances should the message include metadata such as time, dates, or lists of specifically modified files. Git handles that tracking inherently.
 
 ## 4. Skills Implementation (The User Commands)
 
 ### [MODIFY] `/goto`
-
 - **Frontmatter**: `disable-model-invocation: true`, `user-invocable: true`
 - **Behavior Requirements**:
   - Arguments are cleanly evaluated.
@@ -57,18 +48,14 @@ Hooks will rely strictly on the official Claude Code hooks framework using nativ
   - If given a Branch Name: Execute `git checkout [branch_name]` (HEAD of branch).
 
 ### [MODIFY] `/fork-explore`
-
-- **Behavior Requirements (Handling Parallel Realities)**:
-  - This skill is designed to synchronize the official `claude --fork-session` behavior with Git branching. The goal is to allow parallel development based on the same identical starting context.
-  - **Execution Flow**:
-    1. The skill instructs the user (or executes directly if permitted) to run `git checkout -b <new_sub_branch>` to create a new physical sub-branch off the current working branch.
-    2. The skill instructs the user to open a new terminal and run `claude --fork-session`.
-    3. According to official logic, `--fork-session` creates a *brand new session ID* but duplicates the exact conversation history up to this point.
-    4. When this new session starts on the new branch, the `SessionStart` hook fires automatically. It realizes this is a brand new Session ID and natively mounts/saves it to the new Git sub-branch in `.claude/session-git-map.json`.
-  - **Result**: The user now has two parallel working branches, each bound to a unique Session ID, but sharing identical historical contexts up to the point of the fork. Subsequent conversations within the new terminal window will default strictly to this new sub-branch.
+- **Frontmatter**: `context: fork`, `agent: Explore`
+- **Behavior Requirements**:
+  - Represents the official Claude Code `fork-session` branching logic in Git format.
+  - Creates a new Git sub-branch nested under the current Working Branch.
+  - Generates the new Session ID and maps it to the sub-branch in `session-git-map.json`.
+  - Unless the user manually executes Git checkout away from this pointer, subsequent conversations are routed into this sub-branch.
 
 ### [MODIFY] `/merge`
-
 - **Frontmatter**: `disable-model-invocation: true`, `allowed-tools: Bash, Read`
 - **Behavior Requirements**: **Strictly Advisory Mode**.
   - Claude cannot run `git merge`.
@@ -79,30 +66,24 @@ Hooks will rely strictly on the official Claude Code hooks framework using nativ
 ## 5. Reference & Verification Plan for Code Implementation
 
 ### Reference Code Achievement Guide
-
 This section dictates precisely how we will script the system to comply with official Claude Code specs.
 
-1. **Config Hook File**: `.claude/settings.json` must be standard JSON defining the "hooks" object dictionary.
+1. **Config Hook File**: [.claude/settings.json](file:///e:/CODE_project/BalanceSoldier/ChassisControl/CHASSIS_Patience/.claude/settings.json) must be standard JSON defining the "hooks" object dictionary.
 2. **Standard I/O Mapping**: For script-based hooks, `.tool_input.command` must be parsed using `jq` from the JSON payload fed to `stdin`.
 3. **Session ID Identification**: Scripts must rely on the securely provided environment variable `$CLAUDE_SESSION_ID` injected natively by Claude Code during task execution.
 
 ### Verification Matrix
-
 Before the user manually installs this system globally, the following strict checks must pass:
 
 1. **Working Branch Integrity (Null-Pointer Safety)**:
    - Close a session on `working-branch-alpha`. Check out `working-branch-beta` manually in bash.
    - Run `claude`. The `SessionStart` hook successfully triggers the prompt: "Branch mismatch."
-2. **Parallel Context Fork Verification (`/fork-explore`)**:
-   - Run `git branch` (on `branch-A`). Open new terminal and run `claude --fork-session`.
-   - In the new session, run `git checkout -b branch-B`.
-   - Verify that `session-git-map.json` now contains *two* separate session IDs: one mapped to `branch-A` and one mapped to `branch-B`. Both AI contexts should perfectly recall the conversation prior to the fork.
-3. **Checkpoint Format Check**:
-   - Ask Claude to modify code.
+2. **Checkpoint Format Check**:
+   - Ask Claude to modify code. 
    - Check `git log`. The commit message is solely `CP: "[Global explanation]"` without any automated "Files modified:" boilerplate.
-4. **Protected Branch Ejection**:
+3. **Protected Branch Ejection**:
    - Check out `main`. Ask Claude to delete a file.
    - The official hook interface catches it via Exit Code 2. The action is fully blocked without human intervention.
-5. **Merge Guide Generation**:
+4. **Merge Guide Generation**:
    - Run `/merge target-branch`.
    - Verify that Git history remains untouched (no merge commit exists), and a nicely formatted `feature_merged_into_target.md` appears exactly in `References/MergeGuide/`.
