@@ -151,8 +151,11 @@ T_wl, T_wr, T_bl, T_br
 (左轮扭矩, 右轮扭矩, 左摆杆扭矩, 右摆杆扭矩)
 ```
 
-## Git and Claude Code Branch Rules
+## Git Branch Rules & Session Workflow (CRITICAL)
 
-- **Protected Branches (`main`, `master`, `v1-stable`)**: You are strictly prohibited from using `Edit`/`Write`/`MultiEdit`/`Replace` tools to directly modify files when checked out on these branches.
-- **Diagnostics & Git**: You have `Bash` permissions to run `git` (including `git worktree`), `ls`, `dir`, and other diagnostic commands on protected branches. Feel free to use `git worktree list` or `git checkout -b` directly.
-- **Workflow**: Always ensure you are on a working branch or appropriate worktree before beginning file modifications to avoid being blocked by system hooks.
+- **Terminology**:
+  1. **Protected Branches (`main`, `master`, `v1-stable`)**: Code baseline. AI modification is strictly prohibited.
+  2. **Working Branches**: Where AI edits occur. Every active session must map to a working branch to avoid null pointer issues.
+- **Workflow**:
+  - If you start a session on a Protected Branch, you *cannot* edit code. You MUST use AskUserQuestion to ask: "Create a new protected branch or a working branch?" Then use `Bash(git checkout -b <branch>)` to enter the sandbox.
+  - **DO NOT USE `git worktree`**: If blocked by hooks, ALWAYS resolve it by checking out a working branch locally. Never spawn worktrees.
