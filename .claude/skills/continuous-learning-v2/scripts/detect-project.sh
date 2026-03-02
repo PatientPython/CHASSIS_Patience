@@ -4,6 +4,8 @@
 # Shared logic for detecting current project context.
 # Sourced by observe.sh and start-observer.sh.
 #
+# v2.1.1: Windows compatibility — auto-detect python command
+#
 # Exports:
 #   _CLV2_PROJECT_ID     - Short hash identifying the project (or "global")
 #   _CLV2_PROJECT_NAME   - Human-readable project name
@@ -22,6 +24,14 @@
 _CLV2_HOMUNCULUS_DIR="${HOME}/.claude/homunculus"
 _CLV2_PROJECTS_DIR="${_CLV2_HOMUNCULUS_DIR}/projects"
 _CLV2_REGISTRY_FILE="${_CLV2_HOMUNCULUS_DIR}/projects.json"
+
+# ─────────────────────────────────────────────
+# Detect python command (Windows uses 'python', Unix uses 'python3')
+# ─────────────────────────────────────────────
+_CLV2_PYTHON="python"
+if command -v python3 &>/dev/null && python3 --version &>/dev/null; then
+  _CLV2_PYTHON="python3"
+fi
 
 _clv2_detect_project() {
   local project_root=""
@@ -65,10 +75,10 @@ _clv2_detect_project() {
   fi
 
   local hash_input="${remote_url:-$project_root}"
-  # Use SHA256 via python3 (portable across macOS/Linux, no shasum/sha256sum divergence)
-  project_id=$(printf '%s' "$hash_input" | python3 -c "import sys,hashlib; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:12])" 2>/dev/null)
+  # Use SHA256 via python (auto-detected for Windows/Unix compatibility)
+  project_id=$(printf '%s' "$hash_input" | $_CLV2_PYTHON -c "import sys,hashlib; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:12])" 2>/dev/null)
 
-  # Fallback if python3 failed
+  # Fallback if python failed
   if [ -z "$project_id" ]; then
     project_id=$(printf '%s' "$hash_input" | shasum -a 256 2>/dev/null | cut -c1-12 || \
                  printf '%s' "$hash_input" | sha256sum 2>/dev/null | cut -c1-12 || \
@@ -102,13 +112,12 @@ _clv2_update_project_registry() {
   mkdir -p "$(dirname "$_CLV2_REGISTRY_FILE")"
 
   # Pass values via env vars to avoid shell→python injection.
-  # python3 reads them with os.environ, which is safe for any string content.
   _CLV2_REG_PID="$pid" \
   _CLV2_REG_PNAME="$pname" \
   _CLV2_REG_PROOT="$proot" \
   _CLV2_REG_PREMOTE="$premote" \
   _CLV2_REG_FILE="$_CLV2_REGISTRY_FILE" \
-  python3 -c '
+  $_CLV2_PYTHON -c '
 import json, os
 from datetime import datetime, timezone
 
@@ -139,3 +148,4 @@ PROJECT_ID="$_CLV2_PROJECT_ID"
 PROJECT_NAME="$_CLV2_PROJECT_NAME"
 PROJECT_ROOT="$_CLV2_PROJECT_ROOT"
 PROJECT_DIR="$_CLV2_PROJECT_DIR"
+PYTHON_CMD="$_CLV2_PYTHON"
