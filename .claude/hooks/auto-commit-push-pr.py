@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Git Commit-Push-PR Workflow
 One-command workflow: commit → push → create pull request
@@ -10,9 +11,16 @@ import sys
 import os
 import json
 import re
+import io
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from urllib.parse import urlparse
+
+# Fix encoding on Windows
+if sys.platform == 'win32':
+    # Set UTF-8 encoding for stdout/stderr
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 class CommitPushPRWorkflow:
     """Manages the complete commit → push → PR create workflow."""
