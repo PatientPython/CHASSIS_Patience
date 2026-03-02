@@ -72,9 +72,15 @@ if [ -f "$CONFIG_DIR/disabled" ]; then
   exit 0
 fi
 
+# Detect python command (Windows uses 'python', Unix uses 'python3')
+PYTHON_CMD="python3"
+if ! command -v python3 &>/dev/null || [[ "$(python3 --version 2>&1)" == *"Windows"* && ! -x "$(command -v python3 2>/dev/null)" ]]; then
+  PYTHON_CMD="python"
+fi
+
 # Parse using python via stdin pipe (safe for all JSON payloads)
 # Pass HOOK_PHASE via env var since Claude Code does not include hook type in stdin JSON
-PARSED=$(echo "$INPUT_JSON" | HOOK_PHASE="$HOOK_PHASE" python3 -c '
+PARSED=$(echo "$INPUT_JSON" | HOOK_PHASE="$HOOK_PHASE" $PYTHON_CMD -c '
 import json
 import sys
 import os
