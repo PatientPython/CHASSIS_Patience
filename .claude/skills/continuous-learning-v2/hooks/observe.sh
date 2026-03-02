@@ -7,6 +7,8 @@
 # v2.1: Project-scoped observations — detects current project context
 #       and writes observations to project-specific directory.
 #
+# v2.1.1: Windows compatibility — use 'python' instead of 'python3'
+#
 # Registered via plugin hooks/hooks.json (auto-loaded when plugin is enabled).
 # Can also be registered manually in ~/.claude/settings.json.
 
@@ -14,6 +16,14 @@ set -e
 
 # Hook phase from CLI argument: "pre" (PreToolUse) or "post" (PostToolUse)
 HOOK_PHASE="${1:-post}"
+
+# ─────────────────────────────────────────────
+# Detect python command (Windows uses 'python', Unix uses 'python3')
+# ─────────────────────────────────────────────
+PYTHON_CMD="python"
+if command -v python3 &>/dev/null && python3 --version &>/dev/null; then
+  PYTHON_CMD="python3"
+fi
 
 # ─────────────────────────────────────────────
 # Read stdin first (before project detection)
@@ -33,7 +43,7 @@ fi
 
 # Extract cwd from the hook JSON to use for project detection.
 # This avoids spawning a separate git subprocess when cwd is available.
-STDIN_CWD=$(echo "$INPUT_JSON" | python3 -c '
+STDIN_CWD=$(echo "$INPUT_JSON" | $PYTHON_CMD -c '
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -70,12 +80,6 @@ MAX_FILE_SIZE_MB=10
 # Skip if disabled
 if [ -f "$CONFIG_DIR/disabled" ]; then
   exit 0
-fi
-
-# Detect python command (Windows uses 'python', Unix uses 'python3')
-PYTHON_CMD="python3"
-if ! command -v python3 &>/dev/null || [[ "$(python3 --version 2>&1)" == *"Windows"* && ! -x "$(command -v python3 2>/dev/null)" ]]; then
-  PYTHON_CMD="python"
 fi
 
 # Parse using python via stdin pipe (safe for all JSON payloads)
@@ -128,13 +132,13 @@ except Exception as e:
 ')
 
 # Check if parsing succeeded
-PARSED_OK=$(echo "$PARSED" | python3 -c "import json,sys; print(json.load(sys.stdin).get('parsed', False))" 2>/dev/null || echo "False")
+PARSED_OK=$(echo "$PARSED" | $PYTHON_CMD -c "import json,sys; print(json.load(sys.stdin).get('parsed', False))" 2>/dev/null || echo "False")
 
 if [ "$PARSED_OK" != "True" ]; then
   # Fallback: log raw input for debugging
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   export TIMESTAMP="$timestamp"
-  echo "$INPUT_JSON" | python3 -c "
+  echo "$INPUT_JSON" | $PYTHON_CMD -c "
 import json, sys, os
 raw = sys.stdin.read()[:2000]
 print(json.dumps({'timestamp': os.environ['TIMESTAMP'], 'event': 'parse_error', 'raw': raw}))
@@ -159,7 +163,7 @@ export PROJECT_ID_ENV="$PROJECT_ID"
 export PROJECT_NAME_ENV="$PROJECT_NAME"
 export TIMESTAMP="$timestamp"
 
-echo "$PARSED" | python3 -c "
+echo "$PARSED" | $PYTHON_CMD -c "
 import json, sys, os
 
 parsed = json.load(sys.stdin)
