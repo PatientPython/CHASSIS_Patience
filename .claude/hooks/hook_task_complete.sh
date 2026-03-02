@@ -40,8 +40,8 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 NOW_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
-export PLAN_SHA_FILE CURRENT_BRANCH HEAD_SHA NOW_ISO TASK_SUBJECT
-python3 - <<'PY'
+export PLAN_SHA_FILE CURRENT_BRANCH HEAD_SHA NOW_ISO TASK_SUBJECT PYTHON_CMD
+"$PYTHON_CMD" - <<'PY'
 import json
 import os
 from pathlib import Path
