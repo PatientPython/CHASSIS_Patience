@@ -42,7 +42,7 @@ user-invocable: true
 2. 提交变更（复用 `/commit` 逻辑自动分类）
 3. 推送代码（`git push -u origin <当前分支>`）
 4. 检测目标分支（优先级：`--target` > `develop` > `main/master`）
-5. 创建 PR（使用 GitHub CLI 或 web URL）
+5. 使用 GitHub CLI创建 PR
 6. 显示结果
 
 ## 前置条件
