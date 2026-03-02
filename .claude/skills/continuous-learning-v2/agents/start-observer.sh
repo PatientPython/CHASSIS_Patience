@@ -42,7 +42,7 @@ OBSERVER_INTERVAL_MINUTES=5
 MIN_OBSERVATIONS=20
 OBSERVER_ENABLED=false
 if [ -f "$CONFIG_FILE" ]; then
-  _config=$(CLV2_CONFIG="$CONFIG_FILE" python3 -c "
+  _config=$(CLV2_CONFIG="$CONFIG_FILE" $PYTHON_CMD -c "
 import json, os
 with open(os.environ['CLV2_CONFIG']) as f:
     cfg = json.load(f)
