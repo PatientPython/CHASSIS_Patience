@@ -2,7 +2,11 @@
 
 > 基于 Superpowers 4.3.1 大修大改，融合自定义分支管理方案。
 >
-> **语言规范**: 所有 skills、agents、hooks 中 AI 可见的提示词内容**必须使用准确的英文**，在不影响提示词质量的前提下**尽可能减少 token 使用**。本文档（中文）为设计参考，实际 SKILL.md / agent.md / hook 注入内容均为英文。
+> **语言规范**:
+> 1) 文件路径可包含中文；
+> 2) AI 可见的提示词（skills/agents/hooks 注入）必须使用准确英文，并尽量节省 token；
+> 3) 报告模板必须使用中文；
+> 4) 所有最终输出报告（如 ReviewReport、MergeGuide）必须为全中文。
 
 ---
 
@@ -15,6 +19,7 @@ graph TB
         H2["hook_prompt_submit.sh<br/>UserPromptSubmit:<br/>CPST checkpoint<br/>注入git控制上下文"]
         H3["hook_stop.sh<br/>Stop:<br/>CPED checkpoint"]
         H4["hook_task_complete.sh<br/>TaskCompleted:<br/>TASK checkpoint"]
+      H5["hook_pre_tool_branch_guard.sh<br/>PreToolUse:<br/>受保护分支工具强制阻断"]
     end
 
     subgraph "Skills 层"
@@ -146,32 +151,45 @@ graph TB
   1. Git checkpoint 签名: `TASK:任务名称的前十个字`
   2. **更新 `plan-git-SHA.json`**: 读取当前分支最新 git SHA 和完成时间，写入对应 task 的 `head_sha` 和 `completed_at` 字段，将 task 状态改为 `completed`
 - 匹配逻辑: 用 `task_subject` 匹配 plan-git-SHA.json 中于当前工作区同分支最新的 `in progress` plan 下的 task 名称
-- 同时更新该 plan 的 `head_plan_sha` 为最新提交
+- 同时更新该 plan 的 `head_plan_sha` 为最新提交。plan的‘status’在当前plan的todolist的最后一个任务处理完成（也就是其status变成completed时）自动变成completed。
 
-> [!NOTE]
->
-> plan的head是否在最后一个task完成后停止
 
-### 3.5 settings.json hooks 配置
+### 3.5 `hook_pre_tool_branch_guard.sh` — 新增受保护分支强制阻断
+
+- **触发事件**: `PreToolUse`
+- **目标**: 在受保护分支（`main`/`master`/`v1-stable`）上阻断会写入或高风险的工具调用，避免误修改基线分支
+- **阻断工具集合**: `Bash`、`Edit`、`Write`、`MultiEdit`、`NotebookEdit`、`Agent`
+- **行为**: 命中条件时返回非零退出并输出阻断提示；非受保护分支或非阻断工具直接放行
+- **定位**: `.claude/hooks/hook_pre_tool_branch_guard.sh`
+
+### 3.6 settings.json hooks 配置
 
 ```json
 {
   "hooks": {
     "SessionStart": [{ "matcher": "startup|resume|clear|compact",
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_session_start.sh" }] }],
-    "UserPromptSubmit": [{ "matcher": "*",
+    "UserPromptSubmit": [{
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_prompt_submit.sh" }] }],
-    "Stop": [{ "matcher": "*",
+    "Stop": [{
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_stop.sh", "async": true }] }],
-    "TaskCompleted": [{ "matcher": "*",
-      "hooks": [{ "type": "command", "command": ".claude/hooks/hook_task_complete.sh", "async": true }] }]
+    "TaskCompleted": [{
+      "hooks": [{ "type": "command", "command": ".claude/hooks/hook_task_complete.sh", "async": true }] }],
+    "PreToolUse": [
+      { "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit|Agent",
+        "hooks": [{ "type": "command", "command": ".claude/hooks/hook_pre_tool_branch_guard.sh" }] },
+      { "matcher": "*",
+        "hooks": [{ "type": "command", "command": ".claude/skills/continuous-learning-v2/hooks/observe.sh pre", "async": true }] }
+    ],
+    "PostToolUse": [{ "matcher": "*",
+      "hooks": [{ "type": "command", "command": ".claude/skills/continuous-learning-v2/hooks/observe.sh post", "async": true }] }]
   }
 }
 ```
 
 > **新增文件**: `.claude/hooks/workflow-guide.md` — 推荐工作流说明文档，由 hook_session_start.sh 读取并注入
 >
-> `.claude/hooks/git-harness-agent-policy.md` — 强制git管控说明文档，由 hook_session_start.sh 读取并注入
+> `.claude/hooks/git-harness-agent-policy.md` — 强制git管控说明文档，由 hook_prompt_submit.sh 读取并注入
 
 ---
 
@@ -405,7 +423,8 @@ graph TB
   - 例: `References/ReviewReport/2026-03-02T14-30-LQR-Control/SPEC-2026-03-02T14-30-LQR-Control.md`
 - **报告模板**: 分别创建 `spec-review-tpl.md` 和 `qlty-review-tpl.md`
   - 位置: `.claude/skills/code-review/`
-  - 参考 Superpowers `requesting-code-review/code-reviewer.md` 格式（Strengths / Issues / Assessment 结构）
+  - 参考 Superpowers `requesting-code-review/code-reviewer.md` 格式（优势 / 问题 / 结论结构）
+  - 模板正文必须使用中文字段与中文章节标题
   - spec 模板加入对照 plan 的欺差展示模块
   - qlty 模板加入嵌入式规范欺差展示模块
 - 生成后提示用户进行进一步审核
@@ -523,6 +542,7 @@ sequenceDiagram
 │   ├── hook_prompt_submit.sh  # [改造] CPST 签名 + git-harness 注入
 │   ├── hook_stop.sh           # [新建] CPED 签名
 │   ├── hook_task_complete.sh  # [新建] TASK 签名
+│   ├── hook_pre_tool_branch_guard.sh # [新建] 受保护分支写操作阻断
 │   ├── workflow-guide.md      # [新建] 推荐工作流说明（英文）
 │   └── git-harness-agent-policy.md  # [新建] 分支保护策略（英文，强制）
 ├── agents/
@@ -541,10 +561,10 @@ sequenceDiagram
 │   │   ├── SKILL.md                     #（英文）
 │   │   ├── naming-rules.md              # 命名规范（英文）
 │   │   ├── developing-styles.md         # 代码实现规范（英文）
-│   │   ├── spec-reviewer-prompt.md      # spec-reviewer 调用模板（英文）
-│   │   ├── quality-reviewer-prompt.md   # quality-reviewer 调用模板（英文）
-│   │   ├── spec-review-tpl.md           # [新建] SPEC 报告模板（英文）
-│   │   └── qlty-review-tpl.md           # [新建] QLTY 报告模板（英文）
+│   │   ├── spec-reviewer-prompt.md      # spec-reviewer 调用提示词（英文）
+│   │   ├── quality-reviewer-prompt.md   # quality-reviewer 调用提示词（英文）
+│   │   ├── spec-review-tpl.md           # [新建] SPEC 报告模板（中文）
+│   │   └── qlty-review-tpl.md           # [新建] QLTY 报告模板（中文）
 │   ├── keil-build/                      # [改造] 元技能
 │   │   ├── SKILL.md                     #（英文）
 │   │   └── scripts/
@@ -584,7 +604,7 @@ sequenceDiagram
         },
         "Task_2": {
           "task_name": "编写双环PID算法",
-          "status": "in_progress",
+          "status": "pending",
           "completed_at": "",
           "head_sha": ""
         },
@@ -620,16 +640,20 @@ sequenceDiagram
   "hooks": {
     "SessionStart": [{ "matcher": "startup|resume|clear|compact",
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_session_start.sh" }] }],
-    "UserPromptSubmit": [{ "matcher": "*",
+    "UserPromptSubmit": [{
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_prompt_submit.sh" }] }],
-    "Stop": [{ "matcher": "*",
+    "Stop": [{
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_stop.sh", "async": true }] }],
-    "TaskCompleted": [{ "matcher": "*",
+    "TaskCompleted": [{
       "hooks": [{ "type": "command", "command": ".claude/hooks/hook_task_complete.sh", "async": true }] }],
-    "PreToolUse": [{ "matcher": "*",
-      "hooks": [{ "type": "command",
-        "command": ".claude/skills/continuous-learning-v2/hooks/observe.sh pre",
-        "async": true }] }],
+    "PreToolUse": [
+      { "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit|Agent",
+        "hooks": [{ "type": "command", "command": ".claude/hooks/hook_pre_tool_branch_guard.sh" }] },
+      { "matcher": "*",
+        "hooks": [{ "type": "command",
+          "command": ".claude/skills/continuous-learning-v2/hooks/observe.sh pre",
+          "async": true }] }
+    ],
     "PostToolUse": [{ "matcher": "*",
       "hooks": [{ "type": "command",
         "command": ".claude/skills/continuous-learning-v2/hooks/observe.sh post",
@@ -655,8 +679,9 @@ sequenceDiagram
    - 改造 hook_prompt_submit.sh：实现 CPST + 创建并将 `.claude/hooks/git-harness-agent-policy.md`注入additionalContext，强调要强制执行。  
    - 新建 `.claude/hooks/hook_stop.sh`：实现 CPED。  
    - 新建 `.claude/hooks/hook_task_complete.sh`：实现 TASK，同时回写 `.claude/plan-git-SHA.json` 的 task.status/completed_at/head_sha 与 plan.head_plan_sha。  
+  - 新建 `.claude/hooks/hook_pre_tool_branch_guard.sh`：在 `PreToolUse` 上阻断受保护分支写操作类工具。  
    - 新建状态文件与模式：初始化 `.claude/plan-context.json`、`.claude/plan-git-SHA.json` 结构并写好注释方便后续更改。  
-   - 更新 settings.json 事件绑定，实现 continuous-learning-v2 的 PreToolUse/PostToolUse。  
+  - 更新 settings.json 事件绑定：`UserPromptSubmit/Stop/TaskCompleted` 去除无效 matcher；`PreToolUse` 接入 branch guard 与 continuous-learning-v2；保留 `PostToolUse` 观察钩子。  
    - 清理 hook_pre_tool.sh 与 session-git-map.json。  
 
 3. Phase 2｜审查规范附件与 Subagents  

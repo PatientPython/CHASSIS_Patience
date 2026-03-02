@@ -159,3 +159,26 @@ T_wl, T_wr, T_bl, T_br
 - **Workflow**:
   - If you start a session on a Protected Branch, you *cannot* edit code. You MUST use AskUserQuestion to ask: "Create a new protected branch or a working branch?" Then use `Bash(git checkout -b <branch>)` to enter the sandbox.
   - **DO NOT USE `git worktree`**: If blocked by hooks, ALWAYS resolve it by checking out a working branch locally. Never spawn worktrees.
+
+## Claude Workflow v6 (Hooks + Skills)
+
+- Hooks:
+  - `SessionStart` -> `.claude/hooks/hook_session_start.sh` injects workflow context from `.claude/hooks/workflow-guide.md`.
+  - `UserPromptSubmit` -> `.claude/hooks/hook_prompt_submit.sh` creates `CPST:` checkpoint and injects mandatory git policy from `.claude/hooks/git-harness-agent-policy.md`.
+  - `Stop` -> `.claude/hooks/hook_stop.sh` creates `CPED:` checkpoint.
+  - `TaskCompleted` -> `.claude/hooks/hook_task_complete.sh` creates `TASK:` checkpoint and updates `.claude/plan-git-SHA.json`.
+
+- Core skills:
+  - `brainstorming` -> design note
+  - `create-todolist` -> plan JSON + `.claude/plan-context.json` + `.claude/plan-git-SHA.json`
+  - `implement-and-verify` -> implement with build evidence
+  - `code-review` -> mandatory dispatcher: `spec-reviewer` then `quality-reviewer`
+  - `subagent-driven-dev` / `quick-executing-dev` -> execution modes
+  - `merge-work-branch` -> advisory merge guide output to `References/MergeGuide/`
+
+- Review outputs:
+  - Failure reports under `References/ReviewReport/<plan-id>/`.
+
+- Task status constraints in `.claude/plan-git-SHA.json`:
+  - Task: `pending` or `completed`
+  - Plan: `in_progress` or `completed`

@@ -1,104 +1,102 @@
 #!/bin/bash
-# validate.sh — 验证命名文档的格式和命名规则
-# 用法: bash validate.sh naming_output.md
-# 检查项:
-#   1. 模板结构完整性（7个分区是否都存在）
-#   2. 全局变量是否有 G_ 前缀
-#   3. 静态变量是否有 S_ 前缀
-#   4. 结构体类型是否使用 ST_ 前缀
-#   5. 枚举类型是否使用 EM_ 前缀
-#   6. 宏/常量是否全大写下划线
-#   7. 是否存在单字节变量名（除 i/j/k）
+# validate.sh — Validate naming document format and naming conventions.
+# Usage: bash validate.sh naming_output.md
 
 set -euo pipefail
 
 FILE="${1:-naming_output.md}"
 
 if [ ! -f "$FILE" ]; then
-    echo "❌ 文件不存在: $FILE"
+    echo "ERROR: file not found: $FILE"
     exit 1
 fi
 
-echo "=== 命名文档验证 ==="
-echo "文件: $FILE"
+echo "=== Naming Document Validation ==="
+echo "File: $FILE"
 echo ""
 
 ERRORS=0
 WARNINGS=0
 
-# 1. 检查模板结构完整性
-echo "--- 1. 模板结构 ---"
-SECTIONS=("物理量" "控制变量" "状态变量" "参数与常量" "中间计算量" "结构体定义" "枚举定义")
+# 1) Check template sections
+echo "--- 1) Template Sections ---"
+SECTIONS=(
+  "Physical Quantities"
+  "Control Variables"
+  "State Variables"
+  "Parameters and Constants"
+  "Intermediate Variables"
+  "Struct Definitions"
+  "Enum Definitions"
+)
 for section in "${SECTIONS[@]}"; do
     if grep -q "## [0-9]*\. $section" "$FILE" 2>/dev/null; then
-        echo "  ✅ $section"
+        echo "  OK: $section"
     else
-        echo "  ❌ 缺少分区: $section"
+        echo "  ERROR: missing section: $section"
         ((ERRORS++))
     fi
 done
 echo ""
 
-# 2. 检查全局变量前缀
-echo "--- 2. 全局变量前缀 (G_) ---"
-# 在表格中查找 float/int 类型的全局变量，检查是否以 G_ 开头
+# 2) Heuristic check for variable prefixes
+echo "--- 2) Prefix checks (G_/S_/ST_/EM_) ---"
 grep -oP '(?<=\| )[A-Za-z_][A-Za-z0-9_]*(?= \| float)' "$FILE" 2>/dev/null | while read -r name; do
     if [[ "$name" == G_* ]] || [[ "$name" == [a-z]* ]] || [[ "$name" == [A-Z][A-Z_]* ]]; then
-        : # G_ 前缀、局部变量（小写开头）、常量（全大写）都合法
+        :
     else
-        echo "  ⚠️ 可能缺少前缀: $name"
+        echo "  WARN: possible missing prefix: $name"
         ((WARNINGS++))
     fi
 done
-echo "  检查完成"
+echo "  Done"
 echo ""
 
-# 3. 检查结构体命名
-echo "--- 3. 结构体命名 (ST_) ---"
+# 3) Struct naming
+echo "--- 3) Struct naming (ST_) ---"
 grep -oP 'ST_[A-Za-z0-9_]+' "$FILE" 2>/dev/null | sort -u | while read -r name; do
-    echo "  ✅ $name"
+    echo "  OK: $name"
 done
-# 检查是否有不符合 ST_ 的结构体类型
-grep -P '结构体类型名' "$FILE" -A 100 2>/dev/null | grep -oP '(?<=\| )[A-Z][A-Za-z0-9_]+(?= \|)' | grep -v '^ST_' | grep -v '^#' | while read -r name; do
-    echo "  ❌ 结构体未使用 ST_ 前缀: $name"
+grep -P 'Struct Type' "$FILE" -A 100 2>/dev/null | grep -oP '(?<=\| )[A-Z][A-Za-z0-9_]+(?= \|)' | grep -v '^ST_' | grep -v '^#' | while read -r name; do
+    echo "  ERROR: struct type without ST_ prefix: $name"
     ((ERRORS++))
 done
 echo ""
 
-# 4. 检查枚举命名
-echo "--- 4. 枚举命名 (EM_) ---"
+# 4) Enum naming
+echo "--- 4) Enum naming (EM_) ---"
 grep -oP 'EM_[A-Za-z0-9_]+' "$FILE" 2>/dev/null | sort -u | while read -r name; do
-    echo "  ✅ $name"
+    echo "  OK: $name"
 done
 echo ""
 
-# 5. 检查常量命名（应全大写下划线）
-echo "--- 5. 常量命名 (全大写) ---"
+# 5) Constant naming
+echo "--- 5) Constant naming (UPPER_SNAKE) ---"
 grep -P 'const float|const int|const uint' "$FILE" 2>/dev/null | grep -oP '(?<=\| )[A-Za-z_][A-Za-z0-9_]*(?= \|)' | while read -r name; do
     if [[ "$name" =~ ^[A-Z][A-Z0-9_]*$ ]] || [[ "$name" == G_* ]] || [[ "$name" == S_* ]]; then
-        echo "  ✅ $name"
+        echo "  OK: $name"
     else
-        echo "  ⚠️ 常量建议全大写: $name"
+        echo "  WARN: constant should be uppercase: $name"
         ((WARNINGS++))
     fi
 done
 echo ""
 
-# 6. 检查单字节变量名
-echo "--- 6. 单字节变量检查 ---"
+# 6) One-letter variable names
+echo "--- 6) One-letter variable check ---"
 grep -oP '(?<=\| )[a-zA-Z](?= \|)' "$FILE" 2>/dev/null | while read -r name; do
     if [[ "$name" =~ ^[ijk]$ ]]; then
-        echo "  ✅ 循环变量 $name 合法"
+        echo "  OK: loop variable $name"
     else
-        echo "  ❌ 禁止单字节变量: $name (华为 规则3.4)"
+        echo "  ERROR: disallowed one-letter variable: $name"
         ((ERRORS++))
     fi
 done
-echo "  检查完成"
+echo "  Done"
 echo ""
 
-echo "=== 验证完成 ==="
-echo "错误: $ERRORS | 警告: $WARNINGS"
+echo "=== Validation Complete ==="
+echo "Errors: $ERRORS | Warnings: $WARNINGS"
 
 if [ "$ERRORS" -gt 0 ]; then
     exit 1

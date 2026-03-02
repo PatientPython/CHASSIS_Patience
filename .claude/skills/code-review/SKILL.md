@@ -1,177 +1,56 @@
 ---
 name: code-review
-description: Run code review using code-reviewer agent, with embedded C code review rules
-argument-hint: "[scope-or-files]"
-user-invokable: true
+description: Review dispatcher. Run spec-reviewer first, then quality-reviewer, with SHA range selection from plan-git-SHA.
+argument-hint: "[task|plan|files]"
+user-invocable: true
 ---
 
-# 代码审查
+# Code Review Dispatcher
 
-## 执行规则
+This skill orchestrates review flow only. It does not auto-edit code.
 
-1. 如果提供了参数，将其作为审查范围（模块/文件）传递给 subagent
-2. 如果没有参数，先审查 unstaged 变更，如果没有则审查 staged 变更
-3. subagent 应遵循四阶段流程并返回简明报告：
-   - 严重问题（必须修复）
-   - 警告（应该修复）
-   - 建议（最好修复）
-4. 不要自动修改代码，除非用户在审查后明确要求修复
-5. 审查结束后必须将完整 Markdown 报告写入“当前执行指令所在代码库根目录”的 `References/CodeReview/` 子目录；若目录不存在则创建
-6. `References` 目录禁止创建在 `C:\Users\35766\.claude\` 等全局配置目录；只能位于被审查代码库根目录下
+## Execution order (mandatory)
 
-如果 `code-reviewer` subagent 不可用，报告该问题并建议运行 `/agents` 验证用户级 agent 加载。
+1. Resolve review range from `.claude/plan-git-SHA.json`.
+2. Run `spec-reviewer` first.
+3. Continue to `quality-reviewer` only if spec review passes.
+4. Mark review complete only if both reviewers pass.
 
----
+## SHA range strategy
 
-# 代码审查规范合集
+- Select latest `in_progress` plan on current branch.
+- Plan-level review:
+  - `BASE = base_plan_sha`
+  - `HEAD = current HEAD`
+- Task-level review:
+  - first task: `BASE = base_plan_sha`
+  - otherwise: `BASE = previous completed task head_sha` by `completed_at`
+  - `HEAD = current HEAD`
+- Always run `git diff --stat BASE..HEAD` before dispatch.
 
-> 合并文件管理 + 代码质量规则，排除命名规则（由 naming skill 负责）。
-> 供 code-reviewer agent 预加载使用。
+## Fallback when no active plan
 
----
+Ask user using AskUserQuestion:
 
-## 第一部分：文件管理规则
+1. No in-progress plan found. Choose scope:
+   - (a) input BASE_SHA and HEAD_SHA
+   - (b) review last N commits
+   - (c) other
+2. If (a): ask for both SHAs.
+3. If (b): ask for N.
 
-### 华为C规范 — §1 头文件
+## Output policy
 
-#### 原则
+- Pass result: return concise message, no file required.
+- Fail result: write markdown report to `References/ReviewReport/<plan-id>/`.
+  - spec fail: `SPEC-<plan-id>.md`
+  - quality fail: `QLTY-<plan-id>.md`
+- Report content must be fully in Chinese.
+- Use Chinese report sections: `优势`, `问题`, `结论`.
 
-- **1.1** 头文件放接口声明，不放实现。变量定义放 `.c`，`.h` 仅放 `extern` 声明
-- **1.2** 头文件职责单一，避免 "god.h"
-- **1.3** 向稳定方向包含：产品 → 平台 → 标准库
+## References
 
-#### 强制规则
-
-- **1.1** 每个 `.c` 有同名 `.h` 声明对外接口（`main.c` 除外）
-- **1.2** 禁止头文件循环依赖
-- **1.3** 禁止包含用不到的头文件
-- **1.4** 头文件必须自包含（可独立编译）
-- **1.5** 必须有 `#ifndef / #define / #endif` 保护符
-- **1.6** 禁止在 `.h` 中定义变量
-- **1.7** 禁止在 `.c` 中 `extern` 声明，必须通过 `#include .h` 引入
-- **1.8** 禁止在 `extern "C"` 中包含头文件
-
-#### 建议
-
-- 同一模块的 `.c` 放同一目录，提供模块级 `.h`
-- 统一头文件包含排列方式
-
-### Google C++ — Headers（适用C部分）
-
-- Self-contained：头文件自包含，可独立编译
-- #define Guard：格式 `PROJECT_PATH_FILE_H_`，基于源码树路径
-- IWYU：Include What You Use，不依赖传递性包含
-- Include Order：① 对应 `.h` ② C系统头文件 ③ 项目头文件，每组字母序
-- Internal Linkage：`.c` 中不对外暴露的函数/变量声明为 `static`
-
-### 项目规范 — 文件模板
-
-`.c` 文件分区：
-
-```c
-/***头文件引用***/
-/***宏定义、常量定义***/
-/***结构体、数组定义***/
-/***变量、枚举定义***/
-/***函数定义***/
-```
-
-`.h` 文件分区：
-
-```c
-#ifndef __FILENAME_H
-#define __FILENAME_H
-/***头文件引用***/
-/***宏定义***/
-/***extern声明***/
-/***结构体声明***/
-/***函数声明***/
-#endif
-```
-
----
-
-## 第二部分：代码质量规则
-
-### 函数（华为§2）
-
-- 原则：一个函数仅完成一件功能
-- 原则：重复代码提炼成函数（>2次考虑，>3次必须）
-- 规则：新增函数 ≤50 行（非空非注释，算法例外）
-- 规则：嵌套 ≤4 层
-- 规则：可重入函数避免共享变量，必须时用互斥保护
-- 规则：全面处理函数错误返回码
-- 规则：高扇入、合理扇出（<7）
-- 规则：及时清除废弃代码
-- 建议：不变参数用 `const`
-- 建议：避免使用全局变量和静态局部变量
-- 建议：参数 ≤5 个
-- 建议：内部函数加 `static`
-
-### 变量（华为§4 + Google）
-
-- 一个变量只有一个功能
-- 不用或少用全局变量（用 `static` 限制作用域）
-- 防止局部变量与全局变量同名
-- 严禁使用未初始化变量作右值
-- 首次使用前初始化，越近越好
-- 减少不必要的强制类型转换
-- 声明在最窄作用域，声明与初始化合并
-
-### 宏与常量（华为§5）
-
-- 宏表达式完备括号
-- 多语句宏用 `do{...}while(0)`
-- 宏参数禁止变化（如 `SQUARE(a++)`）
-- 禁止魔鬼数字
-- 优先用函数代替宏
-- 用 `const` 代替 `#define` 定义常量
-- 宏中不使用 `return/goto/continue/break`
-
-### 质量与安全（华为§6）
-
-- 禁止内存越界（推荐 `snprintf` 代替 `sprintf`）
-- 防差1错误（`<=` vs `<`、边界值）
-- `if...else if` 以 `else` 结束
-- `switch` 必须有 `default`，case 贯穿需注释
-- 注意操作符混淆：`=`/`==`、`|`/`||`、`&`/`&&`、`!`/`~`
-- 溢出检查（如 `unsigned char` 下溢）
-- `goto` 不滥用，可用于统一错误退出
-
-### 注释（华为§8 + 项目规范）
-
-- 注释说明 **why** 而非 **what**
-- 修改代码时维护注释一致性
-- 文件头 Doxygen：`@file` `@brief` `@author` `@date`
-- 函数头：`@brief` `@param` `@retval`
-- 全局变量注释（功能、取值范围、访问注意）
-- 注释放上方或右方，不放下面
-- case 贯穿必须注释
-- 分区注释格式：`/***头文件引用***/` 等
-
-### 排版格式（华为§9）
-
-- 缩进一致（Tab=4空格）
-- 行长度合理
-- 符合模板分区结构
-
----
-
-## 第三部分：嵌入式特有审查项
-
-- `volatile`：ISR 中访问的共享变量必须 `volatile` 修饰
-- 可重入性：任务间共享数据需互斥保护
-- 栈溢出：函数中大数组改为 static 或动态分配
-- 对齐：结构体字节对齐（`__packed` 或手动）
-- 浮点精度：`float` 比较用容差，非 `==`
-- 位操作：寄存器操作用正确位掩码和移位
-- 看门狗：长循环中喂狗
-- 固定宽度类型：使用 `uint32_t` 等替代 `int`/`unsigned`
-
----
-
-## 优先级
-
-**项目规范** > **华为强制规则** > **华为建议** > **Google参考**
-
-例外：官方库、第三方库、HAL 层代码保持原风格。
+- `naming-rules.md`
+- `developing-styles.md`
+- `spec-reviewer-prompt.md`
+- `quality-reviewer-prompt.md`

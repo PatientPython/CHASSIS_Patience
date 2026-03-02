@@ -1,184 +1,198 @@
-#!/bin/bash
-# claude_integration.test.sh
-# Automated tests for Claude Code Session & Branch Management Architecture
-# Execute this script directly or via Claude Code: `bash Tests/claude_integration.test.sh`
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Ensure we are executing from the root of the project
-PROJECT_DIR=$(pwd)
-if [[ "$PROJECT_DIR" == *"Tests"* ]]; then
-    cd ..
-    PROJECT_DIR=$(pwd)
-fi
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CLAUDE_DIR="$PROJECT_DIR/.claude"
 
-export CLAUDE_PROJECT_DIR="$PROJECT_DIR"
-MAP_FILE="$PROJECT_DIR/.claude/session-git-map.json"
+PASS=0
+FAIL=0
 
-# Color constants
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+pass() { echo "[PASS] $1"; PASS=$((PASS+1)); }
+fail() { echo "[FAIL] $1"; FAIL=$((FAIL+1)); }
 
-TEST_PASSED=0
-TEST_FAILED=0
-
-# Helper function for assertions
-assert() {
-    local condition=$1
-    local description=$2
-    local details=$3
-    if eval "$condition"; then
-        echo -e "[ ${GREEN}PASS${NC} ] $description"
-        ((TEST_PASSED++))
-    else
-        echo -e "[ ${RED}FAIL${NC} ] $description"
-        if [ -n "$details" ]; then
-            echo -e "         ${RED}Details: ${details}${NC}"
-        fi
-        ((TEST_FAILED++))
-    fi
+assert_file() {
+  local path="$1"
+  local label="$2"
+  if [ -f "$path" ]; then
+    pass "$label"
+  else
+    fail "$label (missing: $path)"
+  fi
 }
 
-echo "=== Claude Code Hook Integration Tests ==="
-echo "Working Directory: $PROJECT_DIR"
+echo "=== v6 Workflow Integration Tests ==="
+echo "Project: $PROJECT_DIR"
 
-# Clean state but back up original
-mkdir -p "$PROJECT_DIR/.claude"
-if [ -f "$MAP_FILE" ]; then
-    cp "$MAP_FILE" "${MAP_FILE}.bak"
-fi
-echo "{}" > "$MAP_FILE"
+assert_file "$CLAUDE_DIR/settings.json" "project settings exists"
+assert_file "$CLAUDE_DIR/hooks/hook_session_start.sh" "hook_session_start exists"
+assert_file "$CLAUDE_DIR/hooks/hook_prompt_submit.sh" "hook_prompt_submit exists"
+assert_file "$CLAUDE_DIR/hooks/hook_stop.sh" "hook_stop exists"
+assert_file "$CLAUDE_DIR/hooks/hook_task_complete.sh" "hook_task_complete exists"
+assert_file "$CLAUDE_DIR/hooks/hook_pre_tool_branch_guard.sh" "protected-branch guard hook exists"
+assert_file "$CLAUDE_DIR/skills/keil-build/SKILL.md" "keil-build skill exists"
 
-# =========================================================
-# 1. hook_session_start.sh validation
-# =========================================================
-echo -e "\n--- 1. Testing Session Start Hook (Working Branch Integrity) ---"
+PROJECT_DIR="$PROJECT_DIR" python3 - <<'PY' || exit 1
+import json
+import os
+from pathlib import Path
 
-# 1.1 Protected branch check
-export MOCK_BRANCH="main"
-OUTPUT=$(bash -c '
-    function git() { if [[ "$1" == "rev-parse" ]]; then echo "$MOCK_BRANCH"; else command git "$@"; fi; }
-    export -f git
-    bash "$CLAUDE_PROJECT_DIR/.claude/hooks/hook_session_start.sh"
-')
-assert "[[ \"\$OUTPUT\" == *\"SYSTEM ALERT: You are on a protected branch.\"* ]]" "Detects protected branch (main) and alerts" "Actual Output: $OUTPUT"
+root = Path(os.environ['PROJECT_DIR'])
+settings = json.loads((root / '.claude/settings.json').read_text(encoding='utf-8'))
+hooks = settings.get('hooks', {})
 
-# 1.2 Empty session map - should register
-export CLAUDE_SESSION_ID="test-session-new"
-export MOCK_BRANCH="working-new"
-OUTPUT=$(bash -c '
-    function git() { if [[ "$1" == "rev-parse" ]]; then echo "$MOCK_BRANCH"; else command git "$@"; fi; }
-    export -f git
-    bash "$CLAUDE_PROJECT_DIR/.claude/hooks/hook_session_start.sh"
-')
-SAVED_BRANCH=$(jq -r ".\"$CLAUDE_SESSION_ID\"" "$MAP_FILE")
-assert "[[ \"\$SAVED_BRANCH\" == \"working-new\" ]]" "Saves completely new session to map" "Saved branch was: $SAVED_BRANCH"
+required = ['SessionStart','UserPromptSubmit','Stop','TaskCompleted','PreToolUse','PostToolUse']
+for key in required:
+    if key not in hooks:
+        raise SystemExit(f"Missing hook event: {key}")
 
-# 1.3 Branch mismatch scenario
-export MOCK_BRANCH="working-other"
-OUTPUT=$(bash -c '
-    function git() { if [[ "$1" == "rev-parse" ]]; then echo "$MOCK_BRANCH"; else command git "$@"; fi; }
-    export -f git
-    bash "$CLAUDE_PROJECT_DIR/.claude/hooks/hook_session_start.sh"
-')
-assert "[[ \"\$OUTPUT\" == *\"SYSTEM ALERT: Branch mismatch.\"* ]]" "Detects branch mismatch from session map constraints" "Actual Output: $OUTPUT"
+for key in ['UserPromptSubmit','Stop','TaskCompleted']:
+    groups = hooks.get(key, [])
+    if not groups:
+        raise SystemExit(f"No hook group for {key}")
+    for group in groups:
+        if 'matcher' in group:
+            raise SystemExit(f"Unexpected matcher in {key}; should be omitted per official docs")
 
+pre_groups = hooks['PreToolUse']
+found_guard = False
+for group in pre_groups:
+    for handler in group.get('hooks', []):
+        if handler.get('command') == '.claude/hooks/hook_pre_tool_branch_guard.sh':
+            found_guard = True
+if not found_guard:
+    raise SystemExit('PreToolUse guard hook not wired in settings')
 
-# =========================================================
-# 2. hook_pre_tool.sh validation
-# =========================================================
-echo -e "\n--- 2. Testing Pre-Tool Hook (Protected Branch Ejection) ---"
+skill_text = (root / '.claude/skills/keil-build/SKILL.md').read_text(encoding='utf-8')
+if '$CLAUDE_PROJECT_DIR/.claude/skills/keil-build/scripts/keil-build.ps1' not in skill_text:
+    raise SystemExit('keil-build is not project-level path')
 
-# 2.1 Protected branch + Bash payload -> should exit 2
-export MOCK_BRANCH="main"
-PAYLOAD='{"tool_name": "Bash"}'
-OUTPUT=$(echo "$PAYLOAD" | bash -c '
-    function git() { if [[ "$1" == "rev-parse" ]]; then echo "$MOCK_BRANCH"; else command git "$@"; fi; }
-    export -f git
-    bash "$CLAUDE_PROJECT_DIR/.claude/hooks/hook_pre_tool.sh" 2>&1
-    echo "EXIT_CODE=$?"
-')
-assert "[[ \"\$OUTPUT\" == *\"Error: Modifying protected branch\"* ]]" "Blocks tool usage on protected branch" "Output: $OUTPUT"
-assert "[[ \"\$OUTPUT\" == *\"EXIT_CODE=2\"* ]]" "Exits with code 2 to trigger official Claude blockage" ""
+print('SETTINGS_AND_SKILL_OK')
+PY
+pass "settings schema and project-level keil-build path"
 
-# 2.2 Working branch + Bash payload -> should exit 0
-export MOCK_BRANCH="working-branch"
-OUTPUT=$(echo "$PAYLOAD" | bash -c '
-    function git() { if [[ "$1" == "rev-parse" ]]; then echo "$MOCK_BRANCH"; else command git "$@"; fi; }
-    export -f git
-    bash "$CLAUDE_PROJECT_DIR/.claude/hooks/hook_pre_tool.sh" 2>&1
-    echo "EXIT_CODE=$?"
-')
-assert "[[ \"\$OUTPUT\" == *\"EXIT_CODE=0\"* ]]" "Allows tool usage on working branches safely" "Output: $OUTPUT"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 
+mkdir -p "$TMP/.claude/hooks"
+cp "$CLAUDE_DIR/hooks/"*.sh "$TMP/.claude/hooks/"
+cp "$CLAUDE_DIR/hooks/"*.md "$TMP/.claude/hooks/"
 
-# =========================================================
-# 3. hook_prompt_submit.sh validation
-# =========================================================
-echo -e "\n--- 3. Testing Prompt Submit Hook (Checkpoint Format) ---"
+cat > "$TMP/.claude/plan-git-SHA.json" <<'JSON'
+{
+  "git_branch": "",
+  "plans": [
+    {
+      "metadata": {
+        "plan_id": "demo-plan",
+        "created_at": "2026-03-02T12:00:00+08:00",
+        "status": "in_progress"
+      },
+      "paths": {
+        "plan_file_path": "References/PlanPrompt/demo-plan.json"
+      },
+      "git_sha": {
+        "base_plan_sha": "",
+        "head_plan_sha": ""
+      },
+      "tasks": {
+        "Task_1": {
+          "task_name": "Alpha",
+          "status": "pending",
+          "completed_at": "",
+          "head_sha": ""
+        },
+        "Task_2": {
+          "task_name": "Beta",
+          "status": "pending",
+          "completed_at": "",
+          "head_sha": ""
+        }
+      }
+    }
+  ]
+}
+JSON
 
-TEST_REPO=$(mktemp -d)
-cp "$PROJECT_DIR/.claude/hooks/hook_prompt_submit.sh" "$TEST_REPO/hook_prompt_submit.sh"
-cd "$TEST_REPO"
-git init >/dev/null 2>&1
-git config user.name "Claude Test"
-git config user.email "test@example.local"
-echo "Initial commit" > file.txt
-git add file.txt
-git commit -m "Init" >/dev/null 2>&1
+pushd "$TMP" >/dev/null
+git init -q
+git config user.name "Hook Test"
+git config user.email "hook@test.local"
+git config commit.gpgsign false
 
-# 3.1 Unstaged changes -> auto commit on UserPromptSubmit
-echo "Change 1" > file.txt
-PAYLOAD='{"hook_event_name": "UserPromptSubmit", "prompt": "Implement the core logic algorithm."}'
-echo "$PAYLOAD" | bash hook_prompt_submit.sh >/dev/null 2>&1
+echo "init" > README.md
+git add -A
+git commit -q -m "init"
+git checkout -q -B master
 
-LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
-assert "[[ \"\$LAST_COMMIT_MSG\" == *\"CP: Checkpoint before prompt: Implement the core logic\"* ]]" "Creates correctly formatted automatic checkpoint commit for prompts" "Commit message: $LAST_COMMIT_MSG"
-
-# 3.2 Unstaged changes -> auto commit on PostToolUse
-echo "Change 2" > file.txt
-PAYLOAD='{"hook_event_name": "PostToolUse"}'
-echo "$PAYLOAD" | bash hook_prompt_submit.sh >/dev/null 2>&1
-
-LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
-assert "[[ \"\$LAST_COMMIT_MSG\" == *\"CP: Automatic checkpoint\"* ]]" "Creates generic automatic checkpoint for empty/post-tool events" "Commit message: $LAST_COMMIT_MSG"
-
-cd "$PROJECT_DIR"
-rm -rf "$TEST_REPO"
-
-
-# =========================================================
-# 4. Settings & Static Files Verification
-# =========================================================
-echo -e "\n--- 4. Configuration & Skills Static Checks ---"
-SETTINGS_FILE="$PROJECT_DIR/.claude/settings.json"
-assert "[ -f \"\$SETTINGS_FILE\" ]" "settings.json exists"
-if command -v jq >/dev/null 2>&1 && [ -f "$SETTINGS_FILE" ]; then
-    HAS_HOOKS=$(jq '.hooks | length' "$SETTINGS_FILE")
-    assert "[[ \$HAS_HOOKS -gt 0 ]]" "settings.json contains active hooks mappings" "Total hook events mapped: $HAS_HOOKS"
-fi
-
-SKILLS_DIR="$PROJECT_DIR/.claude/skills"
-assert "[ -f \"\$SKILLS_DIR/fork-explore/SKILL.md\" ]" "/fork-explore skill is present"
-assert "[ -f \"\$SKILLS_DIR/merge/SKILL.md\" ]" "/merge skill is present"
-assert "[ -f \"\$SKILLS_DIR/goto/SKILL.md\" ]" "/goto skill is present"
-
-# Restore original state
-if [ -f "${MAP_FILE}.bak" ]; then
-    mv "${MAP_FILE}.bak" "$MAP_FILE"
-    rm -f "${MAP_FILE}.bak"
+SESSION_OUT="$(echo '{"hook_event_name":"SessionStart","source":"startup","model":"claude-sonnet-4-6"}' | CLAUDE_PROJECT_DIR="$TMP" bash ./.claude/hooks/hook_session_start.sh)"
+if echo "$SESSION_OUT" | grep -q '"hookEventName": "SessionStart"'; then
+  pass "SessionStart emits hookSpecificOutput"
 else
-    rm -f "$MAP_FILE"
+  fail "SessionStart output schema"
 fi
 
-# Final Summary
-echo -e "\n--- Summary ---"
-echo -e "Tests Passed: ${GREEN}$TEST_PASSED${NC}"
-echo -e "Tests Failed: ${RED}$TEST_FAILED${NC}"
-
-if [ $TEST_FAILED -eq 0 ]; then
-    echo -e "\n${GREEN}ALL INTEGRATION TESTS PASSED. Claude Code is ready for production scaling.${NC}"
-    exit 0
+PROTECTED_OUT="$(echo '{"tool_name":"Edit"}' | bash ./.claude/hooks/hook_pre_tool_branch_guard.sh 2>&1 || true)"
+if echo "$PROTECTED_OUT" | grep -q 'Protected branch'; then
+  pass "PreToolUse guard blocks risky tool on protected branch"
 else
-    echo -e "\n${RED}SOME TESTS FAILED. Please review the output above.${NC}"
-    exit 1
+  fail "PreToolUse guard did not block on protected branch"
+fi
+
+git checkout -q -b work/test
+SAFE_OUT="$(echo '{"tool_name":"Edit"}' | bash ./.claude/hooks/hook_pre_tool_branch_guard.sh 2>&1 || true)"
+if [ -z "$SAFE_OUT" ]; then
+  pass "PreToolUse guard allows risky tool on work branch"
+else
+  fail "PreToolUse guard unexpectedly blocked on work branch"
+fi
+
+echo "u1" > untracked_prompt.txt
+echo '{"hook_event_name":"UserPromptSubmit","prompt":"中文提示词1234567890"}' | CLAUDE_PROJECT_DIR="$TMP" bash ./.claude/hooks/hook_prompt_submit.sh >/dev/null
+if git log -1 --pretty=%B | grep -q '^CPST:'; then
+  pass "UserPromptSubmit creates CPST checkpoint"
+else
+  fail "UserPromptSubmit checkpoint missing"
+fi
+
+echo "u2" > untracked_stop.txt
+echo '{"hook_event_name":"Stop","last_assistant_message":"停止阶段消息123456"}' | bash ./.claude/hooks/hook_stop.sh >/dev/null
+if git log -1 --pretty=%B | grep -q '^CPED:'; then
+  pass "Stop creates CPED checkpoint (including untracked changes)"
+else
+  fail "Stop checkpoint missing"
+fi
+
+echo "u3" > untracked_task.txt
+echo '{"hook_event_name":"TaskCompleted","task_subject":"Alpha","task_description":"desc"}' | bash ./.claude/hooks/hook_task_complete.sh >/dev/null
+if git log -1 --pretty=%B | grep -q '^TASK:Alpha'; then
+  pass "TaskCompleted creates TASK checkpoint"
+else
+  fail "TaskCompleted checkpoint missing"
+fi
+
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+path = Path('.claude/plan-git-SHA.json')
+data = json.loads(path.read_text(encoding='utf-8'))
+plans = data.get('plans', [])
+assert plans, 'No plans in plan-git-SHA.json'
+plan = plans[-1]
+task = plan.get('tasks', {}).get('Task_1', {})
+assert task.get('status') == 'completed', 'Task_1 not completed after hook'
+assert task.get('head_sha'), 'Task_1 head_sha not set'
+assert plan.get('git_sha', {}).get('head_plan_sha'), 'Plan head_plan_sha not set'
+print('PLAN_UPDATE_OK')
+PY
+pass "TaskCompleted updates plan-git-SHA.json"
+
+popd >/dev/null
+
+echo "=== Summary ==="
+echo "PASS: $PASS"
+echo "FAIL: $FAIL"
+
+if [ "$FAIL" -gt 0 ]; then
+  exit 1
 fi
