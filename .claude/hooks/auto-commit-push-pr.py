@@ -116,7 +116,7 @@ class CommitPushPRWorkflow:
                 check=True
             )
         except:
-            return False, "❌ Not in a git repository"
+            return False, "[FAIL] Not in a git repository"
         
         # Check for uncommitted changes
         try:
@@ -130,17 +130,17 @@ class CommitPushPRWorkflow:
                 errors='replace'
             )
             if not result.stdout.strip():
-                return False, "❌ No changes to commit"
+                return False, "[FAIL] No changes to commit"
         except:
-            return False, "❌ Failed to check git status"
+            return False, "[FAIL] Failed to check git status"
         
         # Check if current branch is protected
         if self._is_protected_branch(self.current_branch):
-            return False, f"❌ Cannot push to protected branch '{self.current_branch}'. Please switch to a feature/working branch."
+            return False, f"[FAIL] Cannot push to protected branch '{self.current_branch}'. Please switch to a feature/working branch."
         
         # Check remote configuration
         if not self._get_remote_url():
-            return False, "❌ No remote repository configured (origin)"
+            return False, "[FAIL] No remote repository configured (origin)"
         
         # Check if GitHub CLI is available (if needed for PR creation)
         try:
@@ -150,13 +150,13 @@ class CommitPushPRWorkflow:
                 check=False
             )
         except FileNotFoundError:
-            print("⚠️  Warning: GitHub CLI (gh) not found. PR will still be created but with web URL only.")
+            print("[WARN] GitHub CLI (gh) not found. PR will still be created but with web URL only.")
         
-        return True, "✅ Environment validated"
+        return True, "[OK] Environment validated"
     
     def step_1_commit(self) -> bool:
         """Step 1: Execute commit using auto-commit.py logic."""
-        print("\n📝 Step 1: Committing changes...")
+        print("\n[*] Step 1: Committing changes...")
         
         try:
             # Build arguments for auto-commit.py
@@ -189,7 +189,7 @@ class CommitPushPRWorkflow:
             )
             
             if result.returncode != 0:
-                print(f"  ❌ Commit failed: {result.stderr}")
+                print(f"  [!] Commit failed: {result.stderr}")
                 return False
             
             # Extract commit messages from output
@@ -198,11 +198,11 @@ class CommitPushPRWorkflow:
                     self.commits_created.append(line.strip())
             
             print(result.stdout)
-            print("  ✅ Commit successful")
+            print("  [+] Commit successful")
             return True
             
         except Exception as e:
-            print(f"  ❌ Commit error: {e}")
+            print(f"  [!] Commit error: {e}")
             return False
     
     def _manual_commit(self) -> bool:
@@ -235,12 +235,12 @@ class CommitPushPRWorkflow:
             self.commits_created.append(message)
             return True
         except Exception as e:
-            print(f"  ❌ Manual commit failed: {e}")
+            print(f"  [!] Manual commit failed: {e}")
             return False
     
     def step_2_push(self) -> bool:
         """Step 2: Push changes to remote."""
-        print("\n📤 Step 2: Pushing to remote...")
+        print("\n[*] Step 2: Pushing to remote...")
         
         try:
             # Push to remote (create upstream if not exists)
@@ -256,7 +256,7 @@ class CommitPushPRWorkflow:
             if result.returncode != 0:
                 # Might be a non-FF push, try with --force-with-lease
                 if 'rejected' in result.stderr.lower() or 'failed' in result.stderr.lower():
-                    print("  ℹ️  Attempting push with merge strategy...")
+                    print("  [i] Attempting push with merge strategy...")
                     result = subprocess.run(
                         ['git', 'push', 'origin', self.current_branch],
                         cwd=self.project_root,
@@ -267,29 +267,29 @@ class CommitPushPRWorkflow:
                     )
                 
                 if result.returncode != 0:
-                    print(f"  ❌ Push failed:")
+                    print(f"  [!] Push failed:")
                     print(f"     {result.stderr}")
                     return False
             
             # Extract push result
             if 'Branch' in result.stdout and 'set up to track' in result.stdout:
-                print(f"  ✅ Push successful (new branch created)")
+                print(f"  [+] Push successful (new branch created)")
             elif result.returncode == 0:
-                print(f"  ✅ Push successful")
+                print(f"  [+] Push successful")
             
             print(f"     Target: origin/{self.current_branch}")
             return True
             
         except Exception as e:
-            print(f"  ❌ Push error: {e}")
+            print(f"  [!] Push error: {e}")
             return False
     
     def step_3_detect_target_branch(self) -> str:
         """Step 3: Detect target branch for PR."""
-        print("\n🔍 Step 3: Detecting target branch...")
+        print("\n[*] Step 3: Detecting target branch...")
         
         if self.target_branch:
-            print(f"  ✅ Using specified target: {self.target_branch}")
+            print(f"  [+] Using specified target: {self.target_branch}")
             return self.target_branch
         
         # Priority order:
@@ -314,33 +314,33 @@ class CommitPushPRWorkflow:
             
             # Check for develop
             if 'develop' in remote_branches:
-                print(f"  ✅ Target: develop (found in remote branches)")
+                print(f"  [+] Target: develop (found in remote branches)")
                 return 'develop'
             
             # Check for main or master
             if 'main' in remote_branches:
-                print(f"  ✅ Target: main")
+                print(f"  [+] Target: main")
                 return 'main'
             elif 'master' in remote_branches:
-                print(f"  ✅ Target: master")
+                print(f"  [+] Target: master")
                 return 'master'
             
             # Default to first remote branch (usually main/master)
             if remote_branches:
                 target = remote_branches[0]
-                print(f"  ✅ Target: {target} (default remote branch)")
+                print(f"  [+] Target: {target} (default remote branch)")
                 return target
             
         except:
             pass
         
         # Fallback to main
-        print(f"  ⚠️  Could not auto-detect, using default: main")
+        print(f"  [WARN] Could not auto-detect, using default: main")
         return 'main'
     
     def step_4_create_pr(self, target_branch: str) -> bool:
         """Step 4: Create pull request."""
-        print("\n🔗 Step 4: Creating pull request...")
+        print("\n[*] Step 4: Creating pull request...")
         
         self.remote_url = self._get_remote_url()
         
@@ -387,10 +387,10 @@ class CommitPushPRWorkflow:
             if result.returncode != 0:
                 # gh might not be authenticated
                 if 'authentication' in result.stderr.lower() or 'not authenticated' in result.stderr.lower():
-                    print("  ⚠️  GitHub CLI not authenticated, falling back to web URL")
+                    print("  [WARN] GitHub CLI not authenticated, falling back to web URL")
                     return self._create_pr_web_url(target_branch)
                 else:
-                    print(f"  ❌ gh command failed: {result.stderr}")
+                    print(f"  [!] gh command failed: {result.stderr}")
                     return False
             
             # Extract PR URL from output
@@ -407,29 +407,29 @@ class CommitPushPRWorkflow:
             
             if self.pr_url:
                 draft_text = " (Draft)" if self.draft else ""
-                print(f"  ✅ PR created{draft_text}: {self.pr_url}")
+                print(f"  [+] PR created{draft_text}: {self.pr_url}")
                 return True
             else:
-                print("  ⚠️  PR may have been created but URL not found")
+                print("  [WARN] PR may have been created but URL not found")
                 print(result.stdout)
                 return True
                 
         except FileNotFoundError:
             raise
         except Exception as e:
-            print(f"  ❌ PR creation error: {e}")
+            print(f"  [!] PR creation error: {e}")
             return False
     
     def _create_pr_web_url(self, target_branch: str) -> bool:
         """Create PR web URL as fallback (no actual PR created)."""
         if not self.remote_url:
-            print("  ❌ Cannot create PR: no remote URL found")
+            print("  [!] Cannot create PR: no remote URL found")
             return False
         
         # Convert SSH to HTTPS if needed
         web_url = self._convert_to_https_url(self.remote_url)
         if not web_url:
-            print("  ❌ Cannot create PR: invalid remote URL")
+            print("  [!] Cannot create PR: invalid remote URL")
             return False
         
         # Create compare URL
@@ -439,8 +439,8 @@ class CommitPushPRWorkflow:
         self.pr_url = compare_url
         
         draft_text = " (Draft)" if self.draft else ""
-        print(f"  ⚠️  PR not created automatically (gh not available)")
-        print(f"  📋 Create PR manually: {compare_url}")
+        print(f"  [WARN] PR not created automatically (gh not available)")
+        print(f"  [i] Create PR manually: {compare_url}")
         print(f"\n  Or just visit: {web_url}/pulls")
         
         return True
@@ -492,26 +492,26 @@ class CommitPushPRWorkflow:
     def show_summary(self):
         """Display final summary."""
         print("\n" + "="*60)
-        print("✅ All Tasks Completed Successfully")
+        print("[OK] All Tasks Completed Successfully")
         print("="*60)
         
         if self.commits_created:
-            print("\n📝 Commits:")
+            print("\n[Commits]:")
             for commit in self.commits_created[:3]:  # Show first 3
-                print(f"  • {commit}")
+                print(f"  + {commit}")
             if len(self.commits_created) > 3:
                 print(f"  ... and {len(self.commits_created) - 3} more")
         
-        print(f"\n📤 Push:")
-        print(f"  • Target: origin/{self.current_branch}")
-        print(f"  • Status: ✅ Success")
+        print(f"\n[Push]:")
+        print(f"  + Target: origin/{self.current_branch}")
+        print(f"  + Status: OK")
         
         if self.pr_url:
-            print(f"\n🔗 Pull Request:")
-            print(f"  • URL: {self.pr_url}")
-            print(f"  • Base: {self._get_target_branch()} ← {self.current_branch}")
+            print(f"\n[PR]:")
+            print(f"  + URL: {self.pr_url}")
+            print(f"  + Base: {self._get_target_branch()} <- {self.current_branch}")
             draft_status = " (Draft: YES)" if self.draft else " (Draft: NO)"
-            print(f"  • Status: OPEN{draft_status}")
+            print(f"  + Status: OPEN{draft_status}")
         
         print("\n" + "="*60)
     
@@ -523,7 +523,7 @@ class CommitPushPRWorkflow:
     
     def run(self) -> bool:
         """Execute the complete workflow."""
-        print("🚀 Commit-Push-PR Workflow Started\n")
+        print("[>>] Commit-Push-PR Workflow Started\n")
         
         # Validate environment
         valid, msg = self.validate_environment()
@@ -544,7 +544,7 @@ class CommitPushPRWorkflow:
         
         # Step 4: Create PR
         if not self.step_4_create_pr(target_branch):
-            print("\n⚠️  Warning: PR creation failed, but commits and push succeeded")
+            print("\n[WARN] PR creation failed, but commits and push succeeded")
         
         # Show summary
         self.show_summary()
@@ -624,10 +624,10 @@ def main():
         sys.exit(0 if success else 1)
         
     except KeyboardInterrupt:
-        print("\n\n⚠️  Execution cancelled by user")
+        print("\n\n[!] Execution cancelled by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print(f"\n[!] Unexpected error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
