@@ -54,3 +54,4 @@ dkms.conf
 /STM32/Output/
 /STM32/Listings/
 
+claude build resources/superpowers 4.3.1
