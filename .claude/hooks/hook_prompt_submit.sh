@@ -42,8 +42,8 @@ else
   ADDITIONAL_CONTEXT="MANDATORY: Enforce protected-branch read-only mode, guide user to create a work branch with git checkout -b work/<name>, and never use git worktree."
 fi
 
-export ADDITIONAL_CONTEXT
-python3 - <<'PY'
+export ADDITIONAL_CONTEXT PYTHON_CMD
+"$PYTHON_CMD" - <<'PY'
 import json
 import os
 
