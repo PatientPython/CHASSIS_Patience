@@ -76,6 +76,8 @@ class CommitAnalyzer:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 check=True
             )
             
@@ -123,18 +125,16 @@ class CommitAnalyzer:
     
     def _normalize_filepath(self, filepath: str) -> str:
         """Normalize file path to ensure consistency."""
-        # Handle quoted paths
+        # Handle quoted paths (files with spaces like "claude build resources/...")
         if filepath.startswith('"') and filepath.endswith('"'):
             try:
                 filepath = shlex.split(filepath)[0]
             except (ValueError, IndexError):
                 filepath = filepath[1:-1]
         
-        # Ensure paths that should start with dot do
-        if not filepath.startswith('.') and (filepath.startswith('claude/') or filepath.startswith('.claude/')):
-            # If it's missing the leading dot, add it
-            if filepath.startswith('claude/') and not filepath.startswith('.claude/'):
-                filepath = '.' + filepath
+        # Ensure .claude paths have the leading dot (PowerShell sometimes strips it)
+        if filepath.startswith('claude/') and not filepath.startswith('.claude/'):
+            filepath = '.' + filepath
         
         return filepath
     
