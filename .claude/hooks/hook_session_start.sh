@@ -1,22 +1,27 @@
 #!/bin/bash
-PROTECTED_BRANCHES=("main" "v1-stable" "master")
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+set -e
 
-if [[ " ${PROTECTED_BRANCHES[*]} " =~ " ${CURRENT_BRANCH} " ]]; then
-  echo "SYSTEM ALERT: You are on a protected branch. Stop and ask the user whether to create a new protected branch or a working branch."
-  exit 0
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+GUIDE_FILE="$PROJECT_DIR/.claude/hooks/workflow-guide.md"
+
+if [ -f "$GUIDE_FILE" ]; then
+  ADDITIONAL_CONTEXT="$(cat "$GUIDE_FILE")"
+else
+  ADDITIONAL_CONTEXT="Workflow guide is missing at .claude/hooks/workflow-guide.md. Ask user to restore it before using workflow skills."
 fi
 
-MAP_FILE="$CLAUDE_PROJECT_DIR/.claude/session-git-map.json"
-if [ ! -f "$MAP_FILE" ]; then
-  echo "{}" > "$MAP_FILE"
-fi
+export ADDITIONAL_CONTEXT
+python3 - <<'PY'
+import json
+import os
 
-SAVED_BRANCH=$(jq -r ".\"$CLAUDE_SESSION_ID\"" "$MAP_FILE" 2>/dev/null)
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": "SessionStart",
+        "additionalContext": os.environ.get("ADDITIONAL_CONTEXT", "")
+    }
+}, ensure_ascii=False))
+PY
 
-if [ "$SAVED_BRANCH" == "null" ] || [ -z "$SAVED_BRANCH" ]; then
-  jq ".\"$CLAUDE_SESSION_ID\" = \"$CURRENT_BRANCH\"" "$MAP_FILE" > "${MAP_FILE}.tmp" && mv "${MAP_FILE}.tmp" "$MAP_FILE"
-elif [ "$SAVED_BRANCH" != "$CURRENT_BRANCH" ]; then
-  echo "SYSTEM ALERT: Branch mismatch. Stop and ask the user: 1) Mount this session on the current working branch? 2) Check out the previous working branch? 3) Use /fork-explore to create a new sub-working branch?"
-fi
 exit 0

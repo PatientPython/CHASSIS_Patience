@@ -82,7 +82,7 @@
         命名顺序从(1)到(2)到(3)，比如底盘(CH)安全模式(SafeMode)全局(G)标志位(F)：GFCH_SafeMode
         (1) G：全局变量global       S：静态变量static
         (2) ST：结构体变量Struct    EM：枚举变量enum    F：标志位flag
-        (3) GB：云台变量Gimbal      CH：底盘变量chassis
+        (3) GM：云台变量Gimbal      CH：底盘变量chassis
 
 
     2-2、变量命名规则-数字序号
