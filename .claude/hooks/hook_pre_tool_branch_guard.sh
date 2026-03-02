@@ -7,8 +7,18 @@ unset GIT_COMMON_DIR
 unset GIT_INDEX_FILE
 unset GIT_OBJECT_DIRECTORY
 
+# Windows compatibility: use 'python' if 'python3' not found
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo "Error: Python not found" >&2
+  exit 1
+fi
+
 PAYLOAD="$(cat)"
-TOOL_NAME="$(echo "$PAYLOAD" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("tool_name", ""))' 2>/dev/null || echo "")"
+TOOL_NAME="$(echo "$PAYLOAD" | "$PYTHON_CMD" -c 'import json,sys; d=json.load(sys.stdin); print(d.get("tool_name", ""))' 2>/dev/null || echo "")"
 
 if [ -z "$TOOL_NAME" ]; then
   exit 0
