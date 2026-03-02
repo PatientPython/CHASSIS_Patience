@@ -27,9 +27,10 @@ _CLV2_REGISTRY_FILE="${_CLV2_HOMUNCULUS_DIR}/projects.json"
 
 # ─────────────────────────────────────────────
 # Detect python command (Windows uses 'python', Unix uses 'python3')
+# Test actual execution, not just path existence (Windows has broken stub)
 # ─────────────────────────────────────────────
-_CLV2_PYTHON="python"
-if command -v python3 &>/dev/null && python3 --version &>/dev/null; then
+_CLV2_PYTHON="python"  # Default for Windows
+if python3 -c "import sys" &>/dev/null; then
   _CLV2_PYTHON="python3"
 fi
 
