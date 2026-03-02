@@ -7,7 +7,7 @@
 # v2.1: Project-scoped observations — detects current project context
 #       and writes observations to project-specific directory.
 #
-# v2.1.1: Windows compatibility — use 'python' instead of 'python3'
+# v2.1.1: Windows compatibility — use PYTHON_CMD from detect-project.sh
 #
 # Registered via plugin hooks/hooks.json (auto-loaded when plugin is enabled).
 # Can also be registered manually in ~/.claude/settings.json.
@@ -16,14 +16,6 @@ set -e
 
 # Hook phase from CLI argument: "pre" (PreToolUse) or "post" (PostToolUse)
 HOOK_PHASE="${1:-post}"
-
-# ─────────────────────────────────────────────
-# Detect python command (Windows uses 'python', Unix uses 'python3')
-# ─────────────────────────────────────────────
-PYTHON_CMD="python"
-if command -v python3 &>/dev/null && python3 --version &>/dev/null; then
-  PYTHON_CMD="python3"
-fi
 
 # ─────────────────────────────────────────────
 # Read stdin first (before project detection)
@@ -38,11 +30,21 @@ if [ -z "$INPUT_JSON" ]; then
 fi
 
 # ─────────────────────────────────────────────
+# Project detection (also sets PYTHON_CMD)
+# ─────────────────────────────────────────────
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Source shared project detection helper
+# This sets: PROJECT_ID, PROJECT_NAME, PROJECT_ROOT, PROJECT_DIR, PYTHON_CMD
+source "${SKILL_ROOT}/scripts/detect-project.sh"
+
+# ─────────────────────────────────────────────
 # Extract cwd from stdin for project detection
 # ─────────────────────────────────────────────
 
 # Extract cwd from the hook JSON to use for project detection.
-# This avoids spawning a separate git subprocess when cwd is available.
 STDIN_CWD=$(echo "$INPUT_JSON" | $PYTHON_CMD -c '
 import json, sys
 try:
@@ -57,17 +59,6 @@ except(KeyError, TypeError, ValueError):
 if [ -n "$STDIN_CWD" ] && [ -d "$STDIN_CWD" ]; then
   export CLAUDE_PROJECT_DIR="$STDIN_CWD"
 fi
-
-# ─────────────────────────────────────────────
-# Project detection
-# ─────────────────────────────────────────────
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Source shared project detection helper
-# This sets: PROJECT_ID, PROJECT_NAME, PROJECT_ROOT, PROJECT_DIR
-source "${SKILL_ROOT}/scripts/detect-project.sh"
 
 # ─────────────────────────────────────────────
 # Configuration
@@ -93,8 +84,6 @@ try:
     data = json.load(sys.stdin)
 
     # Determine event type from CLI argument passed via env var.
-    # Claude Code does NOT include a "hook_type" field in the stdin JSON,
-    # so we rely on the shell argument ("pre" or "post") instead.
     hook_phase = os.environ.get("HOOK_PHASE", "post")
     event = "tool_start" if hook_phase == "pre" else "tool_complete"
 
