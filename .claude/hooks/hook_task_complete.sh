@@ -7,13 +7,23 @@ unset GIT_COMMON_DIR
 unset GIT_INDEX_FILE
 unset GIT_OBJECT_DIRECTORY
 
+# Windows compatibility: use 'python' if 'python3' not found
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo "Error: Python not found" >&2
+  exit 1
+fi
+
 PAYLOAD="$(cat)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PLAN_SHA_FILE="$PROJECT_DIR/.claude/plan-git-SHA.json"
 
-TASK_SUBJECT="$(echo "$PAYLOAD" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("task_subject", ""))' 2>/dev/null || echo "")"
-TASK_PREFIX="$(printf '%s' "$TASK_SUBJECT" | python3 -c 'import sys; s=sys.stdin.read().replace("\n"," ").replace("\r"," ").strip(); print(s[:10])')"
+TASK_SUBJECT="$(echo "$PAYLOAD" | "$PYTHON_CMD" -c 'import json,sys; d=json.load(sys.stdin); print(d.get("task_subject", ""))' 2>/dev/null || echo "")"
+TASK_PREFIX="$(printf '%s' "$TASK_SUBJECT" | "$PYTHON_CMD" -c 'import sys; s=sys.stdin.read().replace("\n"," ").replace("\r"," ").strip(); print(s[:10])')"
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
