@@ -89,6 +89,9 @@ class CommitAnalyzer:
                 status = line[:2].strip()
                 filepath = line[3:].strip()
                 
+                # Normalize filepath
+                filepath = self._normalize_filepath(filepath)
+                
                 # Handle quoted file names (files with spaces)
                 if filepath.startswith('"') and filepath.endswith('"'):
                     try:
@@ -117,6 +120,23 @@ class CommitAnalyzer:
         except Exception as e:
             print(f"Error getting changes: {e}", file=sys.stderr)
             return False
+    
+    def _normalize_filepath(self, filepath: str) -> str:
+        """Normalize file path to ensure consistency."""
+        # Handle quoted paths
+        if filepath.startswith('"') and filepath.endswith('"'):
+            try:
+                filepath = shlex.split(filepath)[0]
+            except (ValueError, IndexError):
+                filepath = filepath[1:-1]
+        
+        # Ensure paths that should start with dot do
+        if not filepath.startswith('.') and (filepath.startswith('claude/') or filepath.startswith('.claude/')):
+            # If it's missing the leading dot, add it
+            if filepath.startswith('claude/') and not filepath.startswith('.claude/'):
+                filepath = '.' + filepath
+        
+        return filepath
     
     def _classify_module(self, filepath: str) -> str:
         """Classify file to module based on path."""
@@ -197,15 +217,19 @@ class CommitAnalyzer:
         
         commits = []
         
-        # Determine grouping strategy
-        if self.auto_group or (self.hook_event and len(self.changes) > 1):
+        # Determine grouping strategy:
+        # - Hook triggered with multiple modules → separate commits
+        # - Auto-group flag → separate commits
+        # - Otherwise → try to use single commit
+        should_group = self.auto_group or (self.hook_event and len(self.changes) > 1)
+        
+        if should_group:
             # Group by module - separate commits per module
             for module in sorted(self.changes.keys()):
                 if self._do_commit_module(module, commits):
                     commits.append(module)
         else:
-            # Single commit for all changes
-            affected_modules = ', '.join(sorted(self.changes.keys()))
+            # Single commit for all changes (or when only one module)
             files = []
             for module_files in self.changes.values():
                 files.extend([f for f, _ in module_files])
