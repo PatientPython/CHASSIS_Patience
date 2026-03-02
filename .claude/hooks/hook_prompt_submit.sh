@@ -27,13 +27,15 @@ if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; the
 fi
 POLICY_FILE="$PROJECT_DIR/.claude/hooks/git-harness-agent-policy.md"
 
-PROMPT_TEXT="$(echo "$PAYLOAD" | "$PYTHON_CMD" -c 'import json,sys; d=json.load(sys.stdin); print(d.get("prompt", ""))' 2>/dev/null || echo "")"
-PROMPT_PREFIX="$(printf '%s' "$PROMPT_TEXT" | "$PYTHON_CMD" -c 'import sys; s=sys.stdin.read().replace("\n"," ").replace("\r"," ").strip(); print(s[:10])')"
+# Set environment variables for auto-commit.py
+export HOOK_TRIGGERED=true
+export HOOK_EVENT_TYPE=prompt_submit
 
+# Execute auto-commit if we're in a git repository
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-    git add -A >/dev/null 2>&1 || true
-    git commit -m "CPST:${PROMPT_PREFIX}" >/dev/null 2>&1 || true
+  AUTO_COMMIT_SCRIPT="$SCRIPT_DIR/auto-commit.py"
+  if [ -f "$AUTO_COMMIT_SCRIPT" ]; then
+    "$PYTHON_CMD" "$AUTO_COMMIT_SCRIPT" 2>/dev/null || true
   fi
 fi
 

@@ -8,25 +8,30 @@ unset GIT_INDEX_FILE
 unset GIT_OBJECT_DIRECTORY
 
 # Windows compatibility: test actual execution, not just path existence
-# (Windows has a broken python3.exe stub in WindowsApps)
 if python3 -c "import sys" >/dev/null 2>&1; then
   PYTHON_CMD="python3"
 elif python -c "import sys" >/dev/null 2>&1; then
   PYTHON_CMD="python"
 else
-  echo "Error: Python not found" >&2
-  exit 1
+  exit 0  # Python not available, skip auto-commit
 fi
 
-PAYLOAD="$(cat)"
-MESSAGE="$(echo "$PAYLOAD" | "$PYTHON_CMD" -c 'import json,sys; d=json.load(sys.stdin); print(d.get("last_assistant_message", ""))' 2>/dev/null || echo "")"
-PREFIX="$(printf '%s' "$MESSAGE" | "$PYTHON_CMD" -c 'import sys; s=sys.stdin.read().replace("\n"," ").replace("\r"," ").strip(); print(s[:10])')"
+# Check if inside a git repository
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  exit 0
+fi
 
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-    git add -A >/dev/null 2>&1 || true
-    git commit -m "CPED:${PREFIX}" >/dev/null 2>&1 || true
-  fi
+# Set environment variables for auto-commit.py
+export HOOK_TRIGGERED=true
+export HOOK_EVENT_TYPE=stop
+
+# Get the script directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+AUTO_COMMIT_SCRIPT="$SCRIPT_DIR/auto-commit.py"
+
+# Execute auto-commit with Python
+if [ -f "$AUTO_COMMIT_SCRIPT" ]; then
+  "$PYTHON_CMD" "$AUTO_COMMIT_SCRIPT" 2>/dev/null || true
 fi
 
 exit 0
