@@ -9,6 +9,7 @@ import subprocess
 import sys
 import os
 import json
+import shlex
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
@@ -27,7 +28,9 @@ class CommitAnalyzer:
         'Algorithm': ['API/Algorithm'],
         'Communication': ['Communication/'],
         'FreeRTOS': ['FreeRTOS/'],
-        'Config': ['Project/', 'User/main.c', 'User/IRQHandler_Config.c'],
+        'Hook': ['.claude/hooks/'],
+        'Skill': ['.claude/skills/'],
+        'Config': ['Project/', 'User/main.c', 'User/IRQHandler_Config.c', 'settings'],
         'Doc': ['.md', '.txt'],
     }
     
@@ -81,14 +84,17 @@ class CommitAnalyzer:
             
             # Parse git status output
             for line in result.stdout.strip().split('\n'):
-                if not line or len(line) < 3:
+                if not line or len(line) < 4:
                     continue
                 status = line[:2].strip()
                 filepath = line[3:].strip()
                 
-                # Remove surrounding quotes if present
+                # Handle quoted file names (files with spaces)
                 if filepath.startswith('"') and filepath.endswith('"'):
-                    filepath = filepath[1:-1]
+                    try:
+                        filepath = shlex.split(filepath)[0]
+                    except (ValueError, IndexError):
+                        filepath = filepath[1:-1]  # Fallback: just remove quotes
                 
                 # Skip directories (path ends with /)
                 if filepath.endswith('/'):
@@ -96,6 +102,9 @@ class CommitAnalyzer:
                 
                 # Skip special paths
                 if '__pycache__' in filepath or '.pyc' in filepath:
+                    continue
+                
+                if not filepath:
                     continue
                 
                 module = self._classify_module(filepath)
@@ -113,9 +122,13 @@ class CommitAnalyzer:
         """Classify file to module based on path."""
         filepath_lower = filepath.lower()
         
+        # Normalize path by removing leading dot/slash
+        normalized_path = filepath_lower.lstrip('./')
+        
         for module, patterns in self.MODULE_PATTERNS.items():
             for pattern in patterns:
-                if pattern.lower() in filepath_lower:
+                pattern_lower = pattern.lower().lstrip('./')
+                if pattern_lower in normalized_path or pattern_lower in filepath_lower:
                     return module
         
         return 'Other'
