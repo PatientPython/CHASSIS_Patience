@@ -10,19 +10,14 @@ user-invocable: true
 
 - Do not run merge automatically.
 - Do not use git worktree.
-- Generate report to `References/MergeGuide/`.
+- Provide merge guidance directly in chat rather than a file.
 
 ## Procedure
 
 1. Detect protected target branch (`main`, `master`, `v1-stable` or user-selected protected branch).
 2. Analyze `git diff target..HEAD`.
-3. Write merge guide:
-   - summary of changes
-   - risk notes
-   - recommended merge command
-   - alternatives (rebase/cherry-pick)
-4. The merge guide content must be in Chinese.
-
-## Output file
-
-`References/MergeGuide/<current_branch>_into_<target>.md`
+3. Inform the user of:
+   - Recommended merge commands.
+   - Summary of key changes to be merged.
+   - Any manual conflicts or risks identified during diff.
+4. User will perform the merge manually in their terminal.
