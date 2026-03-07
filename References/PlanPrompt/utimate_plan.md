@@ -6,7 +6,7 @@
 > 1) 文件路径可包含中文；
 > 2) AI 可见的提示词（skills/agents/hooks 注入）必须使用准确英文，并尽量节省 token；
 > 3) 报告模板必须使用中文；
-> 4) 所有最终输出报告（如 ReviewReport、MergeGuide）必须为全中文。
+> 4) 所有最终输出报告（如 ReviewReport）必须为全中文。
 
 ---
 
@@ -370,11 +370,10 @@ graph TB
 #### `merge-work-branch`（三合一新建）
 
 - **合并来源**: `finishing-a-development-branch` + 现有 `merge` + `requesting-code-review`(合并操作部分)
-- 功能: 工作分支合并到默认主分支
-- 去掉所有 worktree 逻辑
-- 生成合并报告 → 输出到 `References/MergeGuide/`（沿用现有 merge 的输出路径）
-- 报告内容: 宏观修改说明 + 合并指令 + diff 分析
-- 只能在上车测试完成后由用户自主激发
+- 功能: 建议工作分支合并到目标分支的指令。
+- 去掉所有 worktree 逻辑。
+- 在对话中直接输出合并指引（含修改说明、合并指令、差异分析）。
+- 只能在上车测试完成后由用户自主激发。
 
 ### 4.4 辅助工具
 
@@ -521,8 +520,7 @@ sequenceDiagram
 
     Note over U,AI: 上车测试完成后
     U->>AI: /merge-work-branch
-    AI->>AI: 生成合并报告 → References/MergeGuide/
-    AI->>U: 合并指令 + diff 分析
+    AI->>U: 合并指令 + 修改摘要 + 差异分析
 ```
 
 > **设计原则**: 所有 skill 均可独立调用。使用完整流程时，每步执行后给出下一步建议（💡），但不强制跳转。

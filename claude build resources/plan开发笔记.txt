@@ -1,0 +1,102 @@
+finishing-a-development-branch一般用于将工作分支的内容合并到默认主分支而不用于将worktrees合并在一起。这个技能和merge合并，然后输出文档按照/merge上写的输出路径输出。技能名称叫做'/merge-work-branch'
+
+requesting-code-review实现的功能和这个是一致的，都会在合并的时候进行，你借鉴一下这里面关于合并到主分支上的操作部分，code-review部分拆分到code-review处，处理好迁移后删除这个技能
+
+
+keil-build把它变成元技能，要求只进行编译并返回编译输出，删除循环编译修改部分，只进行编译操作。要求在保持除循环编译外的其他功能外提升整个skills的执行速度，实现最快的速度返回编译输出
+
+删去所有关于session id和git对应的关系，我不留这个功能了
+
+删除fork-explore，先不用这个功能了
+
+name-symbol应该结合进brainstorm里面
+
+创建两个subagent，一个是'spec-reviewer'一个是'quality-reviewer'
+
+'spec-reviewer'负责检查代码实现的是否和计划要求一致，负责“把事情做对”
+
+'quality-reviewer'负责检查代码实现的规范性和实现质量，负责“把事情做好”
+
+写好调用条件
+
+
+
+将executing-plans技能重命名为quick-executing-dev
+
+
+提供 subagent-driven-dev vs quick-executing-dev 两种选择
+
+
+对于subagent-driven-dev
+
+
+只要是完成一个小任务就调用这两个subagent 进行审查，调用顺序强制设置为先 'spec-reviewer' 再 'quality-reviewer' 。'spec-reviewer' 通过才能进行'quality-reviewer' 。这两个检查都通过才能标记这个任务为完成。
+
+
+对于quick-executing-dev
+
+用户提出的需求实现之后再调用这两个subagent 进行审查，其他不变。目的是对简单任务快速编写，减少不必要的审查浪费时间。
+
+
+将claude build resources\superpowers 4.3.1\华为C语言编程规范.md，claude build resources\superpowers 4.3.1\Google C++ Style Guide.md 和 claude build resources\superpowers 4.3.1\ReadMe.txt claude build resources\superpowers 4.3.1\模板.txt拆开成对应的几个部分，
+权重大小：claude build resources\superpowers 4.3.1\ReadMe.txt 和 claude build resources\superpowers 4.3.1\模板.txt > claude build resources\superpowers 4.3.1\华为C语言编程规范.md > claude build resources\superpowers 4.3.1\Google C++ Style Guide.md。把这些规范分成函数、变量等接口签名的命名规范'naming-rules.md'和代码实现规范、风格等两部分'developing-styles.md', ReadMe.txt内提取的内容需要在这两个文件中单独的一块声明，方便修改
+
+将这个整理好的文件作为assert附件安装官方的格式放在对应的目录下面
+
+
+
+我需要你在写入plan之后存储当前所在分支最新的git提交存储在.claude/plan-git-SHA.json内，然后这个值有三个，plan的起始提交和终止提交还有task的终止提交（'BASE_PLAN_SHA和'HEAD_PLAN_SHA和HEAD_TASK_SHA）如果没有提交就存储当前分支的最新提交
+
+按照plan进行分组，每个plan下面都关联一个plan文件的存储路径（'PLAN_FILE_PATH'）一般为References/PlanPrompt/YYYY-MM-DDThh-mm-<功能简述>.json
+
+plan-git-SHA.json存储示例：
+
+{
+"git_branch": main,[
+  "plans": {
+    {
+      "metadata": {
+        "created_at": "2026-03-02T14:30:00",
+	"status": "in progress",
+      },
+      "paths": {
+        "plan_file_path": "References/PlanPrompt/2026-03-02T14-30-Robot-Leg-Control.json"
+      },
+      "git_sha": {
+        "base_plan_sha": "a1b2c3d4e5f6",
+        "head_plan_sha": "a1b2c3d4e5f6"
+      },
+      "tasks": {
+        "Task_1": {
+	  "status": "completed",
+          "completed_at": "2026-03-02T15:00:00",
+	  "task_name": "初始化GPIO",
+          "head_sha": "f6e5d4c3b2a1", // taskcomplete时调用hooks更新
+        },
+        "Task_2": {
+	  "status": "in progress",
+          "completed_at": "",
+	  "task_name": "编写双环PID算法",
+          "head_sha": "9z8y7x6w5v4u", // taskcomplete时调用hooks更新
+        }
+      }
+     }
+   }
+  ]
+}
+
+对每个task创建状态，在以下三个模式中选择
+pending - 待处理
+in progress - 进行中
+completed - 已完成
+
+对每个plan创建状态，在以下两个模式中选择
+in progress - 进行中
+completed - 已完成
+
+当一个plan或者task处于完成状态后会冻结head_sha和head_plan_sha
+
+当用户使用code-review命令时会读取当前工作区所在分支上最新的 in progress 的 plan或者是task，对于plan读取他的base_plan_sha作为审查的头，对于task将同plan下上一个执行的（用时间判断）plan的尾作为审查的头
+
+如果出现无法匹配的情况，如当前分支上没有进行中的plan或者task或者没有更改，那么使用askuserquestion询问用户
+他的具体审查需求，问什么问题你自己构思一下写到这个implementation plan里面

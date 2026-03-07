@@ -54,3 +54,10 @@ dkms.conf
 /STM32/Output/
 /STM32/Listings/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env

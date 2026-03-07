@@ -7,8 +7,19 @@ unset GIT_COMMON_DIR
 unset GIT_INDEX_FILE
 unset GIT_OBJECT_DIRECTORY
 
+# Windows compatibility: test actual execution, not just path existence
+# (Windows has a broken python3.exe stub in WindowsApps)
+if python3 -c "import sys" >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif python -c "import sys" >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo "Error: Python not found" >&2
+  exit 1
+fi
+
 PAYLOAD="$(cat)"
-TOOL_NAME="$(echo "$PAYLOAD" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("tool_name", ""))' 2>/dev/null || echo "")"
+TOOL_NAME="$(echo "$PAYLOAD" | "$PYTHON_CMD" -c 'import json,sys; d=json.load(sys.stdin); print(d.get("tool_name", ""))' 2>/dev/null || echo "")"
 
 if [ -z "$TOOL_NAME" ]; then
   exit 0

@@ -11,8 +11,19 @@ else
   ADDITIONAL_CONTEXT="Workflow guide is missing at .claude/hooks/workflow-guide.md. Ask user to restore it before using workflow skills."
 fi
 
-export ADDITIONAL_CONTEXT
-python3 - <<'PY'
+# Windows compatibility: test actual execution, not just path existence
+# (Windows has a broken python3.exe stub in WindowsApps)
+if python3 -c "import sys" >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif python -c "import sys" >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo "Error: Python not found" >&2
+  exit 1
+fi
+
+export ADDITIONAL_CONTEXT PYTHON_CMD
+"$PYTHON_CMD" - <<'PY'
 import json
 import os
 

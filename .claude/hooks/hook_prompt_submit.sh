@@ -7,6 +7,17 @@ unset GIT_COMMON_DIR
 unset GIT_INDEX_FILE
 unset GIT_OBJECT_DIRECTORY
 
+# Windows compatibility: test actual execution, not just path existence
+# (Windows has a broken python3.exe stub in WindowsApps)
+if python3 -c "import sys" >/dev/null 2>&1; then
+  PYTHON_CMD="python3"
+elif python -c "import sys" >/dev/null 2>&1; then
+  PYTHON_CMD="python"
+else
+  echo "Error: Python not found" >&2
+  exit 1
+fi
+
 PAYLOAD="$(cat)"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -16,13 +27,15 @@ if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; the
 fi
 POLICY_FILE="$PROJECT_DIR/.claude/hooks/git-harness-agent-policy.md"
 
-PROMPT_TEXT="$(echo "$PAYLOAD" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("prompt", ""))' 2>/dev/null || echo "")"
-PROMPT_PREFIX="$(printf '%s' "$PROMPT_TEXT" | python3 -c 'import sys; s=sys.stdin.read().replace("\n"," ").replace("\r"," ").strip(); print(s[:10])')"
+# Set environment variables for auto-commit.py
+export HOOK_TRIGGERED=true
+export HOOK_EVENT_TYPE=prompt_submit
 
+# Execute auto-commit if we're in a git repository
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-    git add -A >/dev/null 2>&1 || true
-    git commit -m "CPST:${PROMPT_PREFIX}" >/dev/null 2>&1 || true
+  AUTO_COMMIT_SCRIPT="$SCRIPT_DIR/auto-commit.py"
+  if [ -f "$AUTO_COMMIT_SCRIPT" ]; then
+    "$PYTHON_CMD" "$AUTO_COMMIT_SCRIPT" 2>/dev/null || true
   fi
 fi
 
@@ -32,8 +45,8 @@ else
   ADDITIONAL_CONTEXT="MANDATORY: Enforce protected-branch read-only mode, guide user to create a work branch with git checkout -b work/<name>, and never use git worktree."
 fi
 
-export ADDITIONAL_CONTEXT
-python3 - <<'PY'
+export ADDITIONAL_CONTEXT PYTHON_CMD
+"$PYTHON_CMD" - <<'PY'
 import json
 import os
 
